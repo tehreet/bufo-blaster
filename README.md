@@ -1,6 +1,6 @@
 # bufo-blaster
 
-A lightweight bullet-heaven game inspired by Vampire Survivors. Control Bufo and defeat endless waves of enemy Bufos while collecting experience to level up and pick upgrades.
+A lightweight bullet-heaven game inspired by Vampire Survivors. Control Bufo and defeat endless waves of enemy Bufos while collecting experience to level up and pick upgrades. The HUD shows your current health and experience toward the next level.
 
 ## Running
 

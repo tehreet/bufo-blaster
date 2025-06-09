@@ -30,6 +30,9 @@ class GameScene extends Phaser.Scene {
     this.xp = 0;
     this.xpForNext = 5;
 
+    this.maxHealth = 5;
+    this.health = this.maxHealth;
+
     this.fireRate = 500;
     this.bulletSpeed = 300;
     this.bulletDamage = 1;
@@ -41,6 +44,9 @@ class GameScene extends Phaser.Scene {
 
     this.physics.add.overlap(this.bullets, this.enemies, this.hitEnemy, null, this);
     this.physics.add.overlap(this.player, this.xpOrbs, this.collectXp, null, this);
+    this.physics.add.overlap(this.player, this.enemies, this.playerHit, null, this);
+
+    updateHud(this);
   }
 
   update(time, delta) {
@@ -105,6 +111,7 @@ class GameScene extends Phaser.Scene {
     if (this.xp >= this.xpForNext) {
       this.levelUp();
     }
+    updateHud(this);
   }
 
   levelUp() {
@@ -113,6 +120,16 @@ class GameScene extends Phaser.Scene {
     this.xpForNext += 5;
     this.scene.pause();
     showLevelUp(this);
+    updateHud(this);
+  }
+
+  playerHit(player, enemy) {
+    enemy.destroy();
+    this.health -= 1;
+    updateHud(this);
+    if (this.health <= 0) {
+      this.scene.restart();
+    }
   }
 }
 
@@ -148,5 +165,12 @@ function showLevelUp(scene) {
     div.appendChild(btn);
   });
   div.style.display = 'flex';
+}
+
+function updateHud(scene) {
+  const hp = document.getElementById('healthBar');
+  hp.style.width = (100 * scene.health / scene.maxHealth) + '%';
+  const xp = document.getElementById('xpBar');
+  xp.style.width = (100 * scene.xp / scene.xpForNext) + '%';
 }
 
