@@ -591,6 +591,8 @@ function initializeGame() {
     // Start enemy spawning
     if (enemySpawnIntervalId) clearInterval(enemySpawnIntervalId); // Clear existing interval if any
     enemySpawnIntervalId = setInterval(spawnEnemy, 267); // Spawn enemy every 800ms
+    // Register gamepad navigation listener for upgrades now that engine exists
+    Matter.Events.on(engine, 'beforeUpdate', handleUpgradeGamepadNavigation);
 
     Matter.Events.on(engine, 'afterUpdate', function(event) {
         if (player && playerImageElement) {
@@ -1008,8 +1010,50 @@ window.addEventListener("gamepaddisconnected", (event) => {
     selectPrimaryGamepad(); // Re-evaluate primary gamepad
 });
 
-// Handle gamepad navigation on upgrade screen in its own beforeUpdate callback
-Matter.Events.on(engine, 'beforeUpdate', () => {
+function handleUpgradeGamepadNavigation() {
+    if (!gamePausedForUpgrade || availableUpgrades.length === 0) return;
+
+    if (!gamepad) return;
+    const pads = navigator.getGamepads();
+    const live = pads[gamepad.index];
+    if (!live) return;
+
+    // D-Pad buttons (standard mapping): 12 = Up, 13 = Down, 0 = A / South Button
+    const upPressed = (live.buttons[12] && live.buttons[12].pressed) || (live.axes && live.axes.length > 1 && live.axes[1] < -0.5);
+    const downPressed = (live.buttons[13] && live.buttons[13].pressed) || (live.axes && live.axes.length > 1 && live.axes[1] > 0.5);
+    const selectPressed = live.buttons[0] && live.buttons[0].pressed; // A button
+
+    // Navigate options
+    if (upPressed && !prevUpPressed) {
+        currentUpgradeSelectionIndex = (currentUpgradeSelectionIndex - 1 + availableUpgrades.length) % availableUpgrades.length;
+    }
+    if (downPressed && !prevDownPressed) {
+        currentUpgradeSelectionIndex = (currentUpgradeSelectionIndex + 1) % availableUpgrades.length;
+    }
+
+    // Select option
+    if (selectPressed && !prevSelectPressed) {
+        const chosen = availableUpgrades[currentUpgradeSelectionIndex];
+        if (chosen && typeof chosen.apply === 'function') {
+            chosen.apply();
+        }
+        gamePausedForUpgrade = false;
+        availableUpgrades = [];
+        if (playerHealth > 0 && runnerInstance && engine) {
+            Runner.run(runnerInstance, engine);
+            if (audioMusic && audioMusic.paused) {
+                audioMusic.play().catch(e => console.error("Error resuming music:", e));
+            }
+        }
+    }
+
+    // Update previous button states for edge detection
+    prevUpPressed = upPressed;
+    prevDownPressed = downPressed;
+    prevSelectPressed = selectPressed;
+}
+
+/* Matter.Events.on(engine, 'beforeUpdate', () => {
     if (!gamePausedForUpgrade || availableUpgrades.length === 0) return;
 
     if (!gamepad) return;
@@ -1051,6 +1095,7 @@ Matter.Events.on(engine, 'beforeUpdate', () => {
     prevDownPressed = downPressed;
     prevSelectPressed = selectPressed;
 });
+*/
 
 window.onload = setupGameAssets;
 
