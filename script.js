@@ -602,39 +602,65 @@ function initializeGame() {
 
         let velocityX = 0;
         let velocityY = 0;
-
-        // ---- START NEW LOGGING ----
-        if (gamepad && gamepad.axes && gamepad.axes.length >= 2) {
-            console.log(`Gamepad active for movement: ${gamepad.id}, Raw Axes: X=${gamepad.axes[0].toFixed(4)}, Y=${gamepad.axes[1].toFixed(4)}`);
-        } else if (gamepad) {
-            console.log(`Gamepad active: ${gamepad.id}, but not enough axes reported for movement.`);
-        } else {
-            // console.log("No active gamepad for movement input. Checking keyboard..."); // Keep this commented for now to reduce noise if keyboard is used
-        }
-        // ---- END NEW LOGGING ----
+        let gamepadInputProcessed = false;
 
         // Gamepad input (overrides keyboard if active)
-        if (gamepad && gamepad.axes && gamepad.axes.length >= 2) {
-            let stickX = gamepad.axes[0]; // Typically left stick X
-            let stickY = gamepad.axes[1]; // Typically left stick Y
+        if (gamepad) { // Check if a primary gamepad is selected
+            const currentFrameGamepads = navigator.getGamepads();
+            if (gamepad.index < currentFrameGamepads.length) { // Ensure index is still valid
+                const liveGamepadState = currentFrameGamepads[gamepad.index]; // Get the live state using the stored index
 
-            if (Math.abs(stickX) > GAMEPAD_DEAD_ZONE) {
-                velocityX = stickX * playerSpeed;
-            }
-            if (Math.abs(stickY) > GAMEPAD_DEAD_ZONE) {
-                velocityY = stickY * playerSpeed;
+                if (liveGamepadState && liveGamepadState.connected && liveGamepadState.axes && liveGamepadState.axes.length >= 2) {
+                    // ---- UPDATED LOGGING ----
+                    // console.log(`Gamepad active for movement: ${liveGamepadState.id}, Raw Axes: X=${liveGamepadState.axes[0].toFixed(4)}, Y=${liveGamepadState.axes[1].toFixed(4)}`);
+                    // ---- END UPDATED LOGGING ----
+
+                    let stickX = liveGamepadState.axes[0];
+                    let stickY = liveGamepadState.axes[1];
+
+                    if (Math.abs(stickX) > GAMEPAD_DEAD_ZONE) {
+                        velocityX = stickX * playerSpeed;
+                        gamepadInputProcessed = true;
+                    }
+                    if (Math.abs(stickY) > GAMEPAD_DEAD_ZONE) {
+                        velocityY = stickY * playerSpeed;
+                        gamepadInputProcessed = true;
+                    }
+                } else if (liveGamepadState && !liveGamepadState.connected) {
+                    // console.log(`Selected gamepad ${gamepad.id} (index ${gamepad.index}) is no longer connected.`);
+                    // Potentially clear 'gamepad' or re-select, but for now, will fall to keyboard
+                } else {
+                    // console.log(`Selected gamepad ${gamepad.id} (index ${gamepad.index}) has insufficient axes or is not fully available.`);
+                }
+            } else {
+                // console.warn(`Stored gamepad index ${gamepad.index} is out of bounds for current gamepads list (length ${currentFrameGamepads.length}).`);
+                // This might happen if gamepads are rapidly connected/disconnected.
             }
         }
 
-        // Keyboard input (if no significant gamepad input)
-        if (velocityX === 0 && velocityY === 0) {
-            if (keys.w || keys.ArrowUp) velocityY -= playerSpeed;
-            if (keys.s || keys.ArrowDown) velocityY += playerSpeed;
-            if (keys.a || keys.ArrowLeft) velocityX -= playerSpeed;
-            if (keys.d || keys.ArrowRight) velocityX += playerSpeed;
+        // Fallback to keyboard if no gamepad input was processed
+        if (!gamepadInputProcessed) {
+            if (keys.w || keys.ArrowUp) velocityY = -playerSpeed;
+            if (keys.s || keys.ArrowDown) velocityY = playerSpeed;
+            if (keys.a || keys.ArrowLeft) velocityX = -playerSpeed;
+            if (keys.d || keys.ArrowRight) velocityX = playerSpeed;
+            
+            // If both vertical and horizontal keys are pressed, adjust velocity for diagonal movement
+            // This ensures keyboard diagonal speed matches gamepad diagonal speed if only one axis is primary for keyboard
+            if (keys.w || keys.s || keys.ArrowUp || keys.ArrowDown) {
+                if (keys.a || keys.d || keys.ArrowLeft || keys.ArrowRight) {
+                    // velocityX and velocityY are already set, they will be normalized later
+                } else {
+                    // Only vertical, ensure horizontal is zero if it was somehow set
+                    // velocityX = 0; // This line might be too aggressive if mixing inputs is desired
+                }
+            } else if (keys.a || keys.d || keys.ArrowLeft || keys.ArrowRight) {
+                // Only horizontal, ensure vertical is zero
+                // velocityY = 0; // This line might be too aggressive
+            }
         }
 
-        // Normalize diagonal movement
+        // Normalize diagonal movement (applies to both gamepad and keyboard)
         if (velocityX !== 0 && velocityY !== 0) {
             const factor = Math.sqrt(2) / 2; // 1/sqrt(2)
             velocityX *= factor;
