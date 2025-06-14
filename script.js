@@ -41,6 +41,13 @@ let projectiles = []; // Array to hold active projectiles
 let gameInitialized = false;
 let enemySpawnIntervalId; // Declare globally
 
+// Audio elements
+let audioMusic;
+let audioShoot;
+let audioPickup;
+let audioPlayerHit;
+let audioEnemyDie;
+
 // Player GIF animation state (gifler related - REMOVED)
 // let currentPlayerFrameCanvas = null; 
 // let playerGifLoaded = false;
@@ -371,6 +378,11 @@ function shootProjectile() {
 
     World.add(world, projectile);
     projectiles.push(projectile);
+
+    if (audioShoot) {
+        audioShoot.currentTime = 0;
+        audioShoot.play().catch(e => console.error("Error playing shoot sound:", e));
+    }
 }
 
 // Automatic Shooting Interval
@@ -507,6 +519,23 @@ function initializeGame() {
     Runner.run(runnerInstance, engine);
     console.log(`Runner properties: isFixed = ${runnerInstance.isFixed}, delta = ${runnerInstance.delta}`);
     console.log(`Engine timing: timeScale = ${engine.timing.timeScale}`);
+
+    // Initialize audio
+    audioMusic = new Audio('sfx/music_loop.mp3');
+    audioShoot = new Audio('sfx/shoot.mp3');
+    audioPickup = new Audio('sfx/pickup.mp3');
+    audioPlayerHit = new Audio('sfx/player_hit.mp3');
+    audioEnemyDie = new Audio('sfx/enemy_die.mp3');
+
+    audioMusic.loop = true;
+    audioMusic.volume = 0.3; // Adjust volume as needed
+    audioMusic.play().catch(e => console.error("Error playing music:", e));
+
+    // Set volume for sound effects if desired
+    audioShoot.volume = 0.5;
+    audioPickup.volume = 0.6;
+    audioPlayerHit.volume = 0.7;
+    audioEnemyDie.volume = 0.6;
 
     // Event listener to update player <img> position and rotation after each physics update
     // Start enemy spawning
@@ -646,6 +675,10 @@ function initializeGame() {
                 Matter.Composite.remove(world, projectile);
 
                 if (enemy.health <= 0) {
+                    if (audioEnemyDie) {
+                        audioEnemyDie.currentTime = 0;
+                        audioEnemyDie.play().catch(e => console.error("Error playing enemy die sound:", e));
+                    }
                     // Spawn XP Orb
                     const xpOrb = Bodies.circle(enemy.position.x, enemy.position.y, xpOrbRadius, {
                         label: 'xpOrb', isSensor: true, render: { fillStyle: 'cyan' },
@@ -665,6 +698,10 @@ function initializeGame() {
             if (playerBody && enemy) { // enemy here is the one involved with player
                 playerHealth -= 10; 
                 console.log(`Player hit! Health: ${playerHealth}`);
+                if (audioPlayerHit) {
+                    audioPlayerHit.currentTime = 0;
+                    audioPlayerHit.play().catch(e => console.error("Error playing player hit sound:", e));
+                }
                 
                 const enemyIndexToRemove = enemies.indexOf(enemy);
                 if (enemyIndexToRemove > -1) enemies.splice(enemyIndexToRemove, 1);
@@ -676,6 +713,7 @@ function initializeGame() {
                     Runner.stop(runnerInstance);
                     clearInterval(shootIntervalId);
                     clearInterval(enemySpawnIntervalId);
+                    if (audioMusic) audioMusic.pause(); // Stop music on game over
                 }
                 continue;
             }
@@ -683,6 +721,10 @@ function initializeGame() {
             // Player-XP Orb Collision
             if (playerBody && xpOrbToCollect) {
                 playerXP += 5;
+                if (audioPickup) {
+                    audioPickup.currentTime = 0;
+                    audioPickup.play().catch(e => console.error("Error playing pickup sound:", e));
+                }
                 console.log(`Collected XP! Total XP: ${playerXP}, Level: ${playerLevel}`);
 
                 const orbIndex = xpOrbs.indexOf(xpOrbToCollect);
@@ -695,7 +737,8 @@ function initializeGame() {
                     xpToNextLevel = Math.floor(xpToNextLevel * 1.7); // CORRECTED MULTIPLIER
                     console.log(`Level Up! New Level: ${playerLevel}, XP for next: ${xpToNextLevel}`);
                     gamePausedForUpgrade = true;
-                    if (runnerInstance) Runner.stop(runnerInstance); // Ensure runner stops for upgrades
+                    if (runnerInstance) Runner.stop(runnerInstance);
+                    if (audioMusic) audioMusic.pause(); // Pause music during upgrade screen
                     presentUpgradeOptions();
                 }
             } // Closes: if (playerBody && xpOrbToCollect)
@@ -831,6 +874,9 @@ document.querySelector('canvas').addEventListener('click', (event) => {
             availableUpgrades = []; 
             if (playerHealth > 0 && runnerInstance && engine) { // Added engine check for safety
                 Runner.run(runnerInstance, engine); // Ensure runner is active
+                if (audioMusic && audioMusic.paused) {
+                    audioMusic.play().catch(e => console.error("Error resuming music:", e));
+                }
             }
         }
     });
