@@ -1,26 +1,74 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Bufo Blaster</title>
-  <style>
-    body { margin: 0; overflow: hidden; }
-    #levelup { position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.8); color: white; display: flex; flex-direction: column; align-items: center; justify-content: center; font-family: sans-serif; }
-    #levelup button { margin: 8px; padding: 8px 16px; }
-    #hud { position: absolute; top: 10px; left: 10px; width: 200px; font-family: sans-serif; }
-    .bar { background: #444; width: 200px; height: 16px; margin-bottom: 4px; }
-    .bar-inner { height: 100%; width: 100%; }
-    #healthBar { background: #f55; }
-    #xpBar { background: #5f5; width: 0%; }
-  </style>
-  <script src="https://cdn.jsdelivr.net/npm/phaser@3.70.0/dist/phaser.min.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bufo Blaster</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        body { margin: 0; overflow: hidden; background-color: #f0f0f0; color: #333; display: flex; flex-direction: column; justify-content: flex-start; /* Align items to the start for top title */ align-items: center; min-height: 100vh; font-family: Arial, sans-serif; padding-top: 20px; /* Add some padding at the top */ box-sizing: border-box; }
+        #gameContainer {
+            position: relative; /* Establishes positioning context */
+            width: 1600px; /* Match gameWidth */
+            height: 1000px; /* Match gameHeight */
+            margin: auto;
+            border: 1px solid #222;
+            background: linear-gradient(to bottom, #0a0a23, #1f0a33);
+            /* border: 1px dashed red; */ /* Optional: for debugging container bounds */
+        }
+        canvas { 
+            /* border: 1px solid #333; */ /* Canvas border can be styled here or removed if not needed */
+            display: block; /* Ensures canvas behaves predictably within container */
+        }
+        #playerImageElement { /* Changed ID for clarity */
+            position: absolute;
+            display: none; /* Initially hidden, script will show it */
+            width: 80px; /* Approximate size, can be adjusted via JS based on playerRadius/scale */
+            height: 80px;
+            pointer-events: none; /* So it doesn't interfere with canvas clicks */
+            transform-origin: center center; /* For rotation */
+            image-rendering: pixelated; /* Keeps pixel art crisp */
+            will-change: transform, top, left; /* Performance hint */
+        }
+        h1.game-title {
+            text-align: center;
+            margin-top: 0; /* Adjusted due to body padding */
+            margin-bottom: 15px;
+            color: #2c3e50; /* Dark blue-grey for title */
+            font-size: 2.8em;
+            font-weight: bold;
+        }
+        #instructions {
+            text-align: center;
+            margin-top: 20px;
+            margin-bottom: 20px;
+            font-size: 1em;
+            color: #444; /* Slightly darker text for instructions */
+            line-height: 1.6;
+            max-width: 600px; /* Keep instruction text from becoming too wide */
+        }
+        #instructions p {
+            margin: 6px 0;
+        }
+        #instructions strong {
+            color: #1a73e8; /* Highlight key controls */
+        }
+    </style>
 </head>
 <body>
-  <div id="levelup" style="display:none"></div>
-  <div id="hud">
-    <div id="health" class="bar"><div class="bar-inner" id="healthBar"></div></div>
-    <div id="xp" class="bar"><div class="bar-inner" id="xpBar"></div></div>
-  </div>
-  <script type="module" src="main.js"></script>
+    <h1 class="game-title">Bufo Blaster</h1>
+    <div id="gameContainer">
+        <canvas id="gameCanvas"></canvas>
+        <!-- Player image element, to be controlled by script.js -->
+        <img id="playerImageElement" alt="Player Bufo"> <!-- src will be set by script.js -->
+    </div>
+    <div id="instructions">
+        <p>Use <strong>WASD</strong> or <strong>Arrow Keys</strong> to Move.</p>
+        <p>Bufo shoots automatically at the nearest enemy.</p>
+        <p>Survive the onslaught, collect XP orbs to level up, and choose powerful upgrades!</p>
+    </div>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.19.0/matter.min.js"></script>
+    <script src="script.js"></script>
 </body>
 </html>
