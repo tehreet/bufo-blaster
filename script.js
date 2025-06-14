@@ -247,7 +247,7 @@ const enemySpeed = 1.5; // Slower than player
 const ENEMY_MAX_HEALTH = 3; // Max health for enemies
 const xpOrbRadius = 8;
 let xpOrbPickupRadius = 100; // Radius within which XP orbs are attracted to the player
-const xpOrbMagnetSpeed = 2;   // Speed at which XP orbs move towards the player
+const xpOrbMagnetSpeed = 4;   // Speed at which XP orbs move towards the player
 const xpOrbs = [];
 
 function spawnEnemy() {
