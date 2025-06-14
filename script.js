@@ -246,6 +246,8 @@ const enemyRadius = 10; // Enemy physical body radius (visual ~9-14px radius @ 0
 const enemySpeed = 1.5; // Slower than player
 const ENEMY_MAX_HEALTH = 3; // Max health for enemies
 const xpOrbRadius = 8;
+let xpOrbPickupRadius = 100; // Radius within which XP orbs are attracted to the player
+const xpOrbMagnetSpeed = 2;   // Speed at which XP orbs move towards the player
 const xpOrbs = [];
 
 function spawnEnemy() {
@@ -383,13 +385,21 @@ let shootIntervalId = setInterval(shootProjectile, shootInterval);
 // Upgrade Definitions
 const allUpgrades = [
     {
-        name: "Faster Shots",
-        description: "Increases your attack speed.",
-        apply: () => {
-            shootInterval = Math.max(100, shootInterval * 0.85); // 15% faster, cap at 100ms
-            clearInterval(shootIntervalId);
+        name: "Rapid Fire",
+        description: "Increases attack speed by 15%.",
+        apply: () => { 
+            shootInterval *= 0.85; 
+            if (shootIntervalId) clearInterval(shootIntervalId);
             shootIntervalId = setInterval(shootProjectile, shootInterval);
-            console.log(`Upgrade: Faster Shots! New interval: ${shootInterval}ms`);
+            console.log(`Attack speed increased. New interval: ${shootInterval}`);
+        }
+    },
+    {
+        name: "Greater Greed",
+        description: "Increases XP orb pickup range by 25.",
+        apply: () => {
+            xpOrbPickupRadius += 25;
+            console.log(`XP Orb pickup radius increased to: ${xpOrbPickupRadius}`);
         }
     },
     {
@@ -578,6 +588,27 @@ function initializeGame() {
                 projectile.position.y < -50 || projectile.position.y > gameHeight + 50) {
                 Matter.Composite.remove(world, projectile);
                 projectiles.splice(index, 1);
+            }
+        });
+
+        // XP Orb Magnetism
+        xpOrbs.forEach(orb => {
+            if (player) { // player is the Matter.js body
+                const distanceX = player.position.x - orb.position.x;
+                const distanceY = player.position.y - orb.position.y;
+                const distance = Math.sqrt(distanceX * distanceX + distanceY * distanceY);
+
+                // Attract if within pickup radius but not already overlapping significantly
+                if (distance < xpOrbPickupRadius && distance > (playerRadius * 0.5)) {
+                    const directionX = distanceX / distance;
+                    const directionY = distanceY / distance;
+                    Matter.Body.setVelocity(orb, {
+                        x: directionX * xpOrbMagnetSpeed,
+                        y: directionY * xpOrbMagnetSpeed
+                    });
+                } 
+                // If it's very close or overlapping, the collision system will handle the pickup.
+                // No need to explicitly stop velocity here unless overshooting becomes an issue.
             }
         });
     });
