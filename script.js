@@ -1,6 +1,27 @@
 // Matter.js module aliases
 const { Engine, Render, Runner, World, Bodies, Body, Composite, Events } = Matter;
 
+// Function to scale the game container to fit the window
+function scaleGameContainer() {
+    const gameContainer = document.getElementById('gameContainer');
+    if (!gameContainer || typeof gameWidth === 'undefined' || typeof gameHeight === 'undefined') {
+        // console.warn("scaleGameContainer called before game dimensions are set or container not found.");
+        return;
+    }
+
+    const scaleX = window.innerWidth / gameWidth;
+    const scaleY = window.innerHeight / gameHeight;
+    let scale = Math.min(scaleX, scaleY);
+    scale = Math.max(scale, 0.1); // Prevent scale from being 0 or negative
+
+    if (gameContainer && gameContainer.style) {
+        gameContainer.style.transformOrigin = 'center center'; // Ensure scaling is from the center
+        gameContainer.style.transform = `scale(${scale})`;
+    } else {
+        console.error('gameContainer or gameContainer.style is null or undefined during scaling.');
+    }
+}
+
 // Global game instances and state
 let engine;
 let world;
@@ -44,6 +65,8 @@ function triggerGameLoadCheck() {
         console.log('All assets loaded or timed out, initializing game.');
         initializeGame();
         gameInitialized = true; // Mark that game has been initialized
+        scaleGameContainer(); // Initial scaling after game dimensions are set
+        window.addEventListener('resize', scaleGameContainer); // Rescale on window resize
     }
 }
 
@@ -213,7 +236,7 @@ document.querySelector('canvas').addEventListener('click', (event) => {
             }
         }
     });
-});
+}
 
 
 // console.log('Bufo Blaster initialized with Matter.js!'); // Moved to initializeGame
