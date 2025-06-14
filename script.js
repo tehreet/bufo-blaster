@@ -521,7 +521,7 @@ function initializeGame() {
     for (let i = 0; i < gamepads.length; i++) {
         if (gamepads[i]) {
             gamepad = gamepads[i];
-            // console.log("Existing gamepad found on init:", gamepad.id);
+            console.log("Existing gamepad found on init:", gamepad.id);
             break; // Use the first one found
         }
     }
@@ -915,5 +915,18 @@ document.querySelector('canvas').addEventListener('click', (event) => {
         }
     });
 });
+// Gamepad event listeners
+window.addEventListener("gamepadconnected", (event) => {
+    console.log("Gamepad connected:", event.gamepad.id);
+    gamepad = event.gamepad; // Assign the first connected gamepad
+});
+
+window.addEventListener("gamepaddisconnected", (event) => {
+    console.log("Gamepad disconnected:", event.gamepad.id);
+    if (gamepad && gamepad.id === event.gamepad.id) {
+        gamepad = null; // Clear the gamepad if it's the one that disconnected
+    }
+});
+
 window.onload = setupGameAssets;
 
