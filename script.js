@@ -28,6 +28,38 @@ let world;
 let render;
 let runnerInstance;
 let player;
+
+// Function to select the primary gamepad
+function selectPrimaryGamepad() {
+    const gamepads = navigator.getGamepads ? navigator.getGamepads() : (navigator.webkitGetGamepads ? navigator.webkitGetGamepads() : []);
+    let foundGamepad = null;
+    let preferredGamepad = null;
+
+    for (let i = 0; i < gamepads.length; i++) {
+        if (gamepads[i]) {
+            if (!foundGamepad) foundGamepad = gamepads[i]; // Fallback to first detected
+            // Check for Xbox controller (Vendor ID 045e) or standard mapping
+            if (gamepads[i].id.includes('STANDARD GAMEPAD') || gamepads[i].id.toLowerCase().includes('xbox') || (gamepads[i].id.includes('045e') || gamepads[i].id.includes('045E'))) {
+                preferredGamepad = gamepads[i];
+                break; // Found a preferred one, use it
+            }
+        }
+    }
+
+    const newGamepad = preferredGamepad || foundGamepad;
+    if (newGamepad) {
+        if (!gamepad || gamepad.id !== newGamepad.id) {
+            console.log("Primary gamepad selected:", newGamepad.id);
+            gamepad = newGamepad;
+        }
+    } else {
+        if (gamepad) {
+            console.log("No active gamepad found, clearing previous selection.");
+            gamepad = null;
+        }
+    }
+}
+
 let gameWidth;
 let gameHeight;
 let playerImageElement; // For the player's <img> tag
@@ -516,15 +548,8 @@ function initializeGame() {
     Render.run(render);
     Runner.run(runnerInstance, engine);
 
-    // Proactively check for already connected gamepads
-    const gamepads = navigator.getGamepads ? navigator.getGamepads() : (navigator.webkitGetGamepads ? navigator.webkitGetGamepads() : []);
-    for (let i = 0; i < gamepads.length; i++) {
-        if (gamepads[i]) {
-            gamepad = gamepads[i];
-            console.log("Existing gamepad found on init:", gamepad.id);
-            break; // Use the first one found
-        }
-    }
+    // Select the primary gamepad on initialization
+    selectPrimaryGamepad();
     // console.log(`Runner properties: isFixed = ${runnerInstance.isFixed}, delta = ${runnerInstance.delta}`);
     // console.log(`Engine timing: timeScale = ${engine.timing.timeScale}`);
 
@@ -917,15 +942,13 @@ document.querySelector('canvas').addEventListener('click', (event) => {
 });
 // Gamepad event listeners
 window.addEventListener("gamepadconnected", (event) => {
-    console.log("Gamepad connected:", event.gamepad.id);
-    gamepad = event.gamepad; // Assign the first connected gamepad
+    console.log("Gamepad connected event for:", event.gamepad.id);
+    selectPrimaryGamepad(); // Re-evaluate primary gamepad
 });
 
 window.addEventListener("gamepaddisconnected", (event) => {
-    console.log("Gamepad disconnected:", event.gamepad.id);
-    if (gamepad && gamepad.id === event.gamepad.id) {
-        gamepad = null; // Clear the gamepad if it's the one that disconnected
-    }
+    console.log("Gamepad disconnected event for:", event.gamepad.id);
+    selectPrimaryGamepad(); // Re-evaluate primary gamepad
 });
 
 window.onload = setupGameAssets;
