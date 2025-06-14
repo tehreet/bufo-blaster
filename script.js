@@ -490,6 +490,7 @@ function initializeGame() {
 
     // Create and run the runner (fixed: only one creation)
     runnerInstance = Runner.create(); 
+    runnerInstance.isFixed = true; // Ensure consistent game speed
     Render.run(render);
     Runner.run(runnerInstance, engine);
 
