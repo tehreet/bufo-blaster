@@ -128,7 +128,7 @@ const enemyCategory = 0x0004;
 const projectileCategory = 0x0008;
 
 // Player setup
-const playerRadius = 40; // Increased player radius
+const playerRadius = 18; // Player's physical body radius (visual ~14px radius @ 0.35 scale of 80px sprite)
 // const playerSpriteUrl = 'https://raw.githubusercontent.com/knobiknows/all-the-bufo/main/all-the-bufo/bufo-stab.gif'; // Removed duplicate
 
 let playerHealth = 100;
@@ -242,7 +242,7 @@ const enemyTypes = [
     { file: 'bufo-dizzy.gif', scale: 0.35 } // Matched to player scale
 ];
 const enemies = [];
-const enemyRadius = 40; // Matched to player radius
+const enemyRadius = 10; // Enemy physical body radius (visual ~9-14px radius @ 0.22-0.35 scale of ~80px sprite)
 const enemySpeed = 0.5; // Slower than player
 const xpOrbRadius = 8;
 const xpOrbs = [];
