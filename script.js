@@ -139,7 +139,7 @@ let gamePausedForUpgrade = false;
 let availableUpgrades = [];
 let projectileDamage = 0.05; // Base projectile damage
 let gameOver = false; // Tracks game over state
-let playerSpeed = 2; // Player movement speed, consolidated global declaration
+let playerSpeed = 5; // Player movement speed, consolidated global declaration
 let shootInterval = 1000; // Time in ms between shots, consolidated global declaration
 
 // player is already declared globally with 'let player;'
@@ -243,7 +243,7 @@ const enemyTypes = [
 ];
 const enemies = [];
 const enemyRadius = 10; // Enemy physical body radius (visual ~9-14px radius @ 0.22-0.35 scale of ~80px sprite)
-const enemySpeed = 0.5; // Slower than player
+const enemySpeed = 1.5; // Slower than player
 const xpOrbRadius = 8;
 const xpOrbs = [];
 
@@ -318,7 +318,7 @@ function spawnEnemy() {
 // Projectile Setup
 // const projectiles = []; // Removed redundant declaration, already declared with let globally
 const projectileRadius = 5;
-const projectileSpeed = 7;
+const projectileSpeed = 12;
 // shootInterval = 1000; // Assignment removed, consolidated to global let declaration
 
 function findNearestEnemy() {
