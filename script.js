@@ -493,6 +493,8 @@ function initializeGame() {
     runnerInstance.isFixed = true; // Ensure consistent game speed
     Render.run(render);
     Runner.run(runnerInstance, engine);
+    console.log(`Runner properties: isFixed = ${runnerInstance.isFixed}, delta = ${runnerInstance.delta}`);
+    console.log(`Engine timing: timeScale = ${engine.timing.timeScale}`);
 
     // Event listener to update player <img> position and rotation after each physics update
     // Start enemy spawning
