@@ -137,7 +137,7 @@ let playerLevel = 1;
 let xpToNextLevel = 30;
 let gamePausedForUpgrade = false;
 let availableUpgrades = [];
-let projectileDamage = 0.05; // Base projectile damage
+let projectileDamage = 1; // Base projectile damage
 let gameOver = false; // Tracks game over state
 let playerSpeed = 5; // Player movement speed, consolidated global declaration
 let shootInterval = 1000; // Time in ms between shots, consolidated global declaration
@@ -244,6 +244,7 @@ const enemyTypes = [
 const enemies = [];
 const enemyRadius = 10; // Enemy physical body radius (visual ~9-14px radius @ 0.22-0.35 scale of ~80px sprite)
 const enemySpeed = 1.5; // Slower than player
+const ENEMY_MAX_HEALTH = 3; // Max health for enemies
 const xpOrbRadius = 8;
 const xpOrbs = [];
 
@@ -294,7 +295,8 @@ function spawnEnemy() {
                     yScale: randomEnemyType.scale
                 }
             },
-            health: 20 
+            health: ENEMY_MAX_HEALTH,
+            maxHealth: ENEMY_MAX_HEALTH
         });
         console.log('DEBUG SPAWN: Bodies.circle SUCCEEDED.');
     } catch (e) {
@@ -606,26 +608,25 @@ function initializeGame() {
 
             // Projectile-Enemy Collision
             if (projectile && enemy) {
-                // Apply damage to enemy (assuming enemy object has a health property)
-                // This part was duplicated and had issues, simplifying:
-                // enemy.health -= projectileDamage; // Assuming projectileDamage is a global or accessible variable
-                // For now, just remove them as per original logic until health/damage is robust
+                enemy.health -= projectileDamage;
 
                 const projIndex = projectiles.indexOf(projectile);
                 if (projIndex > -1) projectiles.splice(projIndex, 1);
                 Matter.Composite.remove(world, projectile);
 
-                // Spawn XP Orb
-                const xpOrb = Bodies.circle(enemy.position.x, enemy.position.y, xpOrbRadius, {
-                    label: 'xpOrb', isSensor: true, render: { fillStyle: 'cyan' },
-                    collisionFilter: { category: defaultCategory, mask: playerCategory }
-                });
-                World.add(world, xpOrb);
-                xpOrbs.push(xpOrb);
+                if (enemy.health <= 0) {
+                    // Spawn XP Orb
+                    const xpOrb = Bodies.circle(enemy.position.x, enemy.position.y, xpOrbRadius, {
+                        label: 'xpOrb', isSensor: true, render: { fillStyle: 'cyan' },
+                        collisionFilter: { category: defaultCategory, mask: playerCategory }
+                    });
+                    World.add(world, xpOrb);
+                    xpOrbs.push(xpOrb);
 
-                const enemyIndex = enemies.indexOf(enemy);
-                if (enemyIndex > -1) enemies.splice(enemyIndex, 1);
-                Matter.Composite.remove(world, enemy);
+                    const enemyIndex = enemies.indexOf(enemy);
+                    if (enemyIndex > -1) enemies.splice(enemyIndex, 1);
+                    Matter.Composite.remove(world, enemy);
+                }
                 continue; 
             }
 
@@ -686,6 +687,27 @@ function initializeGame() {
         context.fillText(`XP: ${playerXP} / ${xpToNextLevel}`, 20, 90);
         context.fillText(`Damage: ${projectileDamage}`, 20, 120);
         context.fillText(`Atk Speed: ${(1000/shootInterval).toFixed(1)}/s`, 20, 150);
+
+        // Draw enemy health bars
+        enemies.forEach(e => {
+            // Only draw health bar if enemy is alive and has taken some damage, or always show if you prefer
+            if (e.health > 0) { 
+                const barWidth = 30; // Width of the health bar
+                const barHeight = 5; // Height of the health bar
+                const x = e.position.x - barWidth / 2;
+                // Position above enemy: enemyRadius is visual, use actual body bounds if different
+                const y = e.position.y - (e.circleRadius || enemyRadius) - barHeight - 5; 
+
+                // Background of the health bar (e.g., dark red or grey)
+                context.fillStyle = 'rgba(100, 100, 100, 0.7)';
+                context.fillRect(x, y, barWidth, barHeight);
+
+                // Current health (e.g., green)
+                const healthPercentage = e.health / e.maxHealth;
+                context.fillStyle = 'rgba(0, 255, 0, 0.9)';
+                context.fillRect(x, y, barWidth * healthPercentage, barHeight);
+            }
+        });
 
         // Upgrade UI
         if (gamePausedForUpgrade && availableUpgrades.length > 0) {
