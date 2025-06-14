@@ -174,7 +174,7 @@ const PLAYER_HEALTHBAR_HEIGHT = 5;     // Height of the player's health bar
 const PLAYER_HEALTHBAR_OFFSET_Y = 30;  // Vertical offset above the player's center
 
 // Game Speed Control
-const GAME_TIME_SCALE = 0.8; // 1.0 is normal speed, < 1.0 is slower, > 1.0 is faster
+const GAME_TIME_SCALE = 0.68; // 1.0 is normal speed, < 1.0 is slower, > 1.0 is faster
 
 // Default Game Settings
 const DEFAULT_GAME_SETTINGS = {
