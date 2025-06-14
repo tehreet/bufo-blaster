@@ -209,40 +209,9 @@ function wrapText(context, text, x, y, maxWidth, lineHeight) {
     context.fillText(line, x, y);
 }
 
-// Canvas click listener for upgrades
-document.querySelector('canvas').addEventListener('click', (event) => {
-    if (!gamePausedForUpgrade || availableUpgrades.length === 0) return;
-
-    const rect = event.target.getBoundingClientRect();
-    const clickX = event.clientX - rect.left;
-    const clickY = event.clientY - rect.top;
-
-    const boxWidth = 200;
-    const boxHeight = 100;
-    const spacing = 20;
-    const totalHeight = (boxHeight + spacing) * availableUpgrades.length - spacing;
-    let startY = (gameHeight - totalHeight) / 2;
-
-    availableUpgrades.forEach((upgrade, index) => {
-        const boxX = (gameWidth - boxWidth) / 2;
-        const boxY = startY + index * (boxHeight + spacing);
-        if (clickX >= boxX && clickX <= boxX + boxWidth && clickY >= boxY && clickY <= boxY + boxHeight) {
-            upgrade.apply();
-            gamePausedForUpgrade = false;
-            availableUpgrades = []; // Clear choices
-            if (runnerInstance && engine && playerHealth > 0) Runner.run(runnerInstance, engine); // Resume the engine runner
-                        if (playerHealth > 0 && runnerInstance) {
-                 // Runner.run(runnerInstance, engine); // Ensure runner is going if it was fully stopped
-            }
-        }
-    });
-}
-
-
-// console.log('Bufo Blaster initialized with Matter.js!'); // Moved to initializeGame
-
 // Player Movement
 // playerSpeed = 3; // Assignment removed, consolidated to global let declaration
+// The canvas click listener for upgrades and restart is now handled by a single listener towards the end of the file.
 const keys = {
     w: false, a: false, s: false, d: false,
     ArrowUp: false, ArrowLeft: false, ArrowDown: false, ArrowRight: false
