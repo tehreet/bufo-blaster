@@ -173,6 +173,9 @@ const PLAYER_HEALTHBAR_WIDTH = 50;    // Width of the player's health bar
 const PLAYER_HEALTHBAR_HEIGHT = 5;     // Height of the player's health bar
 const PLAYER_HEALTHBAR_OFFSET_Y = 30;  // Vertical offset above the player's center
 
+// Game Speed Control
+const GAME_TIME_SCALE = 0.8; // 1.0 is normal speed, < 1.0 is slower, > 1.0 is faster
+
 // Default Game Settings
 const DEFAULT_GAME_SETTINGS = {
     playerHealth: 100,
@@ -590,6 +593,7 @@ function initializeGame() {
     runnerInstance = Runner.create(); 
     runnerInstance.isFixed = true; // Ensure consistent game speed
     Render.run(render);
+    engine.timing.timeScale = GAME_TIME_SCALE; // Apply game speed
     Runner.run(runnerInstance, engine);
 
     // Start the main game tick loop
@@ -1283,6 +1287,7 @@ function resetGame() {
 
     // Ensure game runner is active
     if (runnerInstance && engine) { // Check if runnerInstance and engine exist
+        engine.timing.timeScale = GAME_TIME_SCALE; // Re-apply game speed on reset
         // Runner.stop(runnerInstance); // Ensure it's stopped before starting if that's safer, or just run
         Runner.run(runnerInstance, engine); // Or Runner.start(runnerInstance) if it was fully stopped by a different mechanism
     }
