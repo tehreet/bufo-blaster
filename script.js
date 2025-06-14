@@ -228,6 +228,12 @@ document.addEventListener('keydown', (event) => {
     if (keys.hasOwnProperty(event.key)) {
         keys[event.key] = true;
     }
+    // Try to play music on first keydown if it hasn't successfully played yet
+    if (audioMusic && audioMusic.paused && !audioMusic.hasSuccessfullyPlayed) {
+        audioMusic.play().then(() => {
+            audioMusic.hasSuccessfullyPlayed = true;
+        }).catch(e => console.warn("Music play on keydown failed:", e));
+    }
 });
 
 document.addEventListener('keyup', (event) => {
@@ -529,7 +535,10 @@ function initializeGame() {
 
     audioMusic.loop = true;
     audioMusic.volume = 0.3; // Adjust volume as needed
-    audioMusic.play().catch(e => console.error("Error playing music:", e));
+    audioMusic.hasSuccessfullyPlayed = false; // Custom flag
+    audioMusic.play().then(() => {
+        audioMusic.hasSuccessfullyPlayed = true;
+    }).catch(e => console.warn("Initial music play failed, likely due to autoplay policy. Will try on interaction.", e));
 
     // Set volume for sound effects if desired
     audioShoot.volume = 0.25;
@@ -828,6 +837,13 @@ const oldCanvasClickListener = document.querySelector('canvas').onclick;
 document.querySelector('canvas').removeEventListener('click', oldCanvasClickListener); // Attempt to remove if it was set before
 
 document.querySelector('canvas').addEventListener('click', (event) => {
+    // Try to play music on first canvas click if it hasn't successfully played yet
+    if (audioMusic && audioMusic.paused && !audioMusic.hasSuccessfullyPlayed) {
+        audioMusic.play().then(() => {
+            audioMusic.hasSuccessfullyPlayed = true;
+        }).catch(e => console.warn("Music play on canvas click failed:", e));
+    }
+
     if (playerHealth <= 0) { // Game is over, check for restart click
         const rect = event.target.getBoundingClientRect();
         const clickX = event.clientX - rect.left;
