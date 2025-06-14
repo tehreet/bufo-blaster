@@ -263,17 +263,11 @@ const enemySpeed = 1.5; // Slower than player
 const ENEMY_MAX_HEALTH = 3; // Max health for enemies
 const xpOrbRadius = 8;
 let xpOrbPickupRadius = 100; // Radius within which XP orbs are attracted to the player
-const xpOrbMagnetSpeed = 4;   // Speed at which XP orbs move towards the player
-const xpOrbs = [];
-
 function spawnEnemy() {
     if (gamePausedForUpgrade || gameOver) return; // Check pause/game over state
-    console.log('spawnEnemy function called - Entry'); // Consistent log
     const randomEnemyType = enemyTypes[Math.floor(Math.random() * enemyTypes.length)];
-    // Not logging randomEnemyType for now to reduce noise, assuming it's fine if we reach Bodies.circle
 
     const enemyImageAsset = imageAssets[randomEnemyType.file];
-    // Not logging enemyImageAsset details for now, assuming it's fine if we reach Bodies.circle
 
     if (!enemyImageAsset || enemyImageAsset.complete === false || enemyImageAsset.naturalHeight === 0) {
         console.warn(`Enemy sprite not loaded or broken, skipping spawn: ${randomEnemyType.file}`);
@@ -296,12 +290,9 @@ function spawnEnemy() {
         x = gameWidth - inset;
         y = Math.random() * (gameHeight - 2 * inset) + inset;
     }
-    console.log('Calculated spawn position (x, y):', x, y, 'Inset:', inset); // This log is confirmed to be seen
 
-    console.log('DEBUG SPAWN: Texture for enemy body:', enemyImageAsset.src, '(Type:', typeof enemyImageAsset.src, ')');
     let enemy;
     try {
-        console.log('DEBUG SPAWN: Attempting Bodies.circle...');
         enemy = Bodies.circle(x, y, enemyRadius, {
             collisionFilter: { category: enemyCategory, mask: defaultCategory | playerCategory | projectileCategory },
             label: 'enemy',
@@ -316,26 +307,21 @@ function spawnEnemy() {
             health: ENEMY_MAX_HEALTH,
             maxHealth: ENEMY_MAX_HEALTH
         });
-        console.log('DEBUG SPAWN: Bodies.circle SUCCEEDED.');
     } catch (e) {
-        console.error('DEBUG SPAWN: ERROR during Bodies.circle creation!', e);
+        // console.error('DEBUG SPAWN: ERROR during Bodies.circle creation!', e);
+        console.error('Error during enemy body creation:', e); // Keep a more generic error
         return; // Stop if body creation fails
     }
 
     if (!enemy) {
-        console.error('DEBUG SPAWN: Enemy body is null/undefined after Bodies.circle, even without an exception.');
+        // console.error('DEBUG SPAWN: Enemy body is null/undefined after Bodies.circle, even without an exception.');
+        console.error('Enemy body is null/undefined after creation attempt.'); // Keep a more generic error
         return;
     }
-    // console.log('Created enemy body:', enemy); // Covered by success log above for now
 
     enemies.push(enemy);
     World.add(world, enemy);
-    console.log('DEBUG SPAWN: Enemy added to world. Label:', enemy.label, 'ID:', enemy.id);
 }
-
-// Enemy Spawning Interval - Handled in initializeGame and resetGame
-
-// Projectile Setup
 // const projectiles = []; // Removed redundant declaration, already declared with let globally
 const projectileRadius = 5;
 const projectileSpeed = 12;
