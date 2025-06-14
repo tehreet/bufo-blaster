@@ -79,13 +79,8 @@ const imageAssets = {}; // Still used for enemy images
 let projectiles = []; // Array to hold active projectiles
 let gameInitialized = false;
 let enemySpawnIntervalId; // Declare globally
-
-// Audio elements
-let audioMusic;
-let audioShoot;
-let audioPickup;
-let audioPlayerHit;
-let audioEnemyDie;
+let shootIntervalId; // Declare globally to manage the interval
+let healthRegenIntervalId; // For passive health regeneration
 
 let gamepad = null; // To store the connected gamepad object
 const GAMEPAD_DEAD_ZONE = 0.2; // Dead zone for analog sticks
@@ -168,6 +163,13 @@ function setupGameAssets() {
     }
     loadEnemyAssets();
 }
+
+// Player Health & Regen Constants
+const PLAYER_HEALTH_REGEN_AMOUNT = 1; // Amount of health regenerated per tick
+const PLAYER_HEALTH_REGEN_INTERVAL = 5000; // Interval in ms (e.g., 5 seconds)
+const PLAYER_HEALTHBAR_WIDTH = 50;    // Width of the player's health bar
+const PLAYER_HEALTHBAR_HEIGHT = 5;     // Height of the player's health bar
+const PLAYER_HEALTHBAR_OFFSET_Y = 30;  // Vertical offset above the player's center
 
 // Default Game Settings
 const DEFAULT_GAME_SETTINGS = {
@@ -440,8 +442,7 @@ function shootProjectile() {
     }
 }
 
-// Automatic Shooting Interval
-let shootIntervalId = setInterval(shootProjectile, shootInterval);
+// Automatic Shooting Interval is now handled in initializeGame and resetGame
 
 // Enemy Spawning Interval - Store ID to clear/reset later if needed
 // let enemySpawnIntervalId = setInterval(spawnEnemy, 2500); // This is now handled in initializeGame and resetGame
@@ -608,6 +609,12 @@ function initializeGame() {
     if (enemySpawnIntervalId) clearInterval(enemySpawnIntervalId); // Clear existing interval if any
     initializeGameEnemySpawnInterval = 267; // Store for resetGame
     enemySpawnIntervalId = setInterval(spawnEnemy, initializeGameEnemySpawnInterval);
+
+    // Start shooting interval
+    if (shootIntervalId) clearInterval(shootIntervalId);
+    shootIntervalId = setInterval(shootProjectile, shootInterval);
+    if (healthRegenIntervalId) clearInterval(healthRegenIntervalId);
+    healthRegenIntervalId = setInterval(regeneratePlayerHealth, PLAYER_HEALTH_REGEN_INTERVAL);
     // Gamepad navigation for upgrades is now handled in gameTick via pollGamepadForUpgradeMenu
     // Matter.Events.on(engine, 'beforeUpdate', handleUpgradeGamepadNavigation); // This line is removed
 
@@ -882,6 +889,21 @@ function initializeGame() {
         context.fillText(`XP: ${playerXP} / ${xpToNextLevel}`, 20, 90);
         context.fillText(`Damage: ${projectileDamage}`, 20, 120);
         context.fillText(`Atk Speed: ${(1000/shootInterval).toFixed(1)}/s`, 20, 150);
+
+        // Draw Player Health Bar
+        if (player && playerHealth > 0 && !gameOver && !gamePausedForUpgrade) { // Also check !gamePausedForUpgrade
+            const barX = player.position.x - PLAYER_HEALTHBAR_WIDTH / 2;
+            const barY = player.position.y - playerRadius - PLAYER_HEALTHBAR_OFFSET_Y; // Position above player sprite
+            const currentHealthWidth = (playerHealth / DEFAULT_GAME_SETTINGS.playerHealth) * PLAYER_HEALTHBAR_WIDTH;
+
+            // Background of health bar (e.g., dark red or grey)
+            context.fillStyle = 'rgba(100, 0, 0, 0.7)'; // Dark red, semi-transparent
+            context.fillRect(barX, barY, PLAYER_HEALTHBAR_WIDTH, PLAYER_HEALTHBAR_HEIGHT);
+
+            // Current health (e.g., green)
+            context.fillStyle = 'rgba(0, 200, 0, 0.9)'; // Bright green, mostly opaque
+            context.fillRect(barX, barY, Math.max(0, currentHealthWidth), PLAYER_HEALTHBAR_HEIGHT); // Ensure width isn't negative
+        }
 
         // Draw enemy health bars
         enemies.forEach(e => {
@@ -1233,6 +1255,10 @@ function resetGame() {
     const currentEnemySpawnInterval = typeof initializeGameEnemySpawnInterval !== 'undefined' ? initializeGameEnemySpawnInterval : DEFAULT_GAME_SETTINGS.enemySpawnInterval;
     enemySpawnIntervalId = setInterval(spawnEnemy, currentEnemySpawnInterval);
 
+    // Restart health regeneration interval
+    if (healthRegenIntervalId) clearInterval(healthRegenIntervalId);
+    healthRegenIntervalId = setInterval(regeneratePlayerHealth, PLAYER_HEALTH_REGEN_INTERVAL);
+
     // Ensure game runner is active
     if (runnerInstance && engine) { // Check if runnerInstance and engine exist
         // Runner.stop(runnerInstance); // Ensure it's stopped before starting if that's safer, or just run
@@ -1244,6 +1270,20 @@ function resetGame() {
         audioMusic.play().catch(e => console.error("Error resuming music on reset:", e));
     }
     console.log("Game reset complete.");
+}
+
+function regeneratePlayerHealth() {
+    if (gameOver || gamePausedForUpgrade || !player || playerHealth <= 0) {
+        return; // Don't regenerate if game is over, paused, player doesn't exist, or health is zero
+    }
+
+    if (playerHealth < DEFAULT_GAME_SETTINGS.playerHealth) {
+        playerHealth += PLAYER_HEALTH_REGEN_AMOUNT;
+        if (playerHealth > DEFAULT_GAME_SETTINGS.playerHealth) {
+            playerHealth = DEFAULT_GAME_SETTINGS.playerHealth; // Cap at max health
+        }
+        // console.log(`Player health regenerated to: ${playerHealth}`); // Optional: for debugging
+    }
 }
 
 window.onload = setupGameAssets;
