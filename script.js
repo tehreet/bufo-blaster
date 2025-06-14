@@ -973,6 +973,9 @@ document.querySelector('canvas').addEventListener('click', (event) => {
         // Define a clickable area for the restart text more broadly
         const restartTextY = gameHeight / 2 + 60;
         const restartTextHeight = 30; // Approximate height of the text
+        const canvas = event.target; // The canvas element
+        const context = canvas.getContext('2d');
+        context.font = '24px Arial'; // Match the font used in afterRender for the restart text
         const restartTextWidth = context.measureText("Press 'A' (Gamepad) or Click to Restart").width;
 
         if (clickX >= (gameWidth / 2 - restartTextWidth / 2) && clickX <= (gameWidth / 2 + restartTextWidth / 2) &&
