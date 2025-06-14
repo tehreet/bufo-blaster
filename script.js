@@ -544,7 +544,7 @@ function initializeGame() {
     audioShoot.volume = 0.25;
     audioPickup.volume = 0.6;
     audioPlayerHit.volume = 0.7;
-    audioEnemyDie.volume = 0.6;
+    audioEnemyDie.volume = 0.25;
 
     // Event listener to update player <img> position and rotation after each physics update
     // Start enemy spawning
