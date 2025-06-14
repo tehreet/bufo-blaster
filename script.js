@@ -967,8 +967,20 @@ document.querySelector('canvas').addEventListener('click', (event) => {
 
     if (gameOver) { // Game is over, check for restart click
         const rect = event.target.getBoundingClientRect();
-        const clickX = event.clientX - rect.left;
-        const clickY = event.clientY - rect.top;
+        let clickX = event.clientX - rect.left; // Changed to let
+        let clickY = event.clientY - rect.top;  // Changed to let
+
+        // Apply CSS scaling adjustment to click coordinates
+        let currentAppliedScale = 1;
+        if (typeof gameWidth !== 'undefined' && gameWidth > 0 && typeof gameHeight !== 'undefined' && gameHeight > 0) {
+            const scaleXFactor = window.innerWidth / gameWidth;
+            const scaleYFactor = window.innerHeight / gameHeight;
+            currentAppliedScale = Math.min(scaleXFactor, scaleYFactor);
+            currentAppliedScale = Math.max(currentAppliedScale, 0.1); // Match logic in scaleGameContainer
+        }
+        
+        clickX /= currentAppliedScale;
+        clickY /= currentAppliedScale;
         // Restart button bounds: gameWidth / 2 - 75, gameHeight / 2 + 20, width 150, height 50
         // Define a clickable area for the restart text more broadly
         const restartTextY = gameHeight / 2 + 60;
