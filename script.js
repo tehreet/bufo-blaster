@@ -966,9 +966,19 @@ document.querySelector('canvas').addEventListener('click', (event) => {
     }
 
     if (gameOver) { // Game is over, check for restart click
+        console.log("--- Game Over Click Debug ---");
+        console.log("gameOver flag:", gameOver);
+
         const rect = event.target.getBoundingClientRect();
-        let clickX = event.clientX - rect.left; // Changed to let
-        let clickY = event.clientY - rect.top;  // Changed to let
+        console.log("Canvas rect.left:", rect.left, "rect.top:", rect.top);
+        console.log("Raw event.clientX:", event.clientX, "event.clientY:", event.clientY);
+
+        let unscaledClickX = event.clientX - rect.left;
+        let unscaledClickY = event.clientY - rect.top;
+        console.log("Unscaled clickX:", unscaledClickX, "Unscaled clickY:", unscaledClickY);
+
+        let clickX = event.clientX - rect.left; 
+        let clickY = event.clientY - rect.top;  
 
         // Apply CSS scaling adjustment to click coordinates
         let currentAppliedScale = 1;
@@ -976,24 +986,35 @@ document.querySelector('canvas').addEventListener('click', (event) => {
             const scaleXFactor = window.innerWidth / gameWidth;
             const scaleYFactor = window.innerHeight / gameHeight;
             currentAppliedScale = Math.min(scaleXFactor, scaleYFactor);
-            currentAppliedScale = Math.max(currentAppliedScale, 0.1); // Match logic in scaleGameContainer
+            currentAppliedScale = Math.max(currentAppliedScale, 0.1); 
         }
+        console.log("Calculated currentAppliedScale:", currentAppliedScale);
         
         clickX /= currentAppliedScale;
         clickY /= currentAppliedScale;
-        // Restart button bounds: gameWidth / 2 - 75, gameHeight / 2 + 20, width 150, height 50
-        // Define a clickable area for the restart text more broadly
-        const restartTextY = gameHeight / 2 + 60;
-        const restartTextHeight = 30; // Approximate height of the text
-        const canvas = event.target; // The canvas element
-        const context = canvas.getContext('2d');
-        context.font = '24px Arial'; // Match the font used in afterRender for the restart text
-        const restartTextWidth = context.measureText("Press 'A' (Gamepad) or Click to Restart").width;
+        console.log("Final scaled clickX:", clickX, "Final scaled clickY:", clickY);
 
-        if (clickX >= (gameWidth / 2 - restartTextWidth / 2) && clickX <= (gameWidth / 2 + restartTextWidth / 2) &&
-            clickY >= (restartTextY - restartTextHeight) && clickY <= (restartTextY + restartTextHeight / 2)) {
+        const restartTextY = gameHeight / 2 + 60;
+        const restartTextHeight = 30; 
+        const canvas = event.target; 
+        const context = canvas.getContext('2d');
+        context.font = '24px Arial'; 
+        const restartTextWidth = context.measureText("Press 'A' (Gamepad) or Click to Restart").width;
+        console.log("Calculated restartTextWidth:", restartTextWidth);
+
+        const minX = gameWidth / 2 - restartTextWidth / 2;
+        const maxX = gameWidth / 2 + restartTextWidth / 2;
+        const minY = restartTextY - restartTextHeight; 
+        const maxY = restartTextY + restartTextHeight / 2; 
+        console.log("Clickable area: minX:", minX, "maxX:", maxX, "minY:", minY, "maxY:", maxY);
+        
+        const isInside = (clickX >= minX && clickX <= maxX && clickY >= minY && clickY <= maxY);
+        console.log("Is click inside calculated area?", isInside);
+
+        if (isInside) {
+            console.log("Restarting game via click...");
             resetGame();
-            return; // Exit after handling restart
+            return; 
         }
     }
 
