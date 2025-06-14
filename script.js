@@ -48,6 +48,9 @@ let audioPickup;
 let audioPlayerHit;
 let audioEnemyDie;
 
+let gamepad = null; // To store the connected gamepad object
+const GAMEPAD_DEAD_ZONE = 0.2; // Dead zone for analog sticks
+
 // Player GIF animation state (gifler related - REMOVED)
 // let currentPlayerFrameCanvas = null; 
 // let playerGifLoaded = false;
@@ -569,10 +572,26 @@ function initializeGame() {
         let velocityX = 0;
         let velocityY = 0;
 
-        if (keys.w || keys.ArrowUp) velocityY -= playerSpeed;
-        if (keys.s || keys.ArrowDown) velocityY += playerSpeed;
-        if (keys.a || keys.ArrowLeft) velocityX -= playerSpeed;
-        if (keys.d || keys.ArrowRight) velocityX += playerSpeed;
+        // Gamepad input (overrides keyboard if active)
+        if (gamepad && gamepad.axes && gamepad.axes.length >= 2) {
+            let stickX = gamepad.axes[0]; // Typically left stick X
+            let stickY = gamepad.axes[1]; // Typically left stick Y
+
+            if (Math.abs(stickX) > GAMEPAD_DEAD_ZONE) {
+                velocityX = stickX * playerSpeed;
+            }
+            if (Math.abs(stickY) > GAMEPAD_DEAD_ZONE) {
+                velocityY = stickY * playerSpeed;
+            }
+        }
+
+        // Keyboard input (if no significant gamepad input)
+        if (velocityX === 0 && velocityY === 0) {
+            if (keys.w || keys.ArrowUp) velocityY -= playerSpeed;
+            if (keys.s || keys.ArrowDown) velocityY += playerSpeed;
+            if (keys.a || keys.ArrowLeft) velocityX -= playerSpeed;
+            if (keys.d || keys.ArrowRight) velocityX += playerSpeed;
+        }
 
         // Normalize diagonal movement
         if (velocityX !== 0 && velocityY !== 0) {
