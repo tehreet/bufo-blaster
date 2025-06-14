@@ -512,15 +512,6 @@ const allUpgrades = [
             playerHealth = Math.min(100, playerHealth + 25); // Cap at max health (assuming 100)
             console.log(`Upgrade: Health Pack! Current health: ${playerHealth}`);
         }
-    },
-    {
-        name: "XP Magnet",
-        description: "Increases XP orb collection radius (visual only for now).",
-        apply: () => {
-            // This would ideally make xpOrbs move towards player or increase sensor radius
-            // For now, just a placeholder effect
-            console.log("Upgrade: XP Magnet! (Effect TBD)");
-        }
     }
 ];
 
