@@ -51,6 +51,9 @@ let audioEnemyDie;
 let gamepad = null; // To store the connected gamepad object
 const GAMEPAD_DEAD_ZONE = 0.2; // Dead zone for analog sticks
 
+const xpOrbs = [];
+const xpOrbMagnetSpeed = 4;   // Speed at which XP orbs move towards the player
+
 // Player GIF animation state (gifler related - REMOVED)
 // let currentPlayerFrameCanvas = null; 
 // let playerGifLoaded = false;
