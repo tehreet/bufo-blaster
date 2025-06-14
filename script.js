@@ -532,12 +532,12 @@ function initializeGame() {
     for (let i = 0; i < gamepads.length; i++) {
         if (gamepads[i]) {
             gamepad = gamepads[i];
-            console.log("Existing gamepad found on init:", gamepad.id);
+            // console.log("Existing gamepad found on init:", gamepad.id);
             break; // Use the first one found
         }
     }
-    console.log(`Runner properties: isFixed = ${runnerInstance.isFixed}, delta = ${runnerInstance.delta}`);
-    console.log(`Engine timing: timeScale = ${engine.timing.timeScale}`);
+    // console.log(`Runner properties: isFixed = ${runnerInstance.isFixed}, delta = ${runnerInstance.delta}`);
+    // console.log(`Engine timing: timeScale = ${engine.timing.timeScale}`);
 
     // Initialize audio
     audioMusic = new Audio('sfx/music_loop.mp3');
