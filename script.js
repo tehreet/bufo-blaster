@@ -526,6 +526,16 @@ function initializeGame() {
     runnerInstance.isFixed = true; // Ensure consistent game speed
     Render.run(render);
     Runner.run(runnerInstance, engine);
+
+    // Proactively check for already connected gamepads
+    const gamepads = navigator.getGamepads ? navigator.getGamepads() : (navigator.webkitGetGamepads ? navigator.webkitGetGamepads() : []);
+    for (let i = 0; i < gamepads.length; i++) {
+        if (gamepads[i]) {
+            gamepad = gamepads[i];
+            console.log("Existing gamepad found on init:", gamepad.id);
+            break; // Use the first one found
+        }
+    }
     console.log(`Runner properties: isFixed = ${runnerInstance.isFixed}, delta = ${runnerInstance.delta}`);
     console.log(`Engine timing: timeScale = ${engine.timing.timeScale}`);
 
