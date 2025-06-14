@@ -562,6 +562,9 @@ function initializeGame() {
     Render.run(render);
     Runner.run(runnerInstance, engine);
 
+    // Start the main game tick loop
+    requestAnimationFrame(gameTick);
+
     // Select the primary gamepad on initialization
     selectPrimaryGamepad();
     // console.log(`Runner properties: isFixed = ${runnerInstance.isFixed}, delta = ${runnerInstance.delta}`);
@@ -591,8 +594,8 @@ function initializeGame() {
     // Start enemy spawning
     if (enemySpawnIntervalId) clearInterval(enemySpawnIntervalId); // Clear existing interval if any
     enemySpawnIntervalId = setInterval(spawnEnemy, 267); // Spawn enemy every 800ms
-    // Register gamepad navigation listener for upgrades now that engine exists
-    Matter.Events.on(engine, 'beforeUpdate', handleUpgradeGamepadNavigation);
+    // Gamepad navigation for upgrades is now handled in gameTick via pollGamepadForUpgradeMenu
+    // Matter.Events.on(engine, 'beforeUpdate', handleUpgradeGamepadNavigation); // This line is removed
 
     Matter.Events.on(engine, 'afterUpdate', function(event) {
         if (player && playerImageElement) {
@@ -1010,7 +1013,7 @@ window.addEventListener("gamepaddisconnected", (event) => {
     selectPrimaryGamepad(); // Re-evaluate primary gamepad
 });
 
-function handleUpgradeGamepadNavigation() {
+function pollGamepadForUpgradeMenu() {
     if (!gamePausedForUpgrade || availableUpgrades.length === 0) return;
 
     if (!gamepad) return;
@@ -1096,6 +1099,13 @@ function handleUpgradeGamepadNavigation() {
     prevSelectPressed = selectPressed;
 });
 */
+
+function gameTick() {
+    if (gamePausedForUpgrade && availableUpgrades.length > 0) {
+        pollGamepadForUpgradeMenu();
+    }
+    requestAnimationFrame(gameTick);
+}
 
 window.onload = setupGameAssets;
 
