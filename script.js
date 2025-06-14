@@ -58,6 +58,13 @@ function selectPrimaryGamepad() {
             gamepad = null;
         }
     }
+
+    // Log the final decision
+    if (gamepad) { // This is the global gamepad variable
+        console.log(`selectPrimaryGamepad RESULT: Active gamepad is ${gamepad.id}`);
+    } else {
+        console.log("selectPrimaryGamepad RESULT: No gamepad is active.");
+    }
 }
 
 let gameWidth;
@@ -595,6 +602,16 @@ function initializeGame() {
 
         let velocityX = 0;
         let velocityY = 0;
+
+        // ---- START NEW LOGGING ----
+        if (gamepad && gamepad.axes && gamepad.axes.length >= 2) {
+            console.log(`Gamepad active for movement: ${gamepad.id}, Raw Axes: X=${gamepad.axes[0].toFixed(4)}, Y=${gamepad.axes[1].toFixed(4)}`);
+        } else if (gamepad) {
+            console.log(`Gamepad active: ${gamepad.id}, but not enough axes reported for movement.`);
+        } else {
+            // console.log("No active gamepad for movement input. Checking keyboard..."); // Keep this commented for now to reduce noise if keyboard is used
+        }
+        // ---- END NEW LOGGING ----
 
         // Gamepad input (overrides keyboard if active)
         if (gamepad && gamepad.axes && gamepad.axes.length >= 2) {
