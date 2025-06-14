@@ -169,6 +169,19 @@ function setupGameAssets() {
     loadEnemyAssets();
 }
 
+// Default Game Settings
+const DEFAULT_GAME_SETTINGS = {
+    playerHealth: 100,
+    playerXP: 0,
+    playerLevel: 1,
+    xpToNextLevel: 30,
+    projectileDamage: 1.5,
+    shootInterval: 1000,
+    playerSpeed: 5,
+    xpOrbPickupRadius: 100,
+    enemySpawnInterval: 2000, // Default enemy spawn interval
+};
+
 // Game setup constants (can be adjusted here if needed)
 const INITIAL_CANVAS_WIDTH = 800;
 const INITIAL_CANVAS_HEIGHT = 600;
@@ -593,7 +606,8 @@ function initializeGame() {
     // Event listener to update player <img> position and rotation after each physics update
     // Start enemy spawning
     if (enemySpawnIntervalId) clearInterval(enemySpawnIntervalId); // Clear existing interval if any
-    enemySpawnIntervalId = setInterval(spawnEnemy, 267); // Spawn enemy every 800ms
+    initializeGameEnemySpawnInterval = 267; // Store for resetGame
+    enemySpawnIntervalId = setInterval(spawnEnemy, initializeGameEnemySpawnInterval);
     // Gamepad navigation for upgrades is now handled in gameTick via pollGamepadForUpgradeMenu
     // Matter.Events.on(engine, 'beforeUpdate', handleUpgradeGamepadNavigation); // This line is removed
 
@@ -923,6 +937,8 @@ function initializeGame() {
             context.font = '48px Arial';
             context.textAlign = 'center';
             context.fillText('GAME OVER', gameWidth / 2, gameHeight / 2);
+            context.font = '24px Arial';
+            context.fillText("Press 'A' (Gamepad) or Click to Restart", gameWidth / 2, gameHeight / 2 + 60);
         }
     });
     
@@ -949,13 +965,18 @@ document.querySelector('canvas').addEventListener('click', (event) => {
         }).catch(e => console.warn("Music play on canvas click failed:", e));
     }
 
-    if (playerHealth <= 0) { // Game is over, check for restart click
+    if (gameOver) { // Game is over, check for restart click
         const rect = event.target.getBoundingClientRect();
         const clickX = event.clientX - rect.left;
         const clickY = event.clientY - rect.top;
         // Restart button bounds: gameWidth / 2 - 75, gameHeight / 2 + 20, width 150, height 50
-        if (clickX >= (gameWidth / 2 - 75) && clickX <= (gameWidth / 2 + 75) &&
-            clickY >= (gameHeight / 2 + 20) && clickY <= (gameHeight / 2 + 70)) {
+        // Define a clickable area for the restart text more broadly
+        const restartTextY = gameHeight / 2 + 60;
+        const restartTextHeight = 30; // Approximate height of the text
+        const restartTextWidth = context.measureText("Press 'A' (Gamepad) or Click to Restart").width;
+
+        if (clickX >= (gameWidth / 2 - restartTextWidth / 2) && clickX <= (gameWidth / 2 + restartTextWidth / 2) &&
+            clickY >= (restartTextY - restartTextHeight) && clickY <= (restartTextY + restartTextHeight / 2)) {
             resetGame();
             return; // Exit after handling restart
         }
@@ -1103,8 +1124,90 @@ function pollGamepadForUpgradeMenu() {
 function gameTick() {
     if (gamePausedForUpgrade && availableUpgrades.length > 0) {
         pollGamepadForUpgradeMenu();
+    } else if (gameOver) {
+        if (gamepad) { // Check if a primary gamepad is selected
+            const pads = navigator.getGamepads();
+            if (pads && gamepad.index < pads.length) {
+                const liveGamepad = pads[gamepad.index];
+                if (liveGamepad && liveGamepad.buttons[0]) { 
+                    if (liveGamepad.buttons[0].pressed && !prevSelectPressed) {
+                        resetGame();
+                    }
+                    prevSelectPressed = liveGamepad.buttons[0].pressed;
+                } else {
+                    prevSelectPressed = false; 
+                }
+            } else {
+                 prevSelectPressed = false; 
+            }
+        } else {
+            prevSelectPressed = false; 
+        }
     }
+    // Note: prevSelectPressed is reset in resetGame() and presentUpgradeOptions()
+    // so we don't explicitly reset it here for the 'not game over and not upgrade' case.
     requestAnimationFrame(gameTick);
+}
+
+function resetGame() {
+    console.log("Resetting game...");
+
+    // Reset player stats
+    playerHealth = DEFAULT_GAME_SETTINGS.playerHealth;
+    playerXP = DEFAULT_GAME_SETTINGS.playerXP;
+    playerLevel = DEFAULT_GAME_SETTINGS.playerLevel;
+    xpToNextLevel = DEFAULT_GAME_SETTINGS.xpToNextLevel;
+    projectileDamage = DEFAULT_GAME_SETTINGS.projectileDamage;
+    shootInterval = DEFAULT_GAME_SETTINGS.shootInterval;
+    playerSpeed = DEFAULT_GAME_SETTINGS.playerSpeed;
+    xpOrbPickupRadius = DEFAULT_GAME_SETTINGS.xpOrbPickupRadius;
+
+    // Clear dynamic objects from Matter.js world and arrays
+    [...enemies, ...projectiles, ...xpOrbs].forEach(obj => {
+        if (obj && world && Composite.get(world, obj.id, obj.type)) { // Check if object exists in world
+            World.remove(world, obj);
+        }
+    });
+    enemies.length = 0;
+    projectiles.length = 0;
+    xpOrbs.length = 0;
+
+    // Reset player position and physics state
+    if (player) {
+        Body.setPosition(player, { x: gameWidth / 2, y: gameHeight / 2 });
+        Body.setVelocity(player, { x: 0, y: 0 });
+        Body.setAngle(player, 0);
+    }
+
+    // Reset game state flags
+    gameOver = false;
+    gamePausedForUpgrade = false;
+    availableUpgrades = [];
+    currentUpgradeSelectionIndex = 0;
+    prevUpPressed = false;
+    prevDownPressed = false;
+    prevSelectPressed = false; // Also reset this for upgrade menu state
+
+    // Restart intervals
+    if (shootIntervalId) clearInterval(shootIntervalId);
+    shootIntervalId = setInterval(shootProjectile, shootInterval);
+
+    if (enemySpawnIntervalId) clearInterval(enemySpawnIntervalId);
+    // Use the same spawn interval as in initializeGame or the default one
+    const currentEnemySpawnInterval = typeof initializeGameEnemySpawnInterval !== 'undefined' ? initializeGameEnemySpawnInterval : DEFAULT_GAME_SETTINGS.enemySpawnInterval;
+    enemySpawnIntervalId = setInterval(spawnEnemy, currentEnemySpawnInterval);
+
+    // Ensure game runner is active
+    if (runnerInstance && engine) { // Check if runnerInstance and engine exist
+        // Runner.stop(runnerInstance); // Ensure it's stopped before starting if that's safer, or just run
+        Runner.run(runnerInstance, engine); // Or Runner.start(runnerInstance) if it was fully stopped by a different mechanism
+    }
+
+    // Resume music
+    if (audioMusic && audioMusic.paused) {
+        audioMusic.play().catch(e => console.error("Error resuming music on reset:", e));
+    }
+    console.log("Game reset complete.");
 }
 
 window.onload = setupGameAssets;
