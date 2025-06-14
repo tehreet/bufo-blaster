@@ -743,9 +743,22 @@ document.querySelector('canvas').addEventListener('click', (event) => {
 
     if (!gamePausedForUpgrade || availableUpgrades.length === 0) return;
 
-    const rect = event.target.getBoundingClientRect();
-    const clickX = event.clientX - rect.left;
-    const clickY = event.clientY - rect.top;
+    const rect = event.target.getBoundingClientRect(); // event.target is the canvas
+
+    // Recalculate the CSS scale factor applied to the game container
+    // This ensures click coordinates are correctly mapped to the game's internal coordinate system.
+    let currentAppliedScale = 1;
+    if (typeof gameWidth !== 'undefined' && gameWidth > 0 && typeof gameHeight !== 'undefined' && gameHeight > 0) {
+        const scaleXFactor = window.innerWidth / gameWidth;
+        const scaleYFactor = window.innerHeight / gameHeight;
+        currentAppliedScale = Math.min(scaleXFactor, scaleYFactor);
+        currentAppliedScale = Math.max(currentAppliedScale, 0.1); // Match logic in scaleGameContainer
+    } else {
+        console.warn('gameWidth or gameHeight not properly defined for click scaling');
+    }
+    
+    const clickX = (event.clientX - rect.left) / currentAppliedScale;
+    const clickY = (event.clientY - rect.top) / currentAppliedScale;
 
     const boxWidth = 200;
     const boxHeight = 100;
@@ -760,8 +773,8 @@ document.querySelector('canvas').addEventListener('click', (event) => {
             upgrade.apply();
             gamePausedForUpgrade = false;
             availableUpgrades = []; 
-            if (playerHealth > 0 && runnerInstance) {
-                // Runner.run(runnerInstance, engine); // Ensure runner is active
+            if (playerHealth > 0 && runnerInstance && engine) { // Added engine check for safety
+                Runner.run(runnerInstance, engine); // Ensure runner is active
             }
         }
     });
