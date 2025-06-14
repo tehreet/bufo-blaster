@@ -1,0 +1,13 @@
+body {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    margin: 0;
+    background-color: #333;
+    overflow: hidden; /* Prevent scrollbars from canvas */
+}
+
+canvas {
+    border: 1px solid #fff; /* For visibility, can be styled further */
+}
