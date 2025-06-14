@@ -532,7 +532,7 @@ function initializeGame() {
     audioMusic.play().catch(e => console.error("Error playing music:", e));
 
     // Set volume for sound effects if desired
-    audioShoot.volume = 0.5;
+    audioShoot.volume = 0.25;
     audioPickup.volume = 0.6;
     audioPlayerHit.volume = 0.7;
     audioEnemyDie.volume = 0.6;
