@@ -189,6 +189,11 @@ let playerLevel = 1;
 let xpToNextLevel = 30;
 let gamePausedForUpgrade = false;
 let availableUpgrades = [];
+// --- Gamepad upgrade navigation state ---
+let currentUpgradeSelectionIndex = 0;
+let prevUpPressed = false;
+let prevDownPressed = false;
+let prevSelectPressed = false;
 let projectileDamage = 1.5; // Base projectile damage
 let gameOver = false; // Tracks game over state
 let playerSpeed = 5; // Player movement speed, consolidated global declaration
@@ -487,6 +492,8 @@ const allUpgrades = [
 ];
 
 function presentUpgradeOptions(count = 3) {
+    currentUpgradeSelectionIndex = 0; // Reset selection to first option whenever upgrade screen opens
+    prevUpPressed = prevDownPressed = prevSelectPressed = false; // Clear button edge states
     if (runnerInstance) Runner.stop(runnerInstance); // Pause the engine runner
     availableUpgrades = [];
     const shuffledUpgrades = [...allUpgrades].sort(() => 0.5 - Math.random());
@@ -896,6 +903,13 @@ function initializeGame() {
                 context.fillText(upgrade.name, gameWidth / 2, boxY + 30);
                 context.font = '12px Arial';
                 wrapText(context, upgrade.description, gameWidth / 2, boxY + 55, boxWidth - 20, 15);
+
+                // Highlight currently selected upgrade when using gamepad
+                if (index === currentUpgradeSelectionIndex) {
+                    context.strokeStyle = 'yellow';
+                    context.lineWidth = 4;
+                    context.strokeRect((gameWidth - boxWidth) / 2, boxY, boxWidth, boxHeight);
+                }
             });
         }
 
@@ -992,6 +1006,50 @@ window.addEventListener("gamepadconnected", (event) => {
 window.addEventListener("gamepaddisconnected", (event) => {
     console.log("Gamepad disconnected event for:", event.gamepad.id);
     selectPrimaryGamepad(); // Re-evaluate primary gamepad
+});
+
+// Handle gamepad navigation on upgrade screen in its own beforeUpdate callback
+Matter.Events.on(engine, 'beforeUpdate', () => {
+    if (!gamePausedForUpgrade || availableUpgrades.length === 0) return;
+
+    if (!gamepad) return;
+    const pads = navigator.getGamepads();
+    const live = pads[gamepad.index];
+    if (!live) return;
+
+    // D-Pad buttons (standard mapping): 12 = Up, 13 = Down, 0 = A / South Button
+    const upPressed = (live.buttons[12] && live.buttons[12].pressed) || (live.axes && live.axes.length > 1 && live.axes[1] < -0.5);
+    const downPressed = (live.buttons[13] && live.buttons[13].pressed) || (live.axes && live.axes.length > 1 && live.axes[1] > 0.5);
+    const selectPressed = live.buttons[0] && live.buttons[0].pressed; // A button
+
+    // Navigate options
+    if (upPressed && !prevUpPressed) {
+        currentUpgradeSelectionIndex = (currentUpgradeSelectionIndex - 1 + availableUpgrades.length) % availableUpgrades.length;
+    }
+    if (downPressed && !prevDownPressed) {
+        currentUpgradeSelectionIndex = (currentUpgradeSelectionIndex + 1) % availableUpgrades.length;
+    }
+
+    // Select option
+    if (selectPressed && !prevSelectPressed) {
+        const chosen = availableUpgrades[currentUpgradeSelectionIndex];
+        if (chosen && typeof chosen.apply === 'function') {
+            chosen.apply();
+        }
+        gamePausedForUpgrade = false;
+        availableUpgrades = [];
+        if (playerHealth > 0 && runnerInstance && engine) {
+            Runner.run(runnerInstance, engine);
+            if (audioMusic && audioMusic.paused) {
+                audioMusic.play().catch(e => console.error("Error resuming music:", e));
+            }
+        }
+    }
+
+    // Update previous button states for edge detection
+    prevUpPressed = upPressed;
+    prevDownPressed = downPressed;
+    prevSelectPressed = selectPressed;
 });
 
 window.onload = setupGameAssets;
