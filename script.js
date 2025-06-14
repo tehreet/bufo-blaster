@@ -81,6 +81,8 @@ let gameInitialized = false;
 let enemySpawnIntervalId; // Declare globally
 let shootIntervalId; // Declare globally to manage the interval
 let healthRegenIntervalId; // For passive health regeneration
+let currentPlayerHealthRegenInterval; // Current interval, can be modified by upgrades
+let currentPlayerHealthRegenAmount;   // Current amount, can be modified by upgrades
 
 let gamepad = null; // To store the connected gamepad object
 const GAMEPAD_DEAD_ZONE = 0.2; // Dead zone for analog sticks
@@ -166,7 +168,7 @@ function setupGameAssets() {
 
 // Player Health & Regen Constants
 const PLAYER_HEALTH_REGEN_AMOUNT = 1; // Amount of health regenerated per tick
-const PLAYER_HEALTH_REGEN_INTERVAL = 5000; // Interval in ms (e.g., 5 seconds)
+const PLAYER_HEALTH_REGEN_INTERVAL = 10000; // Default interval in ms (e.g., 10 seconds)
 const PLAYER_HEALTHBAR_WIDTH = 50;    // Width of the player's health bar
 const PLAYER_HEALTHBAR_HEIGHT = 5;     // Height of the player's health bar
 const PLAYER_HEALTHBAR_OFFSET_Y = 30;  // Vertical offset above the player's center
@@ -463,6 +465,20 @@ const allUpgrades = [
         }
     },
     {
+        name: "Vitality Spores",
+        description: "Speeds up health regeneration by 3 seconds (max 1 HP/sec).",
+        apply: () => {
+            const reduction = 3000; // Regenerate 3 seconds faster
+            const minInterval = 1000; // Minimum interval of 1 second
+            currentPlayerHealthRegenInterval = Math.max(minInterval, currentPlayerHealthRegenInterval - reduction);
+            
+            // Restart the health regeneration interval with the new speed
+            if (healthRegenIntervalId) clearInterval(healthRegenIntervalId);
+            healthRegenIntervalId = setInterval(regeneratePlayerHealth, currentPlayerHealthRegenInterval);
+            console.log(`Health regeneration interval decreased to: ${currentPlayerHealthRegenInterval}ms`);
+        }
+    },
+    {
         name: "Greater Greed",
         description: "Increases XP orb pickup range by 25.",
         apply: () => {
@@ -613,8 +629,12 @@ function initializeGame() {
     // Start shooting interval
     if (shootIntervalId) clearInterval(shootIntervalId);
     shootIntervalId = setInterval(shootProjectile, shootInterval);
+
+    // Initialize and start health regeneration
+    currentPlayerHealthRegenInterval = PLAYER_HEALTH_REGEN_INTERVAL;
+    currentPlayerHealthRegenAmount = PLAYER_HEALTH_REGEN_AMOUNT;
     if (healthRegenIntervalId) clearInterval(healthRegenIntervalId);
-    healthRegenIntervalId = setInterval(regeneratePlayerHealth, PLAYER_HEALTH_REGEN_INTERVAL);
+    healthRegenIntervalId = setInterval(regeneratePlayerHealth, currentPlayerHealthRegenInterval);
     // Gamepad navigation for upgrades is now handled in gameTick via pollGamepadForUpgradeMenu
     // Matter.Events.on(engine, 'beforeUpdate', handleUpgradeGamepadNavigation); // This line is removed
 
@@ -1256,8 +1276,10 @@ function resetGame() {
     enemySpawnIntervalId = setInterval(spawnEnemy, currentEnemySpawnInterval);
 
     // Restart health regeneration interval
+    currentPlayerHealthRegenInterval = PLAYER_HEALTH_REGEN_INTERVAL; // Reset to default
+    currentPlayerHealthRegenAmount = PLAYER_HEALTH_REGEN_AMOUNT;     // Reset to default
     if (healthRegenIntervalId) clearInterval(healthRegenIntervalId);
-    healthRegenIntervalId = setInterval(regeneratePlayerHealth, PLAYER_HEALTH_REGEN_INTERVAL);
+    healthRegenIntervalId = setInterval(regeneratePlayerHealth, currentPlayerHealthRegenInterval);
 
     // Ensure game runner is active
     if (runnerInstance && engine) { // Check if runnerInstance and engine exist
@@ -1278,7 +1300,7 @@ function regeneratePlayerHealth() {
     }
 
     if (playerHealth < DEFAULT_GAME_SETTINGS.playerHealth) {
-        playerHealth += PLAYER_HEALTH_REGEN_AMOUNT;
+        playerHealth += currentPlayerHealthRegenAmount;
         if (playerHealth > DEFAULT_GAME_SETTINGS.playerHealth) {
             playerHealth = DEFAULT_GAME_SETTINGS.playerHealth; // Cap at max health
         }
