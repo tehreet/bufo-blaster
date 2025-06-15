@@ -191,6 +191,11 @@ const DEFAULT_GAME_SETTINGS = {
 
 const ENEMY_CONTACT_DAMAGE = 10;
 
+// Stab Bufo Aura Constants
+const STAB_BUFO_AURA_RADIUS = 75; // Range of the damage aura in pixels
+const STAB_BUFO_AURA_DAMAGE_PER_TICK = 0.5; // Damage dealt per tick to enemies in range
+const STAB_BUFO_AURA_TICK_INTERVAL_MS = 500; // How often the aura damage applies (in milliseconds)
+
 // Game setup constants (can be adjusted here if needed)
 const INITIAL_CANVAS_WIDTH = 800;
 const INITIAL_CANVAS_HEIGHT = 600;
@@ -224,6 +229,7 @@ let playerSpeed = 5; // Player movement speed, consolidated global declaration
 let playerIsInvincible = false;
 const INVINCIBILITY_DURATION = 1000; // 1 second in milliseconds
 let invincibilityTimerId = null;
+let lastAuraTickTime = 0; // Tracks the last time aura damage was applied
 let shootInterval = 1000; // Time in ms between shots, consolidated global declaration
 
 // player is already declared globally with 'let player;'
@@ -820,7 +826,7 @@ function initializeGame() {
     });
 
     // Game Logic Update (Movement, Cleanup) - MOVED HERE
-    Matter.Events.on(engine, 'beforeUpdate', () => {
+    Matter.Events.on(engine, 'beforeUpdate', (event) => {
         if (gameOver || gamePausedForUpgrade) return; // Simplified condition
 
         // Player movement (already in initializeGame, this is for other game logic)
@@ -875,12 +881,58 @@ function initializeGame() {
                 // No need to explicitly stop velocity here unless overshooting becomes an issue.
             }
         });
+
+        // Stab Bufo Aura Damage Logic
+        if (player && player.position && !gameOver && !gamePausedForUpgrade) { // Ensure player and its position exist and game is active
+            const currentTime = event.timestamp; // 'event.timestamp' is the current time in Matter.js 'beforeUpdate'
+            if ((currentTime - lastAuraTickTime) >= STAB_BUFO_AURA_TICK_INTERVAL_MS) {
+                lastAuraTickTime = currentTime;
+
+                for (let i = enemies.length - 1; i >= 0; i--) {
+                    const enemyBody = enemies[i];
+                    if (!enemyBody || !enemyBody.position) continue; // Skip if enemy or its position is invalid
+
+                    const distanceX = player.position.x - enemyBody.position.x;
+                    const distanceY = player.position.y - enemyBody.position.y;
+                    const distance = Math.sqrt(distanceX * distanceX + distanceY * distanceY);
+
+                    if (distance <= STAB_BUFO_AURA_RADIUS) {
+                        if (typeof enemyBody.currentHealth === 'number') { // Check it's a number
+                            enemyBody.currentHealth -= STAB_BUFO_AURA_DAMAGE_PER_TICK;
+                        } else {
+                            console.warn("Aura Target: Enemy missing or has invalid currentHealth property", enemyBody);
+                            continue; // Skip this enemy
+                        }
+                        
+                        if (enemyBody.currentHealth <= 0) {
+                            if (audioEnemyDie) {
+                                audioEnemyDie.currentTime = 0;
+                                audioEnemyDie.play().catch(e => console.error("Error playing enemy die sound (aura):", e));
+                            }
+                            
+
+                            // Assuming xpOrbRadius is in scope from initializeGame, like in collision handling
+                            const xpOrb = Bodies.circle(enemyBody.position.x, enemyBody.position.y, xpOrbRadius, { 
+                                label: 'xpOrb', isSensor: true, render: { fillStyle: 'cyan' },
+                                collisionFilter: { category: defaultCategory, mask: playerCategory }
+                            });
+                            World.add(world, xpOrb);
+                            xpOrbs.push(xpOrb);
+
+                            Matter.Composite.remove(world, enemyBody);
+                            enemies.splice(i, 1); // Remove from array
+                        }
+                    }
+                }
+            }
+        }
     });
 
     // Collision Handling - MOVED HERE
     Matter.Events.on(engine, 'collisionStart', (event) => {
         if (gameOver) return; // Don't process collisions if game is over
 
+        // ...
         const pairs = event.pairs;
         for (let i = 0; i < pairs.length; i++) {
             const pair = pairs[i];
@@ -995,6 +1047,14 @@ function initializeGame() {
             // Current health (e.g., green)
             context.fillStyle = 'rgba(0, 200, 0, 0.9)'; // Bright green, mostly opaque
             context.fillRect(barX, barY, Math.max(0, currentHealthWidth), PLAYER_HEALTHBAR_HEIGHT); // Ensure width isn't negative
+        }
+
+        // Draw Stab Bufo Aura Visual
+        if (player && player.position && !gameOver && !gamePausedForUpgrade) {
+            context.fillStyle = 'rgba(173, 216, 230, 0.3)'; // Light blue, semi-transparent
+            context.beginPath();
+            context.arc(player.position.x, player.position.y, STAB_BUFO_AURA_RADIUS, 0, Math.PI * 2);
+            context.fill();
         }
 
         // Draw enemy health bars
