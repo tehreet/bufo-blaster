@@ -86,6 +86,7 @@ let currentPlayerHealthRegenAmount;   // Current amount, can be modified by upgr
 
 let runStartTime = 0; // Added for run timer
 let elapsedRunTimeFormatted = "00:00"; // Added for run timer
+let enemyKillCount = 0; // Added for enemy kill counter
 
 let gamepad = null; // To store the connected gamepad object
 const GAMEPAD_DEAD_ZONE = 0.2; // Dead zone for analog sticks
@@ -942,6 +943,7 @@ function initializeGame() {
                                 collisionFilter: { category: defaultCategory, mask: playerCategory }
                             });
                             World.add(world, xpOrb);
+                            enemyKillCount++; // Increment kill count for aura kill
                             xpOrbs.push(xpOrb);
 
                             Matter.Composite.remove(world, enemyBody);
@@ -997,6 +999,7 @@ function initializeGame() {
                         collisionFilter: { category: defaultCategory, mask: playerCategory }
                     });
                     World.add(world, xpOrb);
+                    enemyKillCount++; // Increment kill count for projectile kill
                     xpOrbs.push(xpOrb);
 
                     const enemyIndex = enemies.indexOf(enemy);
@@ -1061,6 +1064,7 @@ function initializeGame() {
 
         // Display Run Timer
         context.fillText(`Run Time: ${elapsedRunTimeFormatted}`, 20, 180);
+        context.fillText(`Kills: ${enemyKillCount}`, 20, 210); // Display Kill Count
 
         // Draw Player Health Bar
         if (player && playerHealth > 0 && !gameOver && !gamePausedForUpgrade) { // Also check !gamePausedForUpgrade
@@ -1392,6 +1396,7 @@ function resetGame() {
 
     runStartTime = Date.now(); // Reset the run timer
     elapsedRunTimeFormatted = "00:00"; // Reset formatted time
+    enemyKillCount = 0; // Reset kill count
 
     // Reset player stats
     playerHealth = DEFAULT_GAME_SETTINGS.playerHealth;
