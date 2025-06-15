@@ -581,9 +581,12 @@ function handleCollisions(event) {
         }
 
         if (playerBody && enemyBody) {
+            console.log(`Collision: P-E. Time: ${Date.now()}. Invincible: ${playerIsInvincible}. Health: ${playerHealth}`); // Log before check
+
             if (!playerIsInvincible) {
+                console.log(`   DAMAGE APPLIED. Time: ${Date.now()}. Was Invincible: false. Health before: ${playerHealth}`);
                 playerHealth -= ENEMY_CONTACT_DAMAGE;
-                console.log(`Player hit! Health: ${playerHealth}`);
+                console.log(`   Player hit! Health after: ${playerHealth}`);
                 
                 // Play hit sound
                 if (audioPlayerHit) { 
@@ -592,18 +595,21 @@ function handleCollisions(event) {
                 }
 
                 playerIsInvincible = true;
+                console.log(`   Invincibility SET TRUE. Time: ${Date.now()}`);
                 // Clear any existing invincibility timer
                 if (invincibilityTimerId) {
                     clearTimeout(invincibilityTimerId);
                 }
                 invincibilityTimerId = setTimeout(() => {
                     playerIsInvincible = false;
-                    console.log("Player invincibility ended.");
+                    console.log(`   Invincibility ENDED (timer). Time: ${Date.now()}`);
                 }, INVINCIBILITY_DURATION);
 
                 if (playerHealth <= 0 && !gameOver) {
                     triggerGameOver();
                 }
+            } else {
+                console.log(`   DAMAGE SKIPPED. Time: ${Date.now()}. Was Invincible: true. Health: ${playerHealth}`); // Log if damage is skipped
             }
         }
     }
