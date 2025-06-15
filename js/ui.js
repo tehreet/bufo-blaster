@@ -56,7 +56,7 @@ export function renderPlayerHealthBar(context) {
 // Render enemy health bars
 export function renderEnemyHealthBars(context) {
     enemies.forEach(enemy => {
-        if (enemy.health !== undefined && enemy.health < GAME_CONFIG.ENEMY_MAX_HEALTH) {
+        if (enemy.health !== undefined) {
             const barWidth = 30;
             const barHeight = 5;
             const x = enemy.position.x - barWidth / 2;

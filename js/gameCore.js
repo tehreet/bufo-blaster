@@ -45,6 +45,11 @@ import {
     updatePlayerXP,
     updatePlayerLevel,
     updateXpToNextLevel,
+    updateProjectileDamage,
+    updateShootInterval,
+    updatePlayerSpeed,
+    updateXpOrbPickupRadius,
+    updateHealthRegenInterval,
     setGameOver,
     setGamePausedForUpgrade,
     setPlayerInvincible,
@@ -202,6 +207,74 @@ function setupEventListeners() {
         const context = render.canvas.getContext('2d');
         renderUI(context);
     });
+
+    // Mouse click handlers
+    setupMouseEventListeners();
+}
+
+// Setup mouse event listeners
+function setupMouseEventListeners() {
+    const canvas = document.getElementById('gameCanvas');
+    if (!canvas) return;
+
+    canvas.addEventListener('click', (event) => {
+        const rect = canvas.getBoundingClientRect();
+        const scaleX = canvas.width / rect.width;
+        const scaleY = canvas.height / rect.height;
+        const mouseX = (event.clientX - rect.left) * scaleX;
+        const mouseY = (event.clientY - rect.top) * scaleY;
+
+        // Handle upgrade menu clicks
+        if (gamePausedForUpgrade && availableUpgrades.length > 0) {
+            handleUpgradeMenuClick(mouseX, mouseY);
+        }
+        
+        // Handle game over restart click
+        if (gameOver) {
+            handleGameOverClick(mouseX, mouseY);
+        }
+    });
+}
+
+// Handle upgrade menu mouse clicks
+function handleUpgradeMenuClick(mouseX, mouseY) {
+    const boxWidth = 200;
+    const boxHeight = 100;
+    const spacing = 20;
+    const totalHeight = (boxHeight + spacing) * availableUpgrades.length - spacing;
+    let startY = (gameHeight - totalHeight) / 2;
+
+    availableUpgrades.forEach((upgrade, index) => {
+        const boxY = startY + index * (boxHeight + spacing);
+        const boxX = (gameWidth - boxWidth) / 2;
+        
+        // Check if click is within this upgrade box
+        if (mouseX >= boxX && mouseX <= boxX + boxWidth &&
+            mouseY >= boxY && mouseY <= boxY + boxHeight) {
+            
+            // Apply the upgrade
+            if (upgrade && typeof upgrade.apply === 'function') {
+                upgrade.apply();
+            }
+            
+            // Resume game
+            setGamePausedForUpgrade(false);
+            setAvailableUpgrades([]);
+            if (playerHealth > 0 && runnerInstance && engine) {
+                const { Runner } = Matter;
+                Runner.run(runnerInstance, engine);
+                if (audioMusic && audioMusic.paused) {
+                    audioMusic.play().catch(e => console.error("Error resuming music:", e));
+                }
+            }
+        }
+    });
+}
+
+// Handle game over screen mouse clicks
+function handleGameOverClick(mouseX, mouseY) {
+    // Simple click anywhere to restart for now
+    resetGame();
 }
 
 // Handle all collision events
@@ -421,7 +494,11 @@ export function resetGame() {
     updatePlayerXP(DEFAULT_GAME_SETTINGS.playerXP);
     updatePlayerLevel(DEFAULT_GAME_SETTINGS.playerLevel);
     updateXpToNextLevel(DEFAULT_GAME_SETTINGS.xpToNextLevel);
-    // Reset other stats through gameState setters...
+    updateProjectileDamage(DEFAULT_GAME_SETTINGS.projectileDamage);
+    updateShootInterval(DEFAULT_GAME_SETTINGS.shootInterval);
+    updatePlayerSpeed(DEFAULT_GAME_SETTINGS.playerSpeed);
+    updateXpOrbPickupRadius(DEFAULT_GAME_SETTINGS.xpOrbPickupRadius);
+    updateHealthRegenInterval(GAME_CONFIG.PLAYER_HEALTH_REGEN_INTERVAL);
 
     // Clear dynamic objects
     [...enemies, ...projectiles, ...xpOrbs].forEach(obj => {

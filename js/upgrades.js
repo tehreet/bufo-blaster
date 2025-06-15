@@ -7,6 +7,7 @@ import {
     updateXpOrbPickupRadius,
     updateProjectileDamage,
     updatePlayerHealth,
+    updateHealthRegenInterval,
     playerHealth,
     playerSpeed,
     xpOrbPickupRadius,
@@ -49,6 +50,9 @@ export const allUpgrades = [
             const reduction = 3000; // Regenerate 3 seconds faster
             const minInterval = 1000; // Minimum interval of 1 second
             const newInterval = Math.max(minInterval, currentPlayerHealthRegenInterval - reduction);
+            
+            // Update the interval value
+            updateHealthRegenInterval(newInterval);
             
             // Restart the health regeneration interval with the new speed
             if (healthRegenIntervalId) clearInterval(healthRegenIntervalId);

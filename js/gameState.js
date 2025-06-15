@@ -28,7 +28,7 @@ export let gameInitialized = false;
 export let enemySpawnIntervalId = null;
 export let shootIntervalId = null;
 export let healthRegenIntervalId = null;
-export let currentPlayerHealthRegenInterval = DEFAULT_GAME_SETTINGS.playerSpeed;
+export let currentPlayerHealthRegenInterval = 10000; // 10 seconds
 export let currentPlayerHealthRegenAmount = 1;
 
 // Game statistics
@@ -127,10 +127,12 @@ export const setAudioObjects = (music, shoot, pickup, playerHit, enemyDie) => {
 };
 
 export const setIntervals = (enemySpawn, shoot, healthRegen) => {
-    enemySpawnIntervalId = enemySpawn;
-    shootIntervalId = shoot;
-    healthRegenIntervalId = healthRegen;
+    if (enemySpawn !== null) enemySpawnIntervalId = enemySpawn;
+    if (shoot !== null) shootIntervalId = shoot;
+    if (healthRegen !== null) healthRegenIntervalId = healthRegen;
 };
+
+export const updateHealthRegenInterval = (interval) => { currentPlayerHealthRegenInterval = interval; };
 
 export const updateRunTimer = () => {
     if (runStartTime > 0) {
