@@ -929,30 +929,6 @@ function initializeGame() {
                 continue; 
             }
 
-            // Player-Enemy Collision
-            if (playerBody && enemy) { // enemy here is the one involved with player
-                playerHealth -= 10; 
-                console.log(`Player hit! Health: ${playerHealth}`);
-                if (audioPlayerHit) {
-                    audioPlayerHit.currentTime = 0;
-                    audioPlayerHit.play().catch(e => console.error("Error playing player hit sound:", e));
-                }
-                
-                const enemyIndexToRemove = enemies.indexOf(enemy);
-                if (enemyIndexToRemove > -1) enemies.splice(enemyIndexToRemove, 1);
-                Matter.Composite.remove(world, enemy);
-
-                if (playerHealth <= 0 && !gameOver) {
-                    gameOver = true; // Set gameOver flag
-                    console.log('Game Over!');
-                    Runner.stop(runnerInstance);
-                    clearInterval(shootIntervalId);
-                    clearInterval(enemySpawnIntervalId);
-                    if (audioMusic) audioMusic.pause(); // Stop music on game over
-                }
-                continue;
-            }
-
             // Player-XP Orb Collision
             if (playerBody && xpOrbToCollect) {
                 playerXP += 5;
