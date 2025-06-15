@@ -189,6 +189,8 @@ const DEFAULT_GAME_SETTINGS = {
     enemySpawnInterval: 2000, // Default enemy spawn interval
 };
 
+const ENEMY_CONTACT_DAMAGE = 10;
+
 // Game setup constants (can be adjusted here if needed)
 const INITIAL_CANVAS_WIDTH = 800;
 const INITIAL_CANVAS_HEIGHT = 600;
@@ -217,6 +219,11 @@ let prevSelectPressed = false;
 let projectileDamage = 1.5; // Base projectile damage
 let gameOver = false; // Tracks game over state
 let playerSpeed = 5; // Player movement speed, consolidated global declaration
+
+// Invincibility state
+let playerIsInvincible = false;
+const INVINCIBILITY_DURATION = 1000; // 1 second in milliseconds
+let invincibilityTimerId = null;
 let shootInterval = 1000; // Time in ms between shots, consolidated global declaration
 
 // player is already declared globally with 'let player;'
@@ -526,6 +533,82 @@ function presentUpgradeOptions(count = 3) {
     }
 }
 
+function triggerGameOver() {
+    if (gameOver) return; // Prevent multiple triggers
+
+    gameOver = true;
+    console.log("GAME OVER");
+    // Play game over sound (TODO: Add audioGameOver)
+    // if (audioGameOver) { audioGameOver.currentTime = 0; audioGameOver.play().catch(e => console.warn("Game over sound play failed:", e)); }
+
+
+    // Stop game activities
+    if (runnerInstance) {
+        Runner.stop(runnerInstance);
+        console.log("Matter.js runner stopped.");
+    }
+    if (enemySpawnIntervalId) {
+        clearInterval(enemySpawnIntervalId);
+        enemySpawnIntervalId = null;
+    }
+    if (shootIntervalId) {
+        clearInterval(shootIntervalId);
+        shootIntervalId = null;
+    }
+    if (healthRegenIntervalId) {
+        clearInterval(healthRegenIntervalId);
+        healthRegenIntervalId = null;
+    }
+    // Potentially stop other intervals if they exist (e.g., specific enemy movement timers)
+}
+
+function handleCollisions(event) {
+    const pairs = event.pairs;
+
+    for (let i = 0; i < pairs.length; i++) {
+        const pair = pairs[i];
+        const bodyA = pair.bodyA;
+        const bodyB = pair.bodyB;
+
+        let playerBody, enemyBody;
+
+        if (bodyA.label === 'player' && bodyB.label === 'enemy') {
+            playerBody = bodyA;
+            enemyBody = bodyB;
+        } else if (bodyB.label === 'player' && bodyA.label === 'enemy') {
+            playerBody = bodyB;
+            enemyBody = bodyA;
+        }
+
+        if (playerBody && enemyBody) {
+            if (!playerIsInvincible) {
+                playerHealth -= ENEMY_CONTACT_DAMAGE;
+                console.log(`Player hit! Health: ${playerHealth}`);
+                
+                // Play hit sound
+                if (audioPlayerHit) { 
+                    audioPlayerHit.currentTime = 0; 
+                    audioPlayerHit.play().catch(e => console.warn("Player hit sound play failed:", e));
+                }
+
+                playerIsInvincible = true;
+                // Clear any existing invincibility timer
+                if (invincibilityTimerId) {
+                    clearTimeout(invincibilityTimerId);
+                }
+                invincibilityTimerId = setTimeout(() => {
+                    playerIsInvincible = false;
+                    console.log("Player invincibility ended.");
+                }, INVINCIBILITY_DURATION);
+
+                if (playerHealth <= 0 && !gameOver) {
+                    triggerGameOver();
+                }
+            }
+        }
+    }
+}
+
 function initializeGame() {
     if (gameInitialized) return;
     console.log("Initializing Bufo Blaster with Matter.js!");
@@ -632,6 +715,9 @@ function initializeGame() {
     healthRegenIntervalId = setInterval(regeneratePlayerHealth, currentPlayerHealthRegenInterval);
     // Gamepad navigation for upgrades is now handled in gameTick via pollGamepadForUpgradeMenu
     // Matter.Events.on(engine, 'beforeUpdate', handleUpgradeGamepadNavigation); // This line is removed
+
+    // Handle collisions
+    Matter.Events.on(engine, 'collisionStart', handleCollisions);
 
     Matter.Events.on(engine, 'afterUpdate', function(event) {
         if (player && playerImageElement) {
@@ -891,6 +977,15 @@ function initializeGame() {
     // UI Rendering on canvas - Moved from global scope and gifler logic removed
     Matter.Events.on(render, 'afterRender', () => {
         const context = render.context;
+
+        if (playerImageElement) { // Ensure player image element exists
+            if (playerIsInvincible) {
+                // Flashing effect: 0.5 opacity for 150ms, then 1.0 opacity for 150ms
+                playerImageElement.style.opacity = (Math.floor(Date.now() / 150) % 2 === 0) ? '0.5' : '1.0';
+            } else {
+                playerImageElement.style.opacity = '1.0'; // Ensure full opacity when not invincible
+            }
+        }
 
         // Existing UI drawing code:
         context.fillStyle = 'white';
