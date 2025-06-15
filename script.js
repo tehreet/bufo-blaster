@@ -84,6 +84,9 @@ let healthRegenIntervalId; // For passive health regeneration
 let currentPlayerHealthRegenInterval; // Current interval, can be modified by upgrades
 let currentPlayerHealthRegenAmount;   // Current amount, can be modified by upgrades
 
+let runStartTime = 0; // Added for run timer
+let elapsedRunTimeFormatted = "00:00"; // Added for run timer
+
 let gamepad = null; // To store the connected gamepad object
 const GAMEPAD_DEAD_ZONE = 0.2; // Dead zone for analog sticks
 
@@ -625,6 +628,9 @@ function initializeGame() {
     if (gameInitialized) return;
     console.log("Initializing Bufo Blaster with Matter.js!");
 
+    runStartTime = Date.now(); // Start the run timer
+    elapsedRunTimeFormatted = "00:00"; // Reset formatted time
+
     // Set canvas dimensions first
     const canvas = document.getElementById('gameCanvas');
     if (!canvas) {
@@ -827,7 +833,26 @@ function initializeGame() {
 
     // Game Logic Update (Movement, Cleanup) - MOVED HERE
     Matter.Events.on(engine, 'beforeUpdate', (event) => {
-        if (gameOver || gamePausedForUpgrade) return; // Simplified condition
+        if (gameOver || gamePausedForUpgrade) {
+            // If game is paused or over, still update the timer if it was running, but don't proceed with other game logic
+            if (runStartTime > 0 && !gameOver) { // Only update if started and not game over (allows pause)
+                const elapsedMs = event.timestamp - runStartTime;
+                const totalSeconds = Math.floor(elapsedMs / 1000);
+                const minutes = Math.floor(totalSeconds / 60);
+                const seconds = totalSeconds % 60;
+                elapsedRunTimeFormatted = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+            }
+            return; 
+        }
+
+        // Update Run Timer (when game is active)
+        if (runStartTime > 0) { // Ensure runStartTime is initialized
+            const elapsedMs = event.timestamp - runStartTime;
+            const totalSeconds = Math.floor(elapsedMs / 1000);
+            const minutes = Math.floor(totalSeconds / 60);
+            const seconds = totalSeconds % 60;
+            elapsedRunTimeFormatted = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+        }
 
         // Player movement (already in initializeGame, this is for other game logic)
 
@@ -1033,6 +1058,9 @@ function initializeGame() {
         context.fillText(`XP: ${playerXP} / ${xpToNextLevel}`, 20, 90);
         context.fillText(`Damage: ${projectileDamage}`, 20, 120);
         context.fillText(`Atk Speed: ${(1000/shootInterval).toFixed(1)}/s`, 20, 150);
+
+        // Display Run Timer
+        context.fillText(`Run Time: ${elapsedRunTimeFormatted}`, 20, 180);
 
         // Draw Player Health Bar
         if (player && playerHealth > 0 && !gameOver && !gamePausedForUpgrade) { // Also check !gamePausedForUpgrade
@@ -1361,6 +1389,9 @@ function gameTick() {
 
 function resetGame() {
     console.log("Resetting game...");
+
+    runStartTime = Date.now(); // Reset the run timer
+    elapsedRunTimeFormatted = "00:00"; // Reset formatted time
 
     // Reset player stats
     playerHealth = DEFAULT_GAME_SETTINGS.playerHealth;
