@@ -1,7 +1,7 @@
 // Game Core System
 import { GAME_CONFIG, COLLISION_CATEGORIES, ASSET_URLS, DEFAULT_GAME_SETTINGS } from './constants.js';
 import { initializeAudio, scaleGameContainer } from './assetLoader.js';
-import { setupKeyboardControls, selectPrimaryGamepad, getMovementInput, pollGamepadForUpgradeMenu, handleGameOverInput } from './input.js';
+import { setupKeyboardControls, selectPrimaryGamepad, setupGamepadEventListeners, getMovementInput, pollGamepadForUpgradeMenu, handleGameOverInput } from './input.js';
 import { createPlayerBody, spawnEnemy, shootProjectile, updateEnemyMovement, cleanupOffScreenEntities, updateXPOrbMagnetism, applyPlayerMovement, createXPOrb, applyStabBufoAura } from './entities.js';
 import { presentUpgradeOptions } from './upgrades.js';
 import { renderUI } from './ui.js';
@@ -145,6 +145,7 @@ export function initializeGame() {
 
     // Setup input controls
     setupKeyboardControls();
+    setupGamepadEventListeners();
     selectPrimaryGamepad();
 
     // Setup event listeners

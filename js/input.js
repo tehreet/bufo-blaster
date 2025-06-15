@@ -25,8 +25,11 @@ export function selectPrimaryGamepad() {
     let foundGamepad = null;
     let preferredGamepad = null;
 
+    console.log("Checking for gamepads...", gamepads.length, "slots available");
+    
     for (let i = 0; i < gamepads.length; i++) {
-        if (gamepads[i]) {
+        if (gamepads[i] && gamepads[i].connected) {
+            console.log(`Gamepad ${i}:`, gamepads[i].id, "Connected:", gamepads[i].connected);
             if (!foundGamepad) foundGamepad = gamepads[i]; // Fallback to first detected
             // Check for Xbox controller (Vendor ID 045e) or standard mapping
             if (gamepads[i].id.includes('STANDARD GAMEPAD') || 
@@ -59,6 +62,40 @@ export function selectPrimaryGamepad() {
     }
 }
 
+// Setup gamepad event listeners for connection/disconnection
+export function setupGamepadEventListeners() {
+    window.addEventListener("gamepadconnected", function(e) {
+        console.log("Gamepad connected:", e.gamepad.id);
+        selectPrimaryGamepad();
+    });
+
+    window.addEventListener("gamepaddisconnected", function(e) {
+        console.log("Gamepad disconnected:", e.gamepad.id);
+        if (gamepad && gamepad.id === e.gamepad.id) {
+            setGamepad(null);
+            selectPrimaryGamepad(); // Try to find another one
+        }
+    });
+
+    // Add a manual detection button for debugging
+    const detectButton = document.createElement('button');
+    detectButton.textContent = 'Detect Gamepad';
+    detectButton.style.position = 'fixed';
+    detectButton.style.top = '10px';
+    detectButton.style.right = '10px';
+    detectButton.style.zIndex = '1000';
+    detectButton.style.padding = '10px';
+    detectButton.style.backgroundColor = '#333';
+    detectButton.style.color = 'white';
+    detectButton.style.border = 'none';
+    detectButton.style.borderRadius = '5px';
+    detectButton.onclick = () => {
+        console.log("Manual gamepad detection triggered");
+        selectPrimaryGamepad();
+    };
+    document.body.appendChild(detectButton);
+}
+
 // Keyboard event handlers
 export function setupKeyboardControls() {
     document.addEventListener('keydown', (event) => {
@@ -85,6 +122,11 @@ export function getMovementInput() {
     let velocityX = 0;
     let velocityY = 0;
     let gamepadInputProcessed = false;
+
+    // Try to detect gamepad if we don't have one yet
+    if (!gamepad) {
+        selectPrimaryGamepad();
+    }
 
     // Gamepad input (overrides keyboard if active)
     if (gamepad) {
