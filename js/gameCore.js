@@ -2,7 +2,7 @@
 import { GAME_CONFIG, COLLISION_CATEGORIES, ASSET_URLS, DEFAULT_GAME_SETTINGS } from './constants.js';
 import { initializeAudio, scaleGameContainer } from './assetLoader.js';
 import { setupKeyboardControls, selectPrimaryGamepad, getMovementInput, pollGamepadForUpgradeMenu, handleGameOverInput } from './input.js';
-import { createPlayerBody, spawnEnemy, shootProjectile, updateEnemyMovement, cleanupOffScreenEntities, updateXPOrbMagnetism, applyPlayerMovement, createXPOrb } from './entities.js';
+import { createPlayerBody, spawnEnemy, shootProjectile, updateEnemyMovement, cleanupOffScreenEntities, updateXPOrbMagnetism, applyPlayerMovement, createXPOrb, applyStabBufoAura } from './entities.js';
 import { presentUpgradeOptions } from './upgrades.js';
 import { renderUI } from './ui.js';
 import { 
@@ -50,6 +50,7 @@ import {
     updatePlayerSpeed,
     updateXpOrbPickupRadius,
     updateHealthRegenInterval,
+    setLastAuraTickTime,
     setGameOver,
     setGamePausedForUpgrade,
     setPlayerInvincible,
@@ -197,6 +198,7 @@ function setupEventListeners() {
         updateEnemyMovement();
         cleanupOffScreenEntities();
         updateXPOrbMagnetism();
+        applyStabBufoAura();
     });
 
     // Collision handling
@@ -499,6 +501,7 @@ export function resetGame() {
     updatePlayerSpeed(DEFAULT_GAME_SETTINGS.playerSpeed);
     updateXpOrbPickupRadius(DEFAULT_GAME_SETTINGS.xpOrbPickupRadius);
     updateHealthRegenInterval(GAME_CONFIG.PLAYER_HEALTH_REGEN_INTERVAL);
+    setLastAuraTickTime(0); // Reset aura timer
 
     // Clear dynamic objects
     [...enemies, ...projectiles, ...xpOrbs].forEach(obj => {

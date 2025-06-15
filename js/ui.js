@@ -53,6 +53,30 @@ export function renderPlayerHealthBar(context) {
     context.fillRect(barX, barY, GAME_CONFIG.PLAYER_HEALTHBAR_WIDTH * healthPercentage, GAME_CONFIG.PLAYER_HEALTHBAR_HEIGHT);
 }
 
+// Render Stab Bufo aura
+export function renderStabBufoAura(context) {
+    if (!player) return;
+
+    // Create a pulsing effect based on time
+    const time = Date.now();
+    const pulseIntensity = (Math.sin(time * 0.005) + 1) * 0.5; // Oscillates between 0 and 1
+    const alpha = 0.1 + (pulseIntensity * 0.15); // Alpha between 0.1 and 0.25
+
+    // Draw the aura circle
+    context.save();
+    context.globalAlpha = alpha;
+    context.strokeStyle = '#ff6b6b'; // Red-ish color for damage aura
+    context.fillStyle = '#ff6b6b';
+    context.lineWidth = 2;
+    
+    context.beginPath();
+    context.arc(player.position.x, player.position.y, GAME_CONFIG.STAB_BUFO_AURA_RADIUS, 0, 2 * Math.PI);
+    context.fill();
+    context.stroke();
+    
+    context.restore();
+}
+
 // Render enemy health bars
 export function renderEnemyHealthBars(context) {
     enemies.forEach(enemy => {
@@ -142,6 +166,9 @@ export function renderGameOverScreen(context) {
 export function renderUI(context) {
     // Clear any previous UI elements if needed
     context.save();
+    
+    // Render Stab Bufo aura (behind everything else)
+    renderStabBufoAura(context);
     
     // Render player health bar
     renderPlayerHealthBar(context);

@@ -133,6 +133,7 @@ export const setIntervals = (enemySpawn, shoot, healthRegen) => {
 };
 
 export const updateHealthRegenInterval = (interval) => { currentPlayerHealthRegenInterval = interval; };
+export const setLastAuraTickTime = (time) => { lastAuraTickTime = time; };
 
 export const updateRunTimer = () => {
     if (runStartTime > 0) {

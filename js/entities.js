@@ -11,7 +11,9 @@ import {
     imageAssets,
     projectileDamage,
     playerSpeed,
-    incrementEnemyKillCount
+    incrementEnemyKillCount,
+    lastAuraTickTime,
+    audioEnemyDie
 } from './gameState.js';
 
 const { Bodies, World, Composite } = Matter;
@@ -244,5 +246,53 @@ export function applyPlayerMovement(velocityX, velocityY) {
 
     if (x !== clampedX || y !== clampedY) {
         Matter.Body.setPosition(player, { x: clampedX, y: clampedY });
+    }
+}
+
+// Apply Stab Bufo aura damage
+export function applyStabBufoAura() {
+    if (!player) return;
+
+    const currentTime = Date.now();
+    
+    // Check if enough time has passed since last aura tick
+    if (currentTime - lastAuraTickTime < GAME_CONFIG.STAB_BUFO_AURA_TICK_INTERVAL_MS) {
+        return;
+    }
+
+    // Update last aura tick time through gameState
+    import('./gameState.js').then(({ setLastAuraTickTime }) => {
+        setLastAuraTickTime(currentTime);
+    });
+
+    // Apply damage to enemies within aura range
+    for (let i = enemies.length - 1; i >= 0; i--) {
+        const enemy = enemies[i];
+        if (!enemy) continue;
+
+        const dx = player.position.x - enemy.position.x;
+        const dy = player.position.y - enemy.position.y;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+
+        if (distance <= GAME_CONFIG.STAB_BUFO_AURA_RADIUS) {
+            enemy.health -= GAME_CONFIG.STAB_BUFO_AURA_DAMAGE_PER_TICK;
+
+            // Check if enemy dies from aura damage
+            if (enemy.health <= 0) {
+                // Play death sound
+                if (audioEnemyDie) {
+                    audioEnemyDie.currentTime = 0;
+                    audioEnemyDie.play().catch(e => console.error("Error playing enemy die sound:", e));
+                }
+
+                // Create XP orb
+                createXPOrb(enemy.position.x, enemy.position.y);
+                incrementEnemyKillCount();
+
+                // Remove enemy
+                enemies.splice(i, 1);
+                Matter.Composite.remove(world, enemy);
+            }
+        }
     }
 } 
