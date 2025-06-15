@@ -897,14 +897,14 @@ function initializeGame() {
                     const distance = Math.sqrt(distanceX * distanceX + distanceY * distanceY);
 
                     if (distance <= STAB_BUFO_AURA_RADIUS) {
-                        if (typeof enemyBody.currentHealth === 'number') { // Check it's a number
-                            enemyBody.currentHealth -= STAB_BUFO_AURA_DAMAGE_PER_TICK;
+                        if (typeof enemyBody.health === 'number') { // Check it's a number
+                            enemyBody.health -= STAB_BUFO_AURA_DAMAGE_PER_TICK;
                         } else {
-                            console.warn("Aura Target: Enemy missing or has invalid currentHealth property", enemyBody);
+                            console.warn("Aura Target: Enemy missing or has invalid health property", enemyBody);
                             continue; // Skip this enemy
                         }
                         
-                        if (enemyBody.currentHealth <= 0) {
+                        if (enemyBody.health <= 0) {
                             if (audioEnemyDie) {
                                 audioEnemyDie.currentTime = 0;
                                 audioEnemyDie.play().catch(e => console.error("Error playing enemy die sound (aura):", e));
