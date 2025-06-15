@@ -836,7 +836,7 @@ function initializeGame() {
         if (gameOver || gamePausedForUpgrade) {
             // If game is paused or over, still update the timer if it was running, but don't proceed with other game logic
             if (runStartTime > 0 && !gameOver) { // Only update if started and not game over (allows pause)
-                const elapsedMs = event.timestamp - runStartTime;
+                const elapsedMs = Date.now() - runStartTime;
                 const totalSeconds = Math.floor(elapsedMs / 1000);
                 const minutes = Math.floor(totalSeconds / 60);
                 const seconds = totalSeconds % 60;
@@ -847,7 +847,7 @@ function initializeGame() {
 
         // Update Run Timer (when game is active)
         if (runStartTime > 0) { // Ensure runStartTime is initialized
-            const elapsedMs = event.timestamp - runStartTime;
+            const elapsedMs = Date.now() - runStartTime;
             const totalSeconds = Math.floor(elapsedMs / 1000);
             const minutes = Math.floor(totalSeconds / 60);
             const seconds = totalSeconds % 60;
