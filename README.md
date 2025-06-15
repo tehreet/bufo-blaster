@@ -76,6 +76,25 @@ Bufo Blaster is a top-down survival action game where you control a Bufo charact
 
 ## 🛠️ Technical Implementation
 
+### **Modular Architecture**
+The game is built using a clean modular architecture with ES6 modules:
+
+- **`constants.js`** - All game configuration and constants in one place
+- **`gameState.js`** - Centralized state management with controlled access
+- **`assetLoader.js`** - Asset loading, audio initialization, and responsive scaling
+- **`input.js`** - Keyboard and gamepad input handling
+- **`entities.js`** - Game object creation and management (player, enemies, projectiles)
+- **`upgrades.js`** - Upgrade system definitions and logic
+- **`ui.js`** - All UI rendering and visual feedback
+- **`gameCore.js`** - Core game loop, collision detection, and initialization
+- **`main.js`** - Entry point that ties everything together
+
+This modular approach provides:
+- **Maintainability**: Easy to find and modify specific functionality
+- **Testability**: Individual modules can be tested in isolation
+- **Reusability**: Modules can be reused across different parts of the game
+- **Scalability**: New features can be added without affecting existing code
+
 ### **Physics Engine**
 - **Matter.js**: Full 2D physics simulation
 - **Collision Categories**: Separate collision groups for player, enemies, projectiles
@@ -147,16 +166,26 @@ Bufo Blaster is a top-down survival action game where you control a Bufo charact
 
 ```
 bufo-blaster/
-├── index.html          # Main game page
-├── script.js           # Core game logic (1482 lines)
-├── style.css           # Basic styling
-├── README.md           # This file
-└── sfx/                # Audio assets
-    ├── music_loop.mp3  # Background music
-    ├── shoot.mp3       # Shooting sound
-    ├── pickup.mp3      # XP pickup sound
-    ├── player_hit.mp3  # Player damage sound
-    └── enemy_die.mp3   # Enemy death sound
+├── index.html              # Main game page
+├── style.css               # Basic styling
+├── README.md               # This file
+├── script_original.js      # Original monolithic script (backup)
+├── js/                     # Modular JavaScript files
+│   ├── main.js            # Main entry point
+│   ├── constants.js       # Game constants and configuration
+│   ├── gameState.js       # Global state management
+│   ├── assetLoader.js     # Asset loading and scaling
+│   ├── input.js           # Input handling (keyboard/gamepad)
+│   ├── entities.js        # Game entities (player, enemies, projectiles)
+│   ├── upgrades.js        # Upgrade system
+│   ├── ui.js              # UI rendering
+│   └── gameCore.js        # Core game logic and initialization
+└── sfx/                    # Audio assets
+    ├── music_loop.mp3     # Background music
+    ├── shoot.mp3          # Shooting sound
+    ├── pickup.mp3         # XP pickup sound
+    ├── player_hit.mp3     # Player damage sound
+    └── enemy_die.mp3      # Enemy death sound
 ```
 
 ## 🎮 Game Tips
@@ -170,10 +199,13 @@ bufo-blaster/
 ## 🔧 Development Notes
 
 ### **Code Quality**
+- **Modular Architecture**: Code split into focused, single-responsibility modules
+- **ES6 Modules**: Modern JavaScript module system with clean imports/exports
+- **Separation of Concerns**: Clear boundaries between game systems
 - **Comprehensive Comments**: Well-documented codebase
 - **Error Handling**: Robust error handling for asset loading
 - **Debug Logging**: Extensive console logging for development
-- **Modular Functions**: Clean, reusable function design
+- **Clean Dependencies**: Minimal circular dependencies with dynamic imports where needed
 
 ### **Future Enhancements**
 - Additional enemy types
