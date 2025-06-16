@@ -292,6 +292,8 @@ export function shootProjectile() {
 
 // Create XP orb at position
 export function createXPOrb(x, y) {
+    console.log(`Creating XP orb at (${x.toFixed(0)}, ${y.toFixed(0)})`);
+    
     const xpOrb = Bodies.circle(x, y, GAME_CONFIG.XP_ORB_RADIUS, {
         label: 'xpOrb', 
         isSensor: true, 
@@ -519,6 +521,8 @@ export function applyStabBufoAura() {
 
                 // Check if enemy dies from aura damage
                 if (enemy.health <= 0) {
+                    console.log(`Enemy killed by aura! Type: ${enemy.enemyType || 'undefined'}, Health was: ${enemy.health}`);
+                    
                     // Debug logging for boss bufos
                     if (enemy.enemyType === ENEMY_TYPES.BOSS_BUFO) {
                         console.log('Boss Bufo killed by aura! Creating XP orb...');
@@ -795,6 +799,8 @@ export function applyStarfallAOE(impactX, impactY, damage, confusionDuration, cu
         
         // Check if enemy dies
         if (enemy.health <= 0) {
+            console.log(`Enemy killed by starfall AOE! Type: ${enemy.enemyType || 'undefined'}, Health was: ${enemy.health}`);
+            
             // Debug logging for boss bufos
             if (enemy.enemyType === ENEMY_TYPES.BOSS_BUFO) {
                 console.log('Boss Bufo killed by starfall AOE! Creating XP orb...');
@@ -881,6 +887,8 @@ export function updateGooseOrbit() {
                     
                     // Check if enemy dies
                     if (enemy.health <= 0) {
+                        console.log(`Enemy killed by goose! Type: ${enemy.enemyType || 'undefined'}, Health was: ${enemy.health}`);
+                        
                         // Debug logging for boss bufos
                         if (enemy.enemyType === ENEMY_TYPES.BOSS_BUFO) {
                             console.log('Boss Bufo killed by goose! Creating converted ally...');

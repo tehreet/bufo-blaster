@@ -539,6 +539,8 @@ function handleProjectileEnemyCollision(bodyA, bodyB) {
 
         // Check if enemy is dead
         if (enemyBody.health <= 0) {
+            console.log(`Enemy killed by projectile! Type: ${enemyBody.enemyType || 'undefined'}, Health was: ${enemyBody.health}`);
+            
             // Debug logging for boss bufos
             if (enemyBody.enemyType === 'boss_bufo') {
                 console.log('Boss Bufo killed by projectile! Creating XP orb...');
