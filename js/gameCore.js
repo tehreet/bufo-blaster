@@ -2,7 +2,7 @@
 import { GAME_CONFIG, COLLISION_CATEGORIES, ASSET_URLS, DEFAULT_GAME_SETTINGS, CHARACTERS } from './constants.js';
 import { initializeAudio, scaleGameContainer } from './assetLoader.js';
 import { setupKeyboardControls, selectPrimaryGamepad, setupGamepadEventListeners, getMovementInput, pollGamepadForUpgradeMenu, handleGameOverInput, handleCharacterSelectionInput, handlePauseInput } from './input.js';
-import { createPlayerBody, spawnEnemy, shootProjectile, updateEnemyMovement, cleanupOffScreenEntities, updateXPOrbMagnetism, applyPlayerMovement, createXPOrb, applyStabBufoAura, castStarfall, updateStarfallProjectiles, updateConfusedEnemyMovement } from './entities.js';
+import { createPlayerBody, spawnEnemy, shootProjectile, updateEnemyMovement, cleanupOffScreenEntities, updateXPOrbMagnetism, applyPlayerMovement, createXPOrb, applyStabBufoAura, castStarfall, updateStarfallProjectiles, updateConfusedEnemyMovement, initializeGooseOrbit, updateGooseOrbit, updateConvertedAllies } from './entities.js';
 import { presentUpgradeOptions } from './upgrades.js';
 import { renderUI } from './ui.js';
 import { 
@@ -25,6 +25,8 @@ import {
     projectiles,
     xpOrbs,
     starfallProjectiles,
+    orbitingGeese,
+    convertedAllies,
     playerHealth,
     playerXP,
     playerLevel,
@@ -224,6 +226,9 @@ function setupEventListeners() {
         } else if (selectedCharacter.id === 'wizard') {
             castStarfall(); // Auto-cast when enemies are in range
             updateStarfallProjectiles();
+        } else if (selectedCharacter.id === 'goose') {
+            updateGooseOrbit();
+            updateConvertedAllies();
         }
     });
 
@@ -748,7 +753,7 @@ export function resetGame() {
     setStarfallCount(GAME_CONFIG.WIZARD_STARFALL_COUNT);
 
     // Clear dynamic objects
-    [...enemies, ...projectiles, ...xpOrbs, ...starfallProjectiles].forEach(obj => {
+    [...enemies, ...projectiles, ...xpOrbs, ...starfallProjectiles, ...convertedAllies].forEach(obj => {
         if (obj && world && Composite.get(world, obj.id, obj.type)) {
             World.remove(world, obj);
         }
@@ -757,6 +762,8 @@ export function resetGame() {
     projectiles.length = 0;
     xpOrbs.length = 0;
     starfallProjectiles.length = 0;
+    orbitingGeese.length = 0;
+    convertedAllies.length = 0;
 
     // Reset player position
     if (player) {
@@ -803,6 +810,11 @@ export function startGameAfterCharacterSelection() {
     // Update player sprite
     if (playerImageElement) {
         playerImageElement.src = selectedCharacter.sprite;
+    }
+    
+    // Character-specific initialization
+    if (selectedCharacter.id === 'goose') {
+        initializeGooseOrbit();
     }
     
     // Mark character selection as complete

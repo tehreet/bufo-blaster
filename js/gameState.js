@@ -19,6 +19,10 @@ export const projectiles = [];
 export const xpOrbs = [];
 export const starfallProjectiles = [];
 
+// Goose Bufo arrays
+export const orbitingGeese = [];
+export const convertedAllies = [];
+
 // Asset loading state
 export let imagesToLoadCount = 0;
 export let imagesLoadedCount = 0;

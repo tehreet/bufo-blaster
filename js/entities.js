@@ -7,6 +7,8 @@ import {
     projectiles, 
     xpOrbs,
     starfallProjectiles,
+    orbitingGeese,
+    convertedAllies,
     world,
     player,
     imageAssets,
@@ -617,4 +619,180 @@ export function applyStarfallAOE(impactX, impactY, damage, confusionDuration, cu
     });
     
     console.log(`Starfall AOE hit ${affectedEnemies.length} enemies, killed ${enemiesToRemove.length} at (${impactX.toFixed(0)}, ${impactY.toFixed(0)})`);
-} 
+}
+
+// Initialize orbiting geese for Goose Bufo
+export function initializeGooseOrbit() {
+    orbitingGeese.length = 0; // Clear existing geese
+    
+    for (let i = 0; i < GAME_CONFIG.GOOSE_BUFO_GOOSE_COUNT; i++) {
+        const angle = (i / GAME_CONFIG.GOOSE_BUFO_GOOSE_COUNT) * Math.PI * 2;
+        const goose = {
+            angle: angle,
+            radius: GAME_CONFIG.GOOSE_BUFO_ORBIT_RADIUS,
+            lastDamageTime: 0
+        };
+        orbitingGeese.push(goose);
+    }
+}
+
+// Update orbiting geese around Goose Bufo
+export function updateGooseOrbit() {
+    if (!player || selectedCharacter.id !== 'goose') return;
+    
+    const currentTime = Date.now();
+    
+    orbitingGeese.forEach(goose => {
+        // Update rotation
+        goose.angle += GAME_CONFIG.GOOSE_BUFO_ORBIT_SPEED * 0.016; // Assuming 60fps
+        
+        // Calculate position
+        const gooseX = player.position.x + Math.cos(goose.angle) * goose.radius;
+        const gooseY = player.position.y + Math.sin(goose.angle) * goose.radius;
+        
+        // Check for enemy collisions
+        enemies.forEach((enemy, enemyIndex) => {
+            const dx = gooseX - enemy.position.x;
+            const dy = gooseY - enemy.position.y;
+            const distance = Math.sqrt(dx * dx + dy * dy);
+            
+            // If goose is close to enemy and hasn't damaged recently
+            if (distance < 25 && currentTime - goose.lastDamageTime > 500) {
+                // Damage enemy
+                enemy.health -= GAME_CONFIG.GOOSE_BUFO_GOOSE_DAMAGE;
+                goose.lastDamageTime = currentTime;
+                
+                // Apply knockback
+                const knockbackForce = GAME_CONFIG.GOOSE_BUFO_KNOCKBACK_FORCE;
+                const knockbackX = (dx / distance) * knockbackForce;
+                const knockbackY = (dy / distance) * knockbackForce;
+                Matter.Body.setVelocity(enemy, { x: knockbackX, y: knockbackY });
+                enemy.knockbackTime = currentTime + 300; // 300ms knockback duration
+                
+                // Check if enemy dies
+                if (enemy.health <= 0) {
+                    // Play death sound
+                    if (audioEnemyDie) {
+                        audioEnemyDie.currentTime = 0;
+                        audioEnemyDie.play().catch(e => console.error("Error playing enemy die sound:", e));
+                    }
+
+                    // Create converted ally instead of XP orb
+                    createConvertedAlly(enemy.position.x, enemy.position.y);
+                    incrementEnemyKillCount();
+
+                    // Remove enemy
+                    enemies.splice(enemyIndex, 1);
+                    Composite.remove(world, enemy);
+                }
+            }
+        });
+    });
+}
+
+// Create a converted ally (goose-riding bufo)
+export function createConvertedAlly(x, y) {
+    const ally = Bodies.circle(x, y, GAME_CONFIG.ENEMY_RADIUS, {
+        collisionFilter: { 
+            category: COLLISION_CATEGORIES.PROJECTILE, // Use projectile category to hit enemies
+            mask: COLLISION_CATEGORIES.DEFAULT | COLLISION_CATEGORIES.ENEMY 
+        },
+        label: 'convertedAlly',
+        isSensor: true,
+        render: { 
+            fillStyle: 'lightgreen',
+            strokeStyle: 'green',
+            lineWidth: 2
+        }
+    });
+
+    // Add custom properties
+    ally.health = 1; // One hit and they're gone
+    ally.damage = GAME_CONFIG.GOOSE_BUFO_CONVERTED_ALLY_DAMAGE;
+    ally.creationTime = Date.now();
+    ally.targetEnemy = null;
+    ally.hasAttacked = false;
+
+    convertedAllies.push(ally);
+    World.add(world, ally);
+}
+
+// Update converted allies behavior
+export function updateConvertedAllies() {
+    const currentTime = Date.now();
+    
+    for (let i = convertedAllies.length - 1; i >= 0; i--) {
+        const ally = convertedAllies[i];
+        
+        // Remove expired allies
+        if (currentTime - ally.creationTime > GAME_CONFIG.GOOSE_BUFO_CONVERTED_ALLY_LIFETIME) {
+            Composite.remove(world, ally);
+            convertedAllies.splice(i, 1);
+            continue;
+        }
+        
+        // If ally hasn't attacked yet, find and move toward nearest enemy
+        if (!ally.hasAttacked && enemies.length > 0) {
+            let nearestEnemy = null;
+            let minDistance = Infinity;
+            
+            enemies.forEach(enemy => {
+                const dx = ally.position.x - enemy.position.x;
+                const dy = ally.position.y - enemy.position.y;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+                
+                if (distance < minDistance) {
+                    minDistance = distance;
+                    nearestEnemy = enemy;
+                }
+            });
+            
+            if (nearestEnemy) {
+                const dx = nearestEnemy.position.x - ally.position.x;
+                const dy = nearestEnemy.position.y - ally.position.y;
+                const magnitude = Math.sqrt(dx * dx + dy * dy);
+                
+                if (magnitude > 0) {
+                    const velocityX = (dx / magnitude) * GAME_CONFIG.GOOSE_BUFO_CONVERTED_ALLY_SPEED;
+                    const velocityY = (dy / magnitude) * GAME_CONFIG.GOOSE_BUFO_CONVERTED_ALLY_SPEED;
+                    Matter.Body.setVelocity(ally, { x: velocityX, y: velocityY });
+                    
+                    // Check if close enough to attack
+                    if (magnitude < 20) {
+                        // Deal damage
+                        nearestEnemy.health -= ally.damage;
+                        ally.hasAttacked = true;
+                        
+                        // Check if enemy dies
+                        if (nearestEnemy.health <= 0) {
+                            // Play death sound
+                            if (audioEnemyDie) {
+                                audioEnemyDie.currentTime = 0;
+                                audioEnemyDie.play().catch(e => console.error("Error playing enemy die sound:", e));
+                            }
+
+                            // Create XP orb for converted ally kills
+                            createXPOrb(nearestEnemy.position.x, nearestEnemy.position.y);
+                            incrementEnemyKillCount();
+
+                            // Remove enemy
+                            const enemyIndex = enemies.indexOf(nearestEnemy);
+                            if (enemyIndex > -1) {
+                                enemies.splice(enemyIndex, 1);
+                                Composite.remove(world, nearestEnemy);
+                            }
+                        }
+                        
+                        // Remove the ally after attacking
+                        Composite.remove(world, ally);
+                        convertedAllies.splice(i, 1);
+                    }
+                }
+            }
+        } else if (ally.hasAttacked) {
+            // Remove ally if it has already attacked
+            Composite.remove(world, ally);
+            convertedAllies.splice(i, 1);
+        }
+    }
+}

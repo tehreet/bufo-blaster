@@ -6,6 +6,8 @@ import {
     player,
     enemies,
     starfallProjectiles,
+    orbitingGeese,
+    convertedAllies,
     playerHealth,
     playerXP,
     playerLevel,
@@ -193,6 +195,98 @@ export function renderEnemyHealthBars(context) {
             context.fillStyle = 'green';
             context.fillRect(x, y, barWidth * healthPercentage, barHeight);
         }
+    });
+}
+
+// Render Goose Bufo orbiting geese
+export function renderGooseOrbit(context) {
+    if (!player || selectedCharacter.id !== 'goose') return;
+
+    orbitingGeese.forEach(goose => {
+        const gooseX = player.position.x + Math.cos(goose.angle) * goose.radius;
+        const gooseY = player.position.y + Math.sin(goose.angle) * goose.radius;
+        
+        // Draw goose as a simple bird-like shape
+        context.save();
+        context.translate(gooseX, gooseY);
+        context.rotate(goose.angle + Math.PI / 2); // Orient geese to face their movement direction
+        
+        // Goose body (simple oval)
+        context.fillStyle = 'white';
+        context.strokeStyle = 'gray';
+        context.lineWidth = 2;
+        context.beginPath();
+        context.ellipse(0, 0, 8, 5, 0, 0, 2 * Math.PI);
+        context.fill();
+        context.stroke();
+        
+        // Goose head
+        context.fillStyle = 'white';
+        context.beginPath();
+        context.arc(0, -8, 4, 0, 2 * Math.PI);
+        context.fill();
+        context.stroke();
+        
+        // Goose beak
+        context.fillStyle = 'orange';
+        context.beginPath();
+        context.moveTo(0, -12);
+        context.lineTo(-2, -14);
+        context.lineTo(2, -14);
+        context.closePath();
+        context.fill();
+        
+        context.restore();
+    });
+}
+
+// Render converted allies (goose-riding bufos)
+export function renderConvertedAllies(context) {
+    convertedAllies.forEach(ally => {
+        // Draw a simple representation of bufo riding goose
+        context.save();
+        
+        // Calculate movement direction for orientation
+        const velocity = ally.velocity || { x: 0, y: 0 };
+        const speed = Math.sqrt(velocity.x * velocity.x + velocity.y * velocity.y);
+        const angle = speed > 0 ? Math.atan2(velocity.y, velocity.x) : 0;
+        
+        context.translate(ally.position.x, ally.position.y);
+        context.rotate(angle);
+        
+        // Goose (slightly larger)
+        context.fillStyle = 'lightblue';
+        context.strokeStyle = 'blue';
+        context.lineWidth = 2;
+        context.beginPath();
+        context.ellipse(0, 0, 12, 8, 0, 0, 2 * Math.PI);
+        context.fill();
+        context.stroke();
+        
+        // Bufo rider on top
+        context.fillStyle = 'lightgreen';
+        context.strokeStyle = 'green';
+        context.lineWidth = 1;
+        context.beginPath();
+        context.arc(0, -3, 6, 0, 2 * Math.PI);
+        context.fill();
+        context.stroke();
+        
+        // Add a simple wing flap effect
+        const flapTime = Date.now() * 0.02;
+        const wingOffset = Math.sin(flapTime) * 3;
+        
+        // Wings
+        context.strokeStyle = 'darkblue';
+        context.lineWidth = 2;
+        context.beginPath();
+        context.moveTo(-8, wingOffset);
+        context.lineTo(-15, wingOffset - 5);
+        context.moveTo(8, wingOffset);
+        context.lineTo(15, wingOffset - 5);
+        context.stroke();
+        
+        context.restore();
     });
 }
 
@@ -395,6 +489,9 @@ export function renderUI(context) {
             renderStabBufoAura(context);
         } else if (selectedCharacter.id === 'wizard') {
             renderStarfallProjectiles(context);
+        } else if (selectedCharacter.id === 'goose') {
+            renderGooseOrbit(context);
+            renderConvertedAllies(context);
         }
         
         // Render player health bar

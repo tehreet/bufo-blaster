@@ -48,6 +48,16 @@ export const GAME_CONFIG = {
     WIZARD_STARFALL_CONFUSION_DURATION: 3000, // 3 seconds of confusion (longer)
     WIZARD_STARFALL_RANGE: 300, // Max range to target enemies (larger range)
     WIZARD_STARFALL_AOE_RADIUS: 60, // AOE damage radius around each star impact
+    
+    // Goose Bufo Constants
+    GOOSE_BUFO_GOOSE_COUNT: 3, // Number of orbiting geese
+    GOOSE_BUFO_ORBIT_RADIUS: 60, // Orbit radius around player
+    GOOSE_BUFO_ORBIT_SPEED: 2, // Rotation speed of geese
+    GOOSE_BUFO_GOOSE_DAMAGE: 1, // Damage per goose hit
+    GOOSE_BUFO_KNOCKBACK_FORCE: 3, // Knockback force from geese
+    GOOSE_BUFO_CONVERTED_ALLY_LIFETIME: 8000, // 8 seconds for converted allies
+    GOOSE_BUFO_CONVERTED_ALLY_DAMAGE: 2, // Damage converted allies deal
+    GOOSE_BUFO_CONVERTED_ALLY_SPEED: 2, // Speed of converted allies
 };
 
 // Collision Categories
@@ -92,6 +102,16 @@ export const CHARACTERS = {
         speed: 5,
         abilityName: 'Starfall',
         abilityDescription: 'Casts stars that damage and confuse enemies'
+    },
+    GOOSE_BUFO: {
+        id: 'goose',
+        name: 'Goose Bufo',
+        description: 'Summoner with orbiting geese that convert enemies',
+        sprite: 'https://all-the.bufo.zone/bufo-goose-hat-happy-dance.gif',
+        health: 110,
+        speed: 4.5,
+        abilityName: 'Goose Guard',
+        abilityDescription: 'Orbiting geese damage enemies and convert them to allies'
     }
 };
 
