@@ -674,9 +674,8 @@ function startGameIntervals() {
     // Enemy spawning
     const enemySpawnId = setInterval(spawnEnemy, 267);
     
-    // Shooting - DISABLED for Stab Bufo (melee character)
-    // const shootId = setInterval(shootProjectile, shootInterval);
-    const shootId = null; // No shooting for melee bruiser
+    // No shooting mechanics - removed from game
+    const shootId = null;
     
     // Health regeneration
     const healthRegenId = setInterval(regeneratePlayerHealth, currentPlayerHealthRegenInterval);

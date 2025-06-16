@@ -11,7 +11,9 @@ import {
     convertedAllies,
     megaBossLasers,
     megaBossLavaCracks,
+    megaBossPillars,
     megaBossEmpowermentActive,
+    megaBossDisabled,
     playerHealth,
     playerXP,
     playerLevel,
@@ -632,6 +634,63 @@ export function renderMegaBossLavaCracks(context) {
     });
 }
 
+// Render mega boss pillars
+export function renderMegaBossPillars(context) {
+    megaBossPillars.forEach(pillar => {
+        const healthPercentage = pillar.health / pillar.maxHealth;
+        
+        context.save();
+        
+        // Main pillar body
+        context.fillStyle = pillar.health > 0 ? '#4A4A4A' : '#2A2A2A'; // Darker when destroyed
+        context.strokeStyle = '#333333';
+        context.lineWidth = 3;
+        context.beginPath();
+        context.arc(pillar.position.x, pillar.position.y, pillar.circleRadius, 0, 2 * Math.PI);
+        context.fill();
+        context.stroke();
+        
+        // Health bar above pillar
+        if (pillar.health > 0 && healthPercentage < 1) {
+            const barWidth = 40;
+            const barHeight = 6;
+            const barX = pillar.position.x - barWidth / 2;
+            const barY = pillar.position.y - pillar.circleRadius - 35;
+            
+            // Background (red)
+            context.fillStyle = 'red';
+            context.fillRect(barX, barY, barWidth, barHeight);
+            
+            // Foreground (yellow for pillars)
+            context.fillStyle = '#FFD700';
+            context.fillRect(barX, barY, barWidth * healthPercentage, barHeight);
+            
+            // Border
+            context.strokeStyle = 'black';
+            context.lineWidth = 1;
+            context.strokeRect(barX, barY, barWidth, barHeight);
+        }
+        
+        // Pillar destroyed effect
+        if (pillar.health <= 0) {
+            context.globalAlpha = 0.3;
+            context.fillStyle = '#8B0000'; // Dark red
+            context.beginPath();
+            context.arc(pillar.position.x, pillar.position.y, pillar.circleRadius + 10, 0, 2 * Math.PI);
+            context.fill();
+        }
+        
+        // Pillar index number
+        context.globalAlpha = 1;
+        context.fillStyle = 'white';
+        context.font = '16px Arial';
+        context.textAlign = 'center';
+        context.fillText((pillar.pillarIndex + 1).toString(), pillar.position.x, pillar.position.y + 5);
+        
+        context.restore();
+    });
+}
+
 // Render mega boss empowerment effect
 export function renderMegaBossEmpowerment(context) {
     if (!megaBossEmpowermentActive) return;
@@ -717,6 +776,7 @@ export function renderUI(context) {
         // Render mega boss effects
         renderMegaBossLasers(context);
         renderMegaBossLavaCracks(context);
+        renderMegaBossPillars(context);
         renderMegaBossEmpowerment(context);
         
         // Render HUD

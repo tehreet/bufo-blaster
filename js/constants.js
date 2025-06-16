@@ -78,6 +78,11 @@ export const GAME_CONFIG = {
     MEGA_BOSS_EMPOWERMENT_SPEED_BONUS: 1.5, // 1.5x speed multiplier
     MEGA_BOSS_EMPOWERMENT_DAMAGE_BONUS: 1.3, // 1.3x damage multiplier
     
+    // Mega Boss Pillars (strategic elements to disable boss)
+    MEGA_BOSS_PILLAR_RADIUS: 25, // Medium-sized pillars
+    MEGA_BOSS_PILLAR_HEALTH: 30, // Require multiple hits to destroy
+    MEGA_BOSS_PILLAR_SPAWN_MARGIN: 100, // Distance from corners
+    
     // Projectile Constants
     PROJECTILE_RADIUS: 5,
     PROJECTILE_SPEED: 12,

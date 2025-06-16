@@ -26,8 +26,10 @@ export const convertedAllies = [];
 // Mega Boss arrays and state
 export const megaBossLasers = []; // Active laser beams
 export const megaBossLavaCracks = []; // Active lava cracks
+export const megaBossPillars = []; // Strategic pillars to disable boss
 export let megaBossEmpowermentActive = false;
 export let megaBossEmpowermentEndTime = 0;
+export let megaBossDisabled = false; // True when all pillars destroyed
 
 // Asset loading state
 export let imagesToLoadCount = 0;
@@ -222,4 +224,5 @@ export const setAbilityCooldownMultiplier = (multiplier) => { abilityCooldownMul
 
 // Mega Boss setters
 export const setMegaBossEmpowermentActive = (active) => { megaBossEmpowermentActive = active; };
-export const setMegaBossEmpowermentEndTime = (endTime) => { megaBossEmpowermentEndTime = endTime; }; 
+export const setMegaBossEmpowermentEndTime = (endTime) => { megaBossEmpowermentEndTime = endTime; };
+export const setMegaBossDisabled = (disabled) => { megaBossDisabled = disabled; }; 

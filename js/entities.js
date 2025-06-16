@@ -11,8 +11,10 @@ import {
     convertedAllies,
     megaBossLasers,
     megaBossLavaCracks,
+    megaBossPillars,
     megaBossEmpowermentActive,
     megaBossEmpowermentEndTime,
+    megaBossDisabled,
     world,
     player,
     imageAssets,
@@ -37,7 +39,8 @@ import {
     characterSelectionActive,
     playerLevel,
     setMegaBossEmpowermentActive,
-    setMegaBossEmpowermentEndTime
+    setMegaBossEmpowermentEndTime,
+    setMegaBossDisabled
 } from './gameState.js';
 
 const { Bodies, World, Composite } = Matter;
@@ -304,7 +307,54 @@ export function spawnEnemy() {
         console.log(`Player position: (${player.position.x.toFixed(0)}, ${player.position.y.toFixed(0)})`);
         console.log(`Enemy added to world with ID: ${enemy.id}, Total enemies: ${enemies.length}`);
         console.log(`Enemy render options:`, enemy.render);
+        
+        // Spawn pillars when mega boss appears
+        spawnMegaBossPillars();
     }
+}
+
+// Spawn pillars in the four corners for mega boss encounter
+export function spawnMegaBossPillars() {
+    // Clear any existing pillars
+    megaBossPillars.length = 0;
+    
+    const margin = GAME_CONFIG.MEGA_BOSS_PILLAR_SPAWN_MARGIN;
+    const radius = GAME_CONFIG.MEGA_BOSS_PILLAR_RADIUS;
+    
+    // Four corner positions
+    const positions = [
+        { x: margin, y: margin }, // Top-left
+        { x: gameWidth - margin, y: margin }, // Top-right
+        { x: margin, y: gameHeight - margin }, // Bottom-left
+        { x: gameWidth - margin, y: gameHeight - margin } // Bottom-right
+    ];
+    
+    positions.forEach((pos, index) => {
+        const pillar = Bodies.circle(pos.x, pos.y, radius, {
+            collisionFilter: { 
+                category: COLLISION_CATEGORIES.ENEMY, 
+                mask: COLLISION_CATEGORIES.DEFAULT | COLLISION_CATEGORIES.PLAYER 
+            },
+            label: 'mega_boss_pillar',
+            isStatic: true, // Pillars don't move
+            render: {
+                fillStyle: '#4A4A4A', // Dark gray stone
+                strokeStyle: '#333333',
+                lineWidth: 3
+            }
+        });
+        
+        pillar.health = GAME_CONFIG.MEGA_BOSS_PILLAR_HEALTH;
+        pillar.maxHealth = GAME_CONFIG.MEGA_BOSS_PILLAR_HEALTH;
+        pillar.circleRadius = radius;
+        pillar.pillarIndex = index;
+        
+        megaBossPillars.push(pillar);
+        World.add(world, pillar);
+    });
+    
+    console.log(`🏛️ Spawned ${megaBossPillars.length} mega boss pillars`);
+    setMegaBossDisabled(false); // Boss starts enabled
 }
 
 // Find nearest enemy to player
@@ -436,8 +486,8 @@ export function updateEnemyMovement() {
                 return; // Don't override knockback velocity
             }
             
-            // Skip movement for mega boss if channeling
-            if (enemy.enemyType === ENEMY_TYPES.MEGA_BOSS_BUFO && enemy.isChanneling) {
+            // Skip movement for mega boss if channeling or disabled
+            if (enemy.enemyType === ENEMY_TYPES.MEGA_BOSS_BUFO && (enemy.isChanneling || megaBossDisabled)) {
                 return;
             }
             
@@ -685,6 +735,42 @@ export function applyStabBufoAura() {
                     // Remove enemy
                     enemies.splice(i, 1);
                     Matter.Composite.remove(world, enemy);
+                }
+            }
+        }
+        
+        // Damage mega boss pillars with aura
+        for (let i = megaBossPillars.length - 1; i >= 0; i--) {
+            const pillar = megaBossPillars[i];
+            if (!pillar) continue;
+
+            const dx = pillar.position.x - player.position.x;
+            const dy = pillar.position.y - player.position.y;
+            const distance = Math.sqrt(dx * dx + dy * dy);
+
+            if (distance <= GAME_CONFIG.STAB_BUFO_AURA_RADIUS) {
+                pillar.health -= currentAuraDamage;
+                console.log(`Pillar ${pillar.pillarIndex} damaged! Health: ${pillar.health}/${pillar.maxHealth}`);
+
+                // Check if pillar is destroyed
+                if (pillar.health <= 0) {
+                    console.log(`🏛️ Pillar ${pillar.pillarIndex} destroyed!`);
+                    
+                    // Play death sound
+                    if (audioEnemyDie) {
+                        audioEnemyDie.currentTime = 0;
+                        audioEnemyDie.play().catch(e => console.error("Error playing pillar destruction sound:", e));
+                    }
+
+                    // Remove pillar
+                    megaBossPillars.splice(i, 1);
+                    Matter.Composite.remove(world, pillar);
+                    
+                    // Check if all pillars are destroyed
+                    if (megaBossPillars.length === 0) {
+                        setMegaBossDisabled(true);
+                        console.log('🔥 ALL PILLARS DESTROYED! Mega Boss is now disabled!');
+                    }
                 }
             }
         }
@@ -1169,7 +1255,7 @@ export function updateConvertedAllies() {
 
 // Update mega boss abilities
 export function updateMegaBossAbilities() {
-    if (!player) return;
+    if (!player || megaBossDisabled) return; // Skip if boss is disabled by pillars
     
     const currentTime = Date.now();
     
