@@ -167,7 +167,7 @@ export const ASSET_URLS = {
     // Special Enemy Sprites (with fallback color system for safety)
     SPECIAL_ENEMIES: {
         BUFF_BUFO: 'https://all-the.bufo.zone/buff-bufo.png',
-        GAVEL_BUFO: 'https://all-the.bufo.zone/bufo-brings-a-new-meaning-to-gaveled-by-slamming-the-hammer-very-loud.png',
+        GAVEL_BUFO: 'https://all-the.bufo.zone/bufo-brings-a-new-meaning-to-gaveled-by-slamming-the-hammer-very-loud.gif',
         ICE_BUFO: 'https://all-the.bufo.zone/bufo-code-freeze.png',
         BOSS_BUFO: 'https://all-the.bufo.zone/buff-bufo.png' // Using buff bufo but even larger for boss
     }
