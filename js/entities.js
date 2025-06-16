@@ -231,6 +231,16 @@ export function cleanupOffScreenEntities() {
             projectiles.splice(i, 1);
         }
     }
+    
+    // Clean up starfall projectiles
+    for (let i = starfallProjectiles.length - 1; i >= 0; i--) {
+        const starfall = starfallProjectiles[i];
+        if (starfall.position.x < -100 || starfall.position.x > gameWidth + 100 ||
+            starfall.position.y < -100 || starfall.position.y > gameHeight + 100) {
+            Composite.remove(world, starfall);
+            starfallProjectiles.splice(i, 1);
+        }
+    }
 }
 
 // Update XP orb magnetism
@@ -554,9 +564,10 @@ export function updateConfusedEnemyMovement() {
 // Apply AOE damage from starfall impact
 function applyStarfallAOE(impactX, impactY, damage, confusionDuration, currentTime) {
     const affectedEnemies = [];
+    const enemiesToRemove = [];
     
     // Find all enemies within AOE radius
-    for (let i = enemies.length - 1; i >= 0; i--) {
+    for (let i = 0; i < enemies.length; i++) {
         const enemy = enemies[i];
         const distance = getDistance({ x: impactX, y: impactY }, enemy.position);
         
@@ -589,11 +600,21 @@ function applyStarfallAOE(impactX, impactY, damage, confusionDuration, currentTi
             createXPOrb(enemy.position.x, enemy.position.y);
             incrementEnemyKillCount();
 
-            // Remove enemy
-            enemies.splice(index, 1);
-            Matter.Composite.remove(world, enemy);
+            // Mark for removal (we'll remove them after processing all)
+            enemiesToRemove.push(enemy);
         }
     });
     
-    console.log(`Starfall AOE hit ${affectedEnemies.length} enemies at (${impactX.toFixed(0)}, ${impactY.toFixed(0)})`);
+    // Remove dead enemies in reverse order to avoid index shifting issues
+    enemiesToRemove.forEach(deadEnemy => {
+        const enemyIndex = enemies.indexOf(deadEnemy);
+        if (enemyIndex > -1) {
+            // Remove from enemies array
+            enemies.splice(enemyIndex, 1);
+            // Remove from Matter.js world
+            Matter.Composite.remove(world, deadEnemy);
+        }
+    });
+    
+    console.log(`Starfall AOE hit ${affectedEnemies.length} enemies, killed ${enemiesToRemove.length} at (${impactX.toFixed(0)}, ${impactY.toFixed(0)})`);
 } 
