@@ -169,8 +169,15 @@ export function createXPOrb(x, y) {
 
 // Update enemy movement towards player
 export function updateEnemyMovement() {
+    const currentTime = Date.now();
+    
     enemies.forEach(enemy => {
         if (!enemy.isSleeping && player) {
+            // Skip movement if enemy is currently being knocked back
+            if (enemy.knockbackTime && currentTime < enemy.knockbackTime) {
+                return; // Don't override knockback velocity
+            }
+            
             const directionX = player.position.x - enemy.position.x;
             const directionY = player.position.y - enemy.position.y;
             const magnitude = Math.sqrt(directionX * directionX + directionY * directionY);
@@ -282,11 +289,14 @@ export function applyStabBufoAura() {
                 const knockbackX = (dx / distance) * GAME_CONFIG.STAB_BUFO_AURA_KNOCKBACK_FORCE;
                 const knockbackY = (dy / distance) * GAME_CONFIG.STAB_BUFO_AURA_KNOCKBACK_FORCE;
                 
-                // Apply the knockback velocity
-                Matter.Body.applyForce(enemy, enemy.position, { 
-                    x: knockbackX * 0.001, // Scale down for Matter.js force system
-                    y: knockbackY * 0.001 
+                // Apply knockback directly as velocity (more immediate effect)
+                Matter.Body.setVelocity(enemy, { 
+                    x: knockbackX, 
+                    y: knockbackY 
                 });
+                
+                // Mark enemy as being knocked back to prevent immediate movement override
+                enemy.knockbackTime = currentTime + 200; // 200ms of knockback
             }
 
             // Check if enemy dies from aura damage

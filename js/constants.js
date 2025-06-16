@@ -39,7 +39,7 @@ export const GAME_CONFIG = {
     STAB_BUFO_AURA_RADIUS: 85, // Slightly larger for melee range
     STAB_BUFO_AURA_DAMAGE_PER_TICK: 0.8, // More damage for melee focus
     STAB_BUFO_AURA_TICK_INTERVAL_MS: 400, // Faster ticks
-    STAB_BUFO_AURA_KNOCKBACK_FORCE: 2, // New: knockback force
+    STAB_BUFO_AURA_KNOCKBACK_FORCE: 4, // New: knockback force (increased for visibility)
 };
 
 // Collision Categories
