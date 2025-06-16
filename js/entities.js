@@ -629,8 +629,7 @@ export function initializeGooseOrbit() {
         const angle = (i / GAME_CONFIG.GOOSE_BUFO_GOOSE_COUNT) * Math.PI * 2;
         const goose = {
             angle: angle,
-            radius: GAME_CONFIG.GOOSE_BUFO_ORBIT_RADIUS,
-            lastDamageTime: 0
+            radius: GAME_CONFIG.GOOSE_BUFO_ORBIT_RADIUS
         };
         orbitingGeese.push(goose);
     }
@@ -656,11 +655,10 @@ export function updateGooseOrbit() {
             const dy = gooseY - enemy.position.y;
             const distance = Math.sqrt(dx * dx + dy * dy);
             
-            // If goose is close to enemy and hasn't damaged recently
-            if (distance < 25 && currentTime - goose.lastDamageTime > 500) {
+            // If goose is close to enemy, deal damage every contact
+            if (distance < 25) {
                 // Damage enemy
                 enemy.health -= GAME_CONFIG.GOOSE_BUFO_GOOSE_DAMAGE;
-                goose.lastDamageTime = currentTime;
                 
                 // Apply knockback
                 const knockbackForce = GAME_CONFIG.GOOSE_BUFO_KNOCKBACK_FORCE;
