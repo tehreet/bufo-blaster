@@ -277,8 +277,8 @@ export function applyStabBufoAura() {
         const enemy = enemies[i];
         if (!enemy) continue;
 
-        const dx = player.position.x - enemy.position.x;
-        const dy = player.position.y - enemy.position.y;
+        const dx = enemy.position.x - player.position.x; // Direction FROM player TO enemy
+        const dy = enemy.position.y - player.position.y; // Direction FROM player TO enemy
         const distance = Math.sqrt(dx * dx + dy * dy);
 
         if (distance <= GAME_CONFIG.STAB_BUFO_AURA_RADIUS) {
