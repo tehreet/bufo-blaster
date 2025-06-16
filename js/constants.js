@@ -136,7 +136,7 @@ export const COLLISION_CATEGORIES = {
 export const DEFAULT_GAME_SETTINGS = {
     playerHealth: 120, // Reduced from 150 for better balance
     playerXP: 0,
-    playerLevel: 1, // Start at level 1 normally
+    playerLevel: 7, // Start at level 7 for mega boss testing
     xpToNextLevel: 30,
     projectileDamage: 1.5, // Not used for Stab Bufo
     shootInterval: 1000, // Not used for Stab Bufo
