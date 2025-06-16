@@ -23,7 +23,8 @@ import {
     selectedCharacter,
     imageAssets,
     playerStunned,
-    playerSpeedMultiplier
+    playerSpeedMultiplier,
+    abilityCooldownMultiplier
 } from './gameState.js';
 
 // Helper function for text wrapping
@@ -222,6 +223,28 @@ export function renderPlayerStatusEffects(context) {
         context.textAlign = 'center';
         
         const text = 'SLOWED';
+        const y = statusY - (statusIndex * 18);
+        context.strokeText(text, player.position.x, y);
+        context.fillText(text, player.position.x, y);
+        context.restore();
+        
+        statusIndex++;
+    }
+    
+    // Ability slowed indicator
+    if (abilityCooldownMultiplier > 1.0) {
+        const time = Date.now();
+        const pulse = Math.sin(time * 0.006) * 0.2 + 0.8; // Even slower pulsing
+        
+        context.save();
+        context.globalAlpha = pulse;
+        context.fillStyle = '#B0E0E6';
+        context.strokeStyle = '#1E90FF';
+        context.lineWidth = 2;
+        context.font = 'bold 12px Arial';
+        context.textAlign = 'center';
+        
+        const text = 'ABILITY SLOWED';
         const y = statusY - (statusIndex * 18);
         context.strokeText(text, player.position.x, y);
         context.fillText(text, player.position.x, y);

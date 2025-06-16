@@ -298,14 +298,17 @@ export function updateSpecialEnemyEffects() {
     import('./gameState.js').then(({ 
         playerSpeedMultiplier, 
         setPlayerSpeedMultiplier,
+        abilityCooldownMultiplier,
+        setAbilityCooldownMultiplier,
         playerStunned,
         stunEndTime,
         setPlayerStunned 
     }) => {
         const currentTime = Date.now();
         
-        // Reset speed multiplier
+        // Reset multipliers
         let newSpeedMultiplier = 1.0;
+        let newAbilityCooldownMultiplier = 1.0;
         
         // Check for ice bufo slow effects (gradual based on distance)
         enemies.forEach(enemy => {
@@ -320,13 +323,22 @@ export function updateSpecialEnemyEffects() {
                     const distanceRatio = distance / GAME_CONFIG.ICE_BUFO_SLOW_RADIUS;
                     const slowEffect = GAME_CONFIG.ICE_BUFO_SLOW_FACTOR + (distanceRatio * (1 - GAME_CONFIG.ICE_BUFO_SLOW_FACTOR));
                     newSpeedMultiplier = Math.min(newSpeedMultiplier, slowEffect);
+                    
+                    // Same effect applies to ability cooldowns (makes abilities slower)
+                    // At close range: 2x cooldown (50% effectiveness), at max range: normal cooldown
+                    const cooldownEffect = 1 + (1 - slowEffect); // Inverse of speed effect for cooldowns
+                    newAbilityCooldownMultiplier = Math.max(newAbilityCooldownMultiplier, cooldownEffect);
                 }
             }
         });
         
-        // Update speed multiplier if changed
+        // Update multipliers if changed
         if (newSpeedMultiplier !== playerSpeedMultiplier) {
             setPlayerSpeedMultiplier(newSpeedMultiplier);
+        }
+        
+        if (newAbilityCooldownMultiplier !== abilityCooldownMultiplier) {
+            setAbilityCooldownMultiplier(newAbilityCooldownMultiplier);
         }
         
         // Check if stun has ended
@@ -422,61 +434,64 @@ export function applyStabBufoAura() {
 
     const currentTime = Date.now();
     
-    // Check if enough time has passed since last aura tick
-    if (currentTime - lastAuraTickTime < currentAuraCooldown) {
-        return;
-    }
+    // Get ability cooldown multiplier for ice bufo effect
+    import('./gameState.js').then(({ abilityCooldownMultiplier, setLastAuraTickTime }) => {
+        const effectiveCooldown = currentAuraCooldown * abilityCooldownMultiplier;
+        
+        // Check if enough time has passed since last aura tick (affected by ice bufo)
+        if (currentTime - lastAuraTickTime < effectiveCooldown) {
+            return;
+        }
 
-    // Update last aura tick time through gameState
-    import('./gameState.js').then(({ setLastAuraTickTime }) => {
+        // Update last aura tick time
         setLastAuraTickTime(currentTime);
-    });
-    
-    // Apply damage to enemies within aura range
-    for (let i = enemies.length - 1; i >= 0; i--) {
-        const enemy = enemies[i];
-        if (!enemy) continue;
+        
+        // Apply damage to enemies within aura range
+        for (let i = enemies.length - 1; i >= 0; i--) {
+            const enemy = enemies[i];
+            if (!enemy) continue;
 
-        const dx = enemy.position.x - player.position.x; // Direction FROM player TO enemy
-        const dy = enemy.position.y - player.position.y; // Direction FROM player TO enemy
-        const distance = Math.sqrt(dx * dx + dy * dy);
+            const dx = enemy.position.x - player.position.x; // Direction FROM player TO enemy
+            const dy = enemy.position.y - player.position.y; // Direction FROM player TO enemy
+            const distance = Math.sqrt(dx * dx + dy * dy);
 
-        if (distance <= GAME_CONFIG.STAB_BUFO_AURA_RADIUS) {
-            enemy.health -= currentAuraDamage;
+            if (distance <= GAME_CONFIG.STAB_BUFO_AURA_RADIUS) {
+                enemy.health -= currentAuraDamage;
 
-            // Apply knockback force - push enemy away from player
-            if (distance > 0) { // Avoid division by zero
-                const knockbackX = (dx / distance) * currentAuraKnockback;
-                const knockbackY = (dy / distance) * currentAuraKnockback;
-                
-                // Apply knockback directly as velocity (more immediate effect)
-                Matter.Body.setVelocity(enemy, { 
-                    x: knockbackX, 
-                    y: knockbackY 
-                });
-                
-                // Mark enemy as being knocked back to prevent immediate movement override
-                enemy.knockbackTime = currentTime + 200; // 200ms of knockback
-            }
-
-            // Check if enemy dies from aura damage
-            if (enemy.health <= 0) {
-                // Play death sound
-                if (audioEnemyDie) {
-                    audioEnemyDie.currentTime = 0;
-                    audioEnemyDie.play().catch(e => console.error("Error playing enemy die sound:", e));
+                // Apply knockback force - push enemy away from player
+                if (distance > 0) { // Avoid division by zero
+                    const knockbackX = (dx / distance) * currentAuraKnockback;
+                    const knockbackY = (dy / distance) * currentAuraKnockback;
+                    
+                    // Apply knockback directly as velocity (more immediate effect)
+                    Matter.Body.setVelocity(enemy, { 
+                        x: knockbackX, 
+                        y: knockbackY 
+                    });
+                    
+                    // Mark enemy as being knocked back to prevent immediate movement override
+                    enemy.knockbackTime = currentTime + 200; // 200ms of knockback
                 }
 
-                // Create XP orb
-                createXPOrb(enemy.position.x, enemy.position.y);
-                incrementEnemyKillCount();
+                // Check if enemy dies from aura damage
+                if (enemy.health <= 0) {
+                    // Play death sound
+                    if (audioEnemyDie) {
+                        audioEnemyDie.currentTime = 0;
+                        audioEnemyDie.play().catch(e => console.error("Error playing enemy die sound:", e));
+                    }
 
-                // Remove enemy
-                enemies.splice(i, 1);
-                Matter.Composite.remove(world, enemy);
+                    // Create XP orb
+                    createXPOrb(enemy.position.x, enemy.position.y);
+                    incrementEnemyKillCount();
+
+                    // Remove enemy
+                    enemies.splice(i, 1);
+                    Matter.Composite.remove(world, enemy);
+                }
             }
         }
-    }
+    });
 }
 
 // Find enemies within starfall range
@@ -495,11 +510,21 @@ export function castStarfall() {
 
     const currentTime = Date.now();
     
-    // Check cooldown
-    if (currentTime - lastStarfallTime < currentStarfallCooldown) {
-        return;
-    }
+    // Check cooldown (affected by ice bufo)
+    import('./gameState.js').then(({ abilityCooldownMultiplier }) => {
+        const effectiveCooldown = currentStarfallCooldown * abilityCooldownMultiplier;
+        
+        if (currentTime - lastStarfallTime < effectiveCooldown) {
+            return;
+        }
+        
+        // Continue with starfall logic
+        executeStarfall(currentTime);
+    });
+}
 
+// Separate function for starfall execution
+function executeStarfall(currentTime) {
     // Find enemies within range
     const enemiesInRange = findEnemiesInRange(
         player.position.x, 
@@ -770,49 +795,54 @@ export function updateGooseOrbit() {
     
     const currentTime = Date.now();
     
-    orbitingGeese.forEach(goose => {
-        // Update rotation with speed multiplier from Ability Haste upgrades
-        goose.angle += GAME_CONFIG.GOOSE_BUFO_ORBIT_SPEED * 0.016 * currentGooseOrbitSpeedMultiplier; // Assuming 60fps
-        
-        // Calculate position
-        const gooseX = player.position.x + Math.cos(goose.angle) * goose.radius;
-        const gooseY = player.position.y + Math.sin(goose.angle) * goose.radius;
-        
-        // Check for enemy collisions
-        enemies.forEach((enemy, enemyIndex) => {
-            const dx = gooseX - enemy.position.x;
-            const dy = gooseY - enemy.position.y;
-            const distance = Math.sqrt(dx * dx + dy * dy);
+    // Get ability cooldown multiplier for ice bufo effect
+    import('./gameState.js').then(({ abilityCooldownMultiplier }) => {
+        orbitingGeese.forEach(goose => {
+            // Update rotation with speed multiplier from Ability Haste upgrades and ice bufo effect
+            // Ice bufo slows down orbit speed (higher cooldown multiplier = slower orbit)
+            const effectiveSpeed = GAME_CONFIG.GOOSE_BUFO_ORBIT_SPEED * currentGooseOrbitSpeedMultiplier / abilityCooldownMultiplier;
+            goose.angle += effectiveSpeed * 0.016; // Assuming 60fps
             
-            // If goose is close to enemy, deal damage every contact
-            if (distance < 25) {
-                // Damage enemy
-                enemy.health -= GAME_CONFIG.GOOSE_BUFO_GOOSE_DAMAGE;
+            // Calculate position
+            const gooseX = player.position.x + Math.cos(goose.angle) * goose.radius;
+            const gooseY = player.position.y + Math.sin(goose.angle) * goose.radius;
+            
+            // Check for enemy collisions
+            enemies.forEach((enemy, enemyIndex) => {
+                const dx = gooseX - enemy.position.x;
+                const dy = gooseY - enemy.position.y;
+                const distance = Math.sqrt(dx * dx + dy * dy);
                 
-                // Apply knockback
-                const knockbackForce = GAME_CONFIG.GOOSE_BUFO_KNOCKBACK_FORCE;
-                const knockbackX = (dx / distance) * knockbackForce;
-                const knockbackY = (dy / distance) * knockbackForce;
-                Matter.Body.setVelocity(enemy, { x: knockbackX, y: knockbackY });
-                enemy.knockbackTime = currentTime + 300; // 300ms knockback duration
-                
-                // Check if enemy dies
-                if (enemy.health <= 0) {
-                    // Play death sound
-                    if (audioEnemyDie) {
-                        audioEnemyDie.currentTime = 0;
-                        audioEnemyDie.play().catch(e => console.error("Error playing enemy die sound:", e));
+                // If goose is close to enemy, deal damage every contact
+                if (distance < 25) {
+                    // Damage enemy
+                    enemy.health -= GAME_CONFIG.GOOSE_BUFO_GOOSE_DAMAGE;
+                    
+                    // Apply knockback
+                    const knockbackForce = GAME_CONFIG.GOOSE_BUFO_KNOCKBACK_FORCE;
+                    const knockbackX = (dx / distance) * knockbackForce;
+                    const knockbackY = (dy / distance) * knockbackForce;
+                    Matter.Body.setVelocity(enemy, { x: knockbackX, y: knockbackY });
+                    enemy.knockbackTime = currentTime + 300; // 300ms knockback duration
+                    
+                    // Check if enemy dies
+                    if (enemy.health <= 0) {
+                        // Play death sound
+                        if (audioEnemyDie) {
+                            audioEnemyDie.currentTime = 0;
+                            audioEnemyDie.play().catch(e => console.error("Error playing enemy die sound:", e));
+                        }
+
+                        // Create converted ally instead of XP orb
+                        createConvertedAlly(enemy.position.x, enemy.position.y);
+                        incrementEnemyKillCount();
+
+                        // Remove enemy
+                        enemies.splice(enemyIndex, 1);
+                        Composite.remove(world, enemy);
                     }
-
-                    // Create converted ally instead of XP orb
-                    createConvertedAlly(enemy.position.x, enemy.position.y);
-                    incrementEnemyKillCount();
-
-                    // Remove enemy
-                    enemies.splice(enemyIndex, 1);
-                    Composite.remove(world, enemy);
                 }
-            }
+            });
         });
     });
 }

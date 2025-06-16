@@ -63,6 +63,7 @@ export let lastAuraTickTime = 0;
 export let playerStunned = false;
 export let stunEndTime = 0;
 export let playerSpeedMultiplier = 1.0; // For ice bufo slow effect
+export let abilityCooldownMultiplier = 1.0; // For ice bufo ability slow effect
 
 // Character selection
 export let selectedCharacter = CHARACTERS.STAB_BUFO; // Default to Stab Bufo
@@ -210,4 +211,5 @@ export const incrementEnemyKillCount = () => { enemyKillCount++; };
 // Special enemy effects setters
 export const setPlayerStunned = (stunned) => { playerStunned = stunned; };
 export const setStunEndTime = (endTime) => { stunEndTime = endTime; };
-export const setPlayerSpeedMultiplier = (multiplier) => { playerSpeedMultiplier = multiplier; }; 
+export const setPlayerSpeedMultiplier = (multiplier) => { playerSpeedMultiplier = multiplier; };
+export const setAbilityCooldownMultiplier = (multiplier) => { abilityCooldownMultiplier = multiplier; }; 

@@ -85,8 +85,10 @@ import {
     currentPlayerHealthRegenAmount,
     playerStunned,
     playerSpeedMultiplier,
+    abilityCooldownMultiplier,
     setPlayerStunned,
-    setStunEndTime
+    setStunEndTime,
+    setAbilityCooldownMultiplier
 } from './gameState.js';
 
 const { Engine, Render, Runner, World, Bodies, Body, Composite, Events } = Matter;
@@ -786,8 +788,9 @@ export function resetGame() {
     // Reset special enemy effects
     setPlayerStunned(false);
     setStunEndTime(0);
-    import('./gameState.js').then(({ setPlayerSpeedMultiplier }) => {
+    import('./gameState.js').then(({ setPlayerSpeedMultiplier, setAbilityCooldownMultiplier }) => {
         setPlayerSpeedMultiplier(1.0);
+        setAbilityCooldownMultiplier(1.0);
     });
 
     // Clear dynamic objects
