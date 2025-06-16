@@ -32,11 +32,8 @@ export function selectPrimaryGamepad() {
     let foundGamepad = null;
     let preferredGamepad = null;
 
-    console.log("Checking for gamepads...", gamepads.length, "slots available");
-    
     for (let i = 0; i < gamepads.length; i++) {
         if (gamepads[i] && gamepads[i].connected) {
-            console.log(`Gamepad ${i}:`, gamepads[i].id, "Connected:", gamepads[i].connected);
             if (!foundGamepad) foundGamepad = gamepads[i]; // Fallback to first detected
             // Check for Xbox controller (Vendor ID 045e) or standard mapping
             if (gamepads[i].id.includes('STANDARD GAMEPAD') || 
@@ -59,13 +56,6 @@ export function selectPrimaryGamepad() {
             console.log("No active gamepad found, clearing previous selection.");
             setGamepad(null);
         }
-    }
-
-    // Log the final decision
-    if (gamepad) {
-        console.log(`selectPrimaryGamepad RESULT: Active gamepad is ${gamepad.id}`);
-    } else {
-        console.log("selectPrimaryGamepad RESULT: No gamepad is active.");
     }
 }
 
@@ -261,7 +251,7 @@ export function handleCharacterSelectionInput() {
     const characters = Object.values(CHARACTERS);
     const currentIndex = characters.findIndex(char => char.id === selectedCharacter.id);
     
-    console.log(`Character selection active. Current: ${selectedCharacter.name} (${currentIndex}/${characters.length})`);
+    // Removed spammy console log that was called every frame during character selection
 
     // Keyboard input
     if (keys.a || keys.ArrowLeft) {
