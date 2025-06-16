@@ -2,7 +2,7 @@
 import { GAME_CONFIG, COLLISION_CATEGORIES, ASSET_URLS, DEFAULT_GAME_SETTINGS, CHARACTERS, ENEMY_TYPES } from './constants.js';
 import { initializeAudio, scaleGameContainer } from './assetLoader.js';
 import { setupKeyboardControls, selectPrimaryGamepad, setupGamepadEventListeners, getMovementInput, pollGamepadForUpgradeMenu, handleGameOverInput, handleCharacterSelectionInput, handlePauseInput } from './input.js';
-import { createPlayerBody, spawnEnemy, shootProjectile, updateEnemyMovement, cleanupOffScreenEntities, updateXPOrbMagnetism, applyPlayerMovement, createXPOrb, createXPOrbsForEnemy, applyStabBufoAura, castStarfall, updateStarfallProjectiles, updateConfusedEnemyMovement, initializeGooseOrbit, updateGooseOrbit, updateConvertedAllies, updateSpecialEnemyEffects } from './entities.js';
+import { createPlayerBody, spawnEnemy, shootProjectile, updateEnemyMovement, cleanupOffScreenEntities, updateXPOrbMagnetism, applyPlayerMovement, createXPOrb, createXPOrbsForEnemy, applyStabBufoAura, castStarfall, updateStarfallProjectiles, updateConfusedEnemyMovement, initializeGooseOrbit, updateGooseOrbit, updateConvertedAllies, updateSpecialEnemyEffects, updateMegaBossAbilities, cleanupMegaBossEntities } from './entities.js';
 import { presentUpgradeOptions } from './upgrades.js';
 import { renderUI } from './ui.js';
 import { 
@@ -86,6 +86,7 @@ import {
     playerStunned,
     playerSpeedMultiplier,
     abilityCooldownMultiplier,
+    megaBossEmpowermentActive,
     setPlayerStunned,
     setStunEndTime,
     setAbilityCooldownMultiplier
@@ -224,8 +225,10 @@ function setupEventListeners() {
         updateRunTimer();
         updateEnemyMovement();
         updateSpecialEnemyEffects(); // Handle special enemy effects like ice bufo slow
+        updateMegaBossAbilities(); // Handle mega boss special abilities
         updateConfusedEnemyMovement(); // Handle confused enemies separately
         cleanupOffScreenEntities();
+        cleanupMegaBossEntities(); // Clean up mega boss projectiles
         updateXPOrbMagnetism();
         
         // Character-specific abilities
@@ -471,7 +474,13 @@ function handlePlayerEnemyCollision(bodyA, bodyB) {
 
     if (playerBody && enemyBody && !playerIsInvincible) {
         // Use enemy's contact damage or default
-        const damage = enemyBody.contactDamage || GAME_CONFIG.ENEMY_CONTACT_DAMAGE;
+        let damage = enemyBody.contactDamage || GAME_CONFIG.ENEMY_CONTACT_DAMAGE;
+        
+        // Apply mega boss empowerment damage bonus (but not to mega boss itself)
+        if (megaBossEmpowermentActive && enemyBody.enemyType !== ENEMY_TYPES.MEGA_BOSS_BUFO) {
+            damage = Math.floor(damage * GAME_CONFIG.MEGA_BOSS_EMPOWERMENT_DAMAGE_BONUS);
+        }
+        
         const newHealth = playerHealth - damage;
         updatePlayerHealth(newHealth);
         
@@ -812,6 +821,17 @@ export function resetGame() {
     starfallProjectiles.length = 0;
     orbitingGeese.length = 0;
     convertedAllies.length = 0;
+    
+    // Clear mega boss arrays
+    import('./gameState.js').then(({ 
+        megaBossLasers, 
+        megaBossLavaCracks, 
+        setMegaBossEmpowermentActive 
+    }) => {
+        megaBossLasers.length = 0;
+        megaBossLavaCracks.length = 0;
+        setMegaBossEmpowermentActive(false);
+    });
 
     // Reset player position
     if (player) {

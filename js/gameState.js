@@ -23,6 +23,12 @@ export const starfallProjectiles = [];
 export const orbitingGeese = [];
 export const convertedAllies = [];
 
+// Mega Boss arrays and state
+export const megaBossLasers = []; // Active laser beams
+export const megaBossLavaCracks = []; // Active lava cracks
+export let megaBossEmpowermentActive = false;
+export let megaBossEmpowermentEndTime = 0;
+
 // Asset loading state
 export let imagesToLoadCount = 0;
 export let imagesLoadedCount = 0;
@@ -212,4 +218,8 @@ export const incrementEnemyKillCount = () => { enemyKillCount++; };
 export const setPlayerStunned = (stunned) => { playerStunned = stunned; };
 export const setStunEndTime = (endTime) => { stunEndTime = endTime; };
 export const setPlayerSpeedMultiplier = (multiplier) => { playerSpeedMultiplier = multiplier; };
-export const setAbilityCooldownMultiplier = (multiplier) => { abilityCooldownMultiplier = multiplier; }; 
+export const setAbilityCooldownMultiplier = (multiplier) => { abilityCooldownMultiplier = multiplier; };
+
+// Mega Boss setters
+export const setMegaBossEmpowermentActive = (active) => { megaBossEmpowermentActive = active; };
+export const setMegaBossEmpowermentEndTime = (endTime) => { megaBossEmpowermentEndTime = endTime; }; 

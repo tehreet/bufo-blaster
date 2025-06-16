@@ -9,6 +9,9 @@ import {
     starfallProjectiles,
     orbitingGeese,
     convertedAllies,
+    megaBossLasers,
+    megaBossLavaCracks,
+    megaBossEmpowermentActive,
     playerHealth,
     playerXP,
     playerLevel,
@@ -531,6 +534,139 @@ export function renderPauseScreen(context) {
     context.fillText(`Time: ${elapsedRunTimeFormatted} | Kills: ${enemyKillCount} | Level: ${playerLevel}`, gameWidth / 2, gameHeight / 2 + 90);
 }
 
+// Render mega boss laser beams
+export function renderMegaBossLasers(context) {
+    megaBossLasers.forEach(laser => {
+        const currentTime = Date.now();
+        const activeDuration = currentTime - laser.startTime;
+        const totalDuration = laser.endTime - laser.startTime;
+        const ageRatio = activeDuration / totalDuration;
+        
+        // Calculate laser end point
+        const endX = laser.startX + laser.dirX * GAME_CONFIG.MEGA_BOSS_LASER_RANGE;
+        const endY = laser.startY + laser.dirY * GAME_CONFIG.MEGA_BOSS_LASER_RANGE;
+        
+        context.save();
+        
+        // Draw laser beam with pulsing effect
+        const pulse = Math.sin(currentTime * 0.02) * 0.3 + 0.7;
+        context.globalAlpha = 0.8 * pulse;
+        context.strokeStyle = '#FF0000'; // Red laser
+        context.lineWidth = 8 + Math.sin(currentTime * 0.01) * 2; // Pulsing width
+        context.lineCap = 'round';
+        
+        // Main laser beam
+        context.beginPath();
+        context.moveTo(laser.startX, laser.startY);
+        context.lineTo(endX, endY);
+        context.stroke();
+        
+        // Brighter core
+        context.globalAlpha = 1;
+        context.strokeStyle = '#FFAAAA';
+        context.lineWidth = 3;
+        context.stroke();
+        
+        // Eye glow at start
+        context.globalAlpha = 0.6;
+        context.fillStyle = '#FF0000';
+        context.beginPath();
+        context.arc(laser.startX, laser.startY, 8, 0, 2 * Math.PI);
+        context.fill();
+        
+        context.restore();
+    });
+}
+
+// Render mega boss lava cracks
+export function renderMegaBossLavaCracks(context) {
+    megaBossLavaCracks.forEach(crack => {
+        const currentTime = Date.now();
+        const activeDuration = currentTime - crack.startTime;
+        const totalDuration = crack.endTime - crack.startTime;
+        const ageRatio = activeDuration / totalDuration;
+        
+        context.save();
+        
+        // Lava crack glow
+        const glowAlpha = 0.8 * (1 - ageRatio * 0.5);
+        context.globalAlpha = glowAlpha;
+        context.strokeStyle = '#FF4500'; // Orange-red lava
+        context.lineWidth = GAME_CONFIG.MEGA_BOSS_LAVA_CRACK_WIDTH;
+        context.lineCap = 'round';
+        
+        // Main lava crack
+        context.beginPath();
+        context.moveTo(crack.startX, crack.startY);
+        context.lineTo(crack.endX, crack.endY);
+        context.stroke();
+        
+        // Brighter lava core
+        context.globalAlpha = 1;
+        context.strokeStyle = '#FFFF00'; // Yellow core
+        context.lineWidth = GAME_CONFIG.MEGA_BOSS_LAVA_CRACK_WIDTH * 0.3;
+        context.stroke();
+        
+        // Add crackling particles along the crack
+        const numParticles = 8;
+        for (let i = 0; i < numParticles; i++) {
+            const t = i / (numParticles - 1);
+            const particleX = crack.startX + t * (crack.endX - crack.startX);
+            const particleY = crack.startY + t * (crack.endY - crack.startY);
+            
+            // Add random offset for crackling effect
+            const offsetX = (Math.random() - 0.5) * 10;
+            const offsetY = (Math.random() - 0.5) * 10;
+            
+            context.globalAlpha = 0.7 + Math.random() * 0.3;
+            context.fillStyle = Math.random() > 0.5 ? '#FF6600' : '#FFAA00';
+            context.beginPath();
+            context.arc(particleX + offsetX, particleY + offsetY, 2 + Math.random() * 3, 0, 2 * Math.PI);
+            context.fill();
+        }
+        
+        context.restore();
+    });
+}
+
+// Render mega boss empowerment effect
+export function renderMegaBossEmpowerment(context) {
+    if (!megaBossEmpowermentActive) return;
+    
+    const currentTime = Date.now();
+    
+    // Screen-wide red tint
+    context.save();
+    context.globalAlpha = 0.1 + Math.sin(currentTime * 0.01) * 0.05; // Pulsing red overlay
+    context.fillStyle = '#FF0000';
+    context.fillRect(0, 0, gameWidth, gameHeight);
+    
+    // Empowerment notification
+    context.globalAlpha = 1;
+    context.fillStyle = '#FF6B6B';
+    context.font = '32px Arial';
+    context.textAlign = 'center';
+    context.strokeStyle = 'black';
+    context.lineWidth = 2;
+    context.strokeText('ENEMIES EMPOWERED!', gameWidth / 2, 100);
+    context.fillText('ENEMIES EMPOWERED!', gameWidth / 2, 100);
+    
+    // Add energy effects around empowered enemies
+    enemies.forEach(enemy => {
+        if (enemy.enemyType !== 'mega_boss_bufo') {
+            const pulse = Math.sin(currentTime * 0.008 + enemy.position.x * 0.01) * 0.3 + 0.7;
+            context.globalAlpha = 0.4 * pulse;
+            context.strokeStyle = '#FF6B6B';
+            context.lineWidth = 3;
+            context.beginPath();
+            context.arc(enemy.position.x, enemy.position.y, enemy.circleRadius + 8, 0, 2 * Math.PI);
+            context.stroke();
+        }
+    });
+    
+    context.restore();
+}
+
 // Render game over screen
 export function renderGameOverScreen(context) {
     if (!gameOver) return;
@@ -574,6 +710,11 @@ export function renderUI(context) {
         
         // Render confused enemy indicators
         renderConfusedEnemies(context);
+        
+        // Render mega boss effects
+        renderMegaBossLasers(context);
+        renderMegaBossLavaCracks(context);
+        renderMegaBossEmpowerment(context);
         
         // Render HUD
         renderHUD(context);

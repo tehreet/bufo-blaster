@@ -46,12 +46,37 @@ export const GAME_CONFIG = {
     ICE_BUFO_SLOW_RADIUS: 120, // Increased range to apply slow effect (was 80)
     ICE_BUFO_SLOW_FACTOR: 0.5, // Reduces player speed to 50% at close range
     
-    // Boss Bufo (every 7 levels)
-    BOSS_BUFO_RADIUS: 20,
-    BOSS_BUFO_HEALTH: 20,
-    BOSS_BUFO_CONTACT_DAMAGE: 25,
-    BOSS_BUFO_SPEED_MULTIPLIER: 0.8, // Slower but tankier
-    BOSS_BUFO_LEVEL_INTERVAL: 7, // Spawn every 7 levels
+    // XL Buff Bufo (every 7 levels) - renamed from Boss Bufo
+    XLBUFF_BUFO_RADIUS: 20,
+    XLBUFF_BUFO_HEALTH: 20,
+    XLBUFF_BUFO_CONTACT_DAMAGE: 25,
+    XLBUFF_BUFO_SPEED_MULTIPLIER: 0.8, // Slower but tankier
+    XLBUFF_BUFO_LEVEL_INTERVAL: 7, // Spawn every 7 levels
+
+    // Mega Boss Bufo (level 7+ with special abilities)
+    MEGA_BOSS_BUFO_RADIUS: 50, // 5x larger than normal bufo
+    MEGA_BOSS_BUFO_HEALTH: 150,
+    MEGA_BOSS_BUFO_CONTACT_DAMAGE: 40,
+    MEGA_BOSS_BUFO_SPEED_MULTIPLIER: 0.3, // Much slower
+    MEGA_BOSS_BUFO_LEVEL_INTERVAL: 7, // Also spawns at level 7+
+    
+    // Mega Boss Abilities
+    MEGA_BOSS_LASER_DAMAGE_BASE: 5, // Base damage per tick
+    MEGA_BOSS_LASER_DAMAGE_SCALING: 0.5, // Additional damage per tick (scaling)
+    MEGA_BOSS_LASER_COOLDOWN: 8000, // 8 seconds between laser attacks
+    MEGA_BOSS_LASER_DURATION: 3000, // 3 seconds of laser beam
+    MEGA_BOSS_LASER_RANGE: 400, // Range of laser beams
+    
+    MEGA_BOSS_LAVA_CRACK_DAMAGE: 20, // Damage from lava crack
+    MEGA_BOSS_LAVA_CRACK_COOLDOWN: 12000, // 12 seconds between lava cracks
+    MEGA_BOSS_LAVA_CRACK_CHANNEL_TIME: 1500, // 1.5 second channel time
+    MEGA_BOSS_LAVA_CRACK_DURATION: 4000, // 4 seconds of lava damage
+    MEGA_BOSS_LAVA_CRACK_WIDTH: 30, // Width of the lava crack
+    
+    MEGA_BOSS_EMPOWERMENT_COOLDOWN: 15000, // 15 seconds between empowerments
+    MEGA_BOSS_EMPOWERMENT_DURATION: 8000, // 8 seconds of empowerment
+    MEGA_BOSS_EMPOWERMENT_SPEED_BONUS: 1.5, // 1.5x speed multiplier
+    MEGA_BOSS_EMPOWERMENT_DAMAGE_BONUS: 1.3, // 1.3x damage multiplier
     
     // Projectile Constants
     PROJECTILE_RADIUS: 5,
@@ -95,7 +120,8 @@ export const ENEMY_TYPES = {
     BUFF_BUFO: 'buff_bufo',
     GAVEL_BUFO: 'gavel_bufo',
     ICE_BUFO: 'ice_bufo',
-    BOSS_BUFO: 'boss_bufo'
+    XLBUFF_BUFO: 'xlbuff_bufo', // Renamed from boss_bufo
+    MEGA_BOSS_BUFO: 'mega_boss_bufo' // New mega boss
 };
 
 // Collision Categories
@@ -169,7 +195,8 @@ export const ASSET_URLS = {
         BUFF_BUFO: 'https://all-the.bufo.zone/buff-bufo.png',
         GAVEL_BUFO: 'https://all-the.bufo.zone/bufo-brings-a-new-meaning-to-gaveled-by-slamming-the-hammer-very-loud.gif',
         ICE_BUFO: 'https://all-the.bufo.zone/bufo-code-freeze.png',
-        BOSS_BUFO: 'https://all-the.bufo.zone/buff-bufo.png' // Using buff bufo but even larger for boss
+        XLBUFF_BUFO: 'https://all-the.bufo.zone/buff-bufo.png', // Renamed from boss bufo
+        MEGA_BOSS_BUFO: 'https://all-the.bufo.zone/bufo-laser-eyes.jpg' // New mega boss with laser eyes
     }
 };
 

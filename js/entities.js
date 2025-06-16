@@ -9,6 +9,10 @@ import {
     starfallProjectiles,
     orbitingGeese,
     convertedAllies,
+    megaBossLasers,
+    megaBossLavaCracks,
+    megaBossEmpowermentActive,
+    megaBossEmpowermentEndTime,
     world,
     player,
     imageAssets,
@@ -31,7 +35,9 @@ import {
     gamePaused,
     gameOver,
     characterSelectionActive,
-    playerLevel
+    playerLevel,
+    setMegaBossEmpowermentActive,
+    setMegaBossEmpowermentEndTime
 } from './gameState.js';
 
 const { Bodies, World, Composite } = Matter;
@@ -66,8 +72,10 @@ function getEnemyFallbackColor(enemyType) {
             return '#8B4513'; // Brown
         case ENEMY_TYPES.ICE_BUFO:
             return '#87CEEB'; // Light blue
-        case ENEMY_TYPES.BOSS_BUFO:
+        case ENEMY_TYPES.XLBUFF_BUFO:
             return '#FF6B6B'; // Red
+        case ENEMY_TYPES.MEGA_BOSS_BUFO:
+            return '#8B0000'; // Dark red
         default:
             return 'red'; // Normal enemy red
     }
@@ -75,9 +83,14 @@ function getEnemyFallbackColor(enemyType) {
 
 // Determine what type of enemy to spawn based on current level
 function determineEnemyType() {
-    // Boss every 7 levels
-    if (playerLevel > 0 && playerLevel % GAME_CONFIG.BOSS_BUFO_LEVEL_INTERVAL === 0) {
-        return ENEMY_TYPES.BOSS_BUFO;
+    // Mega Boss spawns only on level 7 (100% chance)
+    if (playerLevel === 7) {
+        return ENEMY_TYPES.MEGA_BOSS_BUFO;
+    }
+    
+    // XL Buff Bufo spawns on other multiples of 7 (14, 21, 28, etc.)
+    if (playerLevel > 7 && playerLevel % GAME_CONFIG.XLBUFF_BUFO_LEVEL_INTERVAL === 0) {
+        return ENEMY_TYPES.XLBUFF_BUFO;
     }
     
     // Special enemies on certain levels (starting from level 2, every other level)
@@ -128,16 +141,27 @@ function getEnemyProperties(enemyType) {
                     : null,
                 scale: 0.42 // Much larger sprite (was 0.28)
             };
-        case ENEMY_TYPES.BOSS_BUFO:
-            const bossAsset = imageAssets['special_enemy_boss_bufo'];
+        case ENEMY_TYPES.XLBUFF_BUFO:
+            const xlbuffAsset = imageAssets['special_enemy_xlbuff_bufo'];
             return {
-                radius: GAME_CONFIG.BOSS_BUFO_RADIUS,
-                health: GAME_CONFIG.BOSS_BUFO_HEALTH,
-                contactDamage: GAME_CONFIG.BOSS_BUFO_CONTACT_DAMAGE,
-                sprite: bossAsset && bossAsset.complete && bossAsset.naturalHeight > 0 
-                    ? bossAsset.src 
+                radius: GAME_CONFIG.XLBUFF_BUFO_RADIUS,
+                health: GAME_CONFIG.XLBUFF_BUFO_HEALTH,
+                contactDamage: GAME_CONFIG.XLBUFF_BUFO_CONTACT_DAMAGE,
+                sprite: xlbuffAsset && xlbuffAsset.complete && xlbuffAsset.naturalHeight > 0 
+                    ? xlbuffAsset.src 
                     : null,
                 scale: 0.6 // Much larger sprite (was 0.4)
+            };
+        case ENEMY_TYPES.MEGA_BOSS_BUFO:
+            const megaBossAsset = imageAssets['special_enemy_mega_boss_bufo'];
+            return {
+                radius: GAME_CONFIG.MEGA_BOSS_BUFO_RADIUS,
+                health: GAME_CONFIG.MEGA_BOSS_BUFO_HEALTH,
+                contactDamage: GAME_CONFIG.MEGA_BOSS_BUFO_CONTACT_DAMAGE,
+                sprite: megaBossAsset && megaBossAsset.complete && megaBossAsset.naturalHeight > 0 
+                    ? megaBossAsset.src 
+                    : null,
+                scale: 1.2 // Massive sprite for mega boss
             };
         default: // NORMAL
             const enemyImageFile = ASSET_URLS.ENEMY_IMAGE_FILES[Math.floor(Math.random() * ASSET_URLS.ENEMY_IMAGE_FILES.length)];
@@ -218,17 +242,27 @@ export function spawnEnemy() {
     enemy.enemyType = enemyType;
     enemy.contactDamage = enemyProps.contactDamage;
     
-    // Special properties for boss
-    if (enemyType === ENEMY_TYPES.BOSS_BUFO) {
-        enemy.speedMultiplier = GAME_CONFIG.BOSS_BUFO_SPEED_MULTIPLIER;
+    // Special properties for boss types
+    if (enemyType === ENEMY_TYPES.XLBUFF_BUFO) {
+        enemy.speedMultiplier = GAME_CONFIG.XLBUFF_BUFO_SPEED_MULTIPLIER;
+    } else if (enemyType === ENEMY_TYPES.MEGA_BOSS_BUFO) {
+        enemy.speedMultiplier = GAME_CONFIG.MEGA_BOSS_BUFO_SPEED_MULTIPLIER;
+        enemy.lastLaserTime = 0;
+        enemy.lastLavaCrackTime = 0;
+        enemy.lastEmpowermentTime = 0;
+        enemy.isChanneling = false;
+        enemy.channelStartTime = 0;
+        enemy.channelType = null;
     }
     
     enemies.push(enemy);
     World.add(world, enemy);
     
     // Debug logging for boss bufos
-    if (enemyType === ENEMY_TYPES.BOSS_BUFO) {
-        console.log(`Boss Bufo spawned at level ${playerLevel}! Health: ${enemy.health}`);
+    if (enemyType === ENEMY_TYPES.XLBUFF_BUFO) {
+        console.log(`XL Buff Bufo spawned at level ${playerLevel}! Health: ${enemy.health}`);
+    } else if (enemyType === ENEMY_TYPES.MEGA_BOSS_BUFO) {
+        console.log(`MEGA BOSS BUFO spawned at level ${playerLevel}! Health: ${enemy.health}`);
     }
 }
 
@@ -329,8 +363,10 @@ function getXPOrbCount(enemyType) {
             return 2; // Gavel bufo drops 2 orbs (6 health vs 3 normal)
         case ENEMY_TYPES.BUFF_BUFO:
             return 3; // Buff bufo drops 3 orbs (8 health vs 3 normal)
-        case ENEMY_TYPES.BOSS_BUFO:
-            return 7; // Boss bufo drops 7 orbs (20 health vs 3 normal)
+        case ENEMY_TYPES.XLBUFF_BUFO:
+            return 7; // XL Buff bufo drops 7 orbs (20 health vs 3 normal)
+        case ENEMY_TYPES.MEGA_BOSS_BUFO:
+            return 25; // Mega boss drops 25 orbs (150 health vs 3 normal)
         default:
             return 1;
     }
@@ -363,6 +399,11 @@ export function updateEnemyMovement() {
                 // Apply boss speed multiplier
                 if (enemy.speedMultiplier) {
                     speed *= enemy.speedMultiplier;
+                }
+                
+                // Apply mega boss empowerment bonus (but not to mega boss itself)
+                if (megaBossEmpowermentActive && enemy.enemyType !== ENEMY_TYPES.MEGA_BOSS_BUFO) {
+                    speed *= GAME_CONFIG.MEGA_BOSS_EMPOWERMENT_SPEED_BONUS;
                 }
                 
                 const velocityX = (directionX / magnitude) * speed;
@@ -1053,6 +1094,270 @@ export function updateConvertedAllies() {
             // Remove ally if it has already attacked
             Composite.remove(world, ally);
             convertedAllies.splice(i, 1);
+        }
+    }
+}
+
+// Update mega boss abilities
+export function updateMegaBossAbilities() {
+    if (!player) return;
+    
+    const currentTime = Date.now();
+    
+    enemies.forEach(enemy => {
+        if (enemy.enemyType === ENEMY_TYPES.MEGA_BOSS_BUFO) {
+            // Handle channeling states
+            if (enemy.isChanneling) {
+                if (currentTime - enemy.channelStartTime >= GAME_CONFIG.MEGA_BOSS_LAVA_CRACK_CHANNEL_TIME) {
+                    // Channel complete - execute lava crack
+                    if (enemy.channelType === 'lava_crack') {
+                        executeLavaCrack(enemy);
+                        enemy.isChanneling = false;
+                        enemy.channelType = null;
+                    }
+                }
+                return; // Don't move while channeling
+            }
+            
+            // Check ability cooldowns and trigger abilities
+            
+            // Laser Eyes ability
+            if (currentTime - enemy.lastLaserTime >= GAME_CONFIG.MEGA_BOSS_LASER_COOLDOWN) {
+                triggerLaserEyes(enemy, currentTime);
+                enemy.lastLaserTime = currentTime;
+            }
+            
+            // Lava Crack ability
+            if (currentTime - enemy.lastLavaCrackTime >= GAME_CONFIG.MEGA_BOSS_LAVA_CRACK_COOLDOWN) {
+                startChannelingLavaCrack(enemy, currentTime);
+                enemy.lastLavaCrackTime = currentTime;
+            }
+            
+            // Empowerment ability
+            if (currentTime - enemy.lastEmpowermentTime >= GAME_CONFIG.MEGA_BOSS_EMPOWERMENT_COOLDOWN) {
+                triggerEmpowerment(enemy, currentTime);
+                enemy.lastEmpowermentTime = currentTime;
+            }
+        }
+    });
+    
+    // Update active laser beams
+    updateLaserBeams(currentTime);
+    
+    // Update active lava cracks
+    updateLavaCracks(currentTime);
+    
+    // Update empowerment effects
+    updateEmpowermentEffects(currentTime);
+}
+
+// Trigger laser eyes ability
+function triggerLaserEyes(boss, currentTime) {
+    if (!player) return;
+    
+    console.log('Mega Boss firing LASER EYES!');
+    
+    // Calculate direction to player
+    const dx = player.position.x - boss.position.x;
+    const dy = player.position.y - boss.position.y;
+    const magnitude = Math.sqrt(dx * dx + dy * dy);
+    
+    if (magnitude > 0) {
+        const dirX = dx / magnitude;
+        const dirY = dy / magnitude;
+        
+        // Create two laser beams (for the eyes)
+        const laserOffset = 15; // Offset for two eyes
+        
+        // Left eye laser
+        const leftLaser = {
+            startX: boss.position.x - dirY * laserOffset,
+            startY: boss.position.y + dirX * laserOffset,
+            dirX: dirX,
+            dirY: dirY,
+            startTime: currentTime,
+            endTime: currentTime + GAME_CONFIG.MEGA_BOSS_LASER_DURATION,
+            damage: GAME_CONFIG.MEGA_BOSS_LASER_DAMAGE_BASE,
+            lastDamageTime: 0
+        };
+        
+        // Right eye laser
+        const rightLaser = {
+            startX: boss.position.x + dirY * laserOffset,
+            startY: boss.position.y - dirX * laserOffset,
+            dirX: dirX,
+            dirY: dirY,
+            startTime: currentTime,
+            endTime: currentTime + GAME_CONFIG.MEGA_BOSS_LASER_DURATION,
+            damage: GAME_CONFIG.MEGA_BOSS_LASER_DAMAGE_BASE,
+            lastDamageTime: 0
+        };
+        
+        megaBossLasers.push(leftLaser, rightLaser);
+    }
+}
+
+// Start channeling lava crack
+function startChannelingLavaCrack(boss, currentTime) {
+    console.log('Mega Boss channeling LAVA CRACK!');
+    boss.isChanneling = true;
+    boss.channelStartTime = currentTime;
+    boss.channelType = 'lava_crack';
+}
+
+// Execute lava crack after channeling
+function executeLavaCrack(boss) {
+    if (!player) return;
+    
+    console.log('Mega Boss releasing LAVA CRACK!');
+    
+    // Create lava crack towards player's current position
+    const crack = {
+        startX: boss.position.x,
+        startY: boss.position.y,
+        endX: player.position.x,
+        endY: player.position.y,
+        startTime: Date.now(),
+        endTime: Date.now() + GAME_CONFIG.MEGA_BOSS_LAVA_CRACK_DURATION,
+        damage: GAME_CONFIG.MEGA_BOSS_LAVA_CRACK_DAMAGE,
+        lastDamageTime: 0
+    };
+    
+    megaBossLavaCracks.push(crack);
+}
+
+// Trigger empowerment
+function triggerEmpowerment(boss, currentTime) {
+    console.log('Mega Boss casting EMPOWERMENT! All enemies are faster and stronger!');
+    
+    import('./gameState.js').then(({ setMegaBossEmpowermentActive, setMegaBossEmpowermentEndTime }) => {
+        setMegaBossEmpowermentActive(true);
+        setMegaBossEmpowermentEndTime(currentTime + GAME_CONFIG.MEGA_BOSS_EMPOWERMENT_DURATION);
+    });
+}
+
+// Update laser beams
+function updateLaserBeams(currentTime) {
+    for (let i = megaBossLasers.length - 1; i >= 0; i--) {
+        const laser = megaBossLasers[i];
+        
+        // Remove expired lasers
+        if (currentTime >= laser.endTime) {
+            megaBossLasers.splice(i, 1);
+            continue;
+        }
+        
+        // Check if laser hits player (damage scales with time)
+        if (player && currentTime - laser.lastDamageTime >= 500) { // Damage every 0.5 seconds
+            const laserLength = GAME_CONFIG.MEGA_BOSS_LASER_RANGE;
+            const endX = laser.startX + laser.dirX * laserLength;
+            const endY = laser.startY + laser.dirY * laserLength;
+            
+            // Check if player is in laser path
+            const distanceToLaser = distancePointToLine(
+                player.position.x, player.position.y,
+                laser.startX, laser.startY,
+                endX, endY
+            );
+            
+            if (distanceToLaser <= GAME_CONFIG.PLAYER_RADIUS + 10) { // 10px tolerance
+                // Damage scales with how long laser has been active
+                const activeDuration = currentTime - laser.startTime;
+                const scalingBonus = Math.floor(activeDuration / 1000) * GAME_CONFIG.MEGA_BOSS_LASER_DAMAGE_SCALING;
+                const totalDamage = laser.damage + scalingBonus;
+                
+                // Apply damage to player
+                import('./gameState.js').then(({ playerHealth, updatePlayerHealth }) => {
+                    const newHealth = Math.max(0, playerHealth - totalDamage);
+                    updatePlayerHealth(newHealth);
+                    console.log(`Player hit by laser! Damage: ${totalDamage}, Health: ${newHealth}`);
+                });
+                
+                laser.lastDamageTime = currentTime;
+            }
+        }
+    }
+}
+
+// Update lava cracks
+function updateLavaCracks(currentTime) {
+    for (let i = megaBossLavaCracks.length - 1; i >= 0; i--) {
+        const crack = megaBossLavaCracks[i];
+        
+        // Remove expired cracks
+        if (currentTime >= crack.endTime) {
+            megaBossLavaCracks.splice(i, 1);
+            continue;
+        }
+        
+        // Check if player is on lava crack
+        if (player && currentTime - crack.lastDamageTime >= 1000) { // Damage every 1 second
+            const distanceToCrack = distancePointToLine(
+                player.position.x, player.position.y,
+                crack.startX, crack.startY,
+                crack.endX, crack.endY
+            );
+            
+            if (distanceToCrack <= GAME_CONFIG.MEGA_BOSS_LAVA_CRACK_WIDTH) {
+                // Apply damage to player
+                import('./gameState.js').then(({ playerHealth, updatePlayerHealth }) => {
+                    const newHealth = Math.max(0, playerHealth - crack.damage);
+                    updatePlayerHealth(newHealth);
+                    console.log(`Player hit by lava crack! Damage: ${crack.damage}, Health: ${newHealth}`);
+                });
+                
+                crack.lastDamageTime = currentTime;
+            }
+        }
+    }
+}
+
+// Update empowerment effects
+function updateEmpowermentEffects(currentTime) {
+    import('./gameState.js').then(({ 
+        megaBossEmpowermentActive, 
+        megaBossEmpowermentEndTime,
+        setMegaBossEmpowermentActive 
+    }) => {
+        if (megaBossEmpowermentActive && currentTime >= megaBossEmpowermentEndTime) {
+            setMegaBossEmpowermentActive(false);
+            console.log('Mega Boss empowerment ended');
+        }
+    });
+}
+
+// Calculate distance from point to line segment
+function distancePointToLine(px, py, x1, y1, x2, y2) {
+    const dx = x2 - x1;
+    const dy = y2 - y1;
+    
+    if (dx === 0 && dy === 0) {
+        // Line is a point
+        return Math.sqrt((px - x1) * (px - x1) + (py - y1) * (py - y1));
+    }
+    
+    const t = Math.max(0, Math.min(1, ((px - x1) * dx + (py - y1) * dy) / (dx * dx + dy * dy)));
+    const closestX = x1 + t * dx;
+    const closestY = y1 + t * dy;
+    
+    return Math.sqrt((px - closestX) * (px - closestX) + (py - closestY) * (py - closestY));
+}
+
+// Clean up mega boss entities
+export function cleanupMegaBossEntities() {
+    const currentTime = Date.now();
+    
+    // Clean up expired lasers
+    for (let i = megaBossLasers.length - 1; i >= 0; i--) {
+        if (currentTime >= megaBossLasers[i].endTime) {
+            megaBossLasers.splice(i, 1);
+        }
+    }
+    
+    // Clean up expired lava cracks
+    for (let i = megaBossLavaCracks.length - 1; i >= 0; i--) {
+        if (currentTime >= megaBossLavaCracks[i].endTime) {
+            megaBossLavaCracks.splice(i, 1);
         }
     }
 }
