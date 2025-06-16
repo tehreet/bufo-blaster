@@ -225,6 +225,11 @@ export function spawnEnemy() {
     
     enemies.push(enemy);
     World.add(world, enemy);
+    
+    // Debug logging for boss bufos
+    if (enemyType === ENEMY_TYPES.BOSS_BUFO) {
+        console.log(`Boss Bufo spawned at level ${playerLevel}! Health: ${enemy.health}`);
+    }
 }
 
 // Find nearest enemy to player
@@ -514,6 +519,11 @@ export function applyStabBufoAura() {
 
                 // Check if enemy dies from aura damage
                 if (enemy.health <= 0) {
+                    // Debug logging for boss bufos
+                    if (enemy.enemyType === ENEMY_TYPES.BOSS_BUFO) {
+                        console.log('Boss Bufo killed by aura! Creating XP orb...');
+                    }
+                    
                     // Play death sound
                     if (audioEnemyDie) {
                         audioEnemyDie.currentTime = 0;
@@ -785,6 +795,11 @@ export function applyStarfallAOE(impactX, impactY, damage, confusionDuration, cu
         
         // Check if enemy dies
         if (enemy.health <= 0) {
+            // Debug logging for boss bufos
+            if (enemy.enemyType === ENEMY_TYPES.BOSS_BUFO) {
+                console.log('Boss Bufo killed by starfall AOE! Creating XP orb...');
+            }
+            
             // Play death sound
             if (audioEnemyDie) {
                 audioEnemyDie.currentTime = 0;
@@ -866,6 +881,11 @@ export function updateGooseOrbit() {
                     
                     // Check if enemy dies
                     if (enemy.health <= 0) {
+                        // Debug logging for boss bufos
+                        if (enemy.enemyType === ENEMY_TYPES.BOSS_BUFO) {
+                            console.log('Boss Bufo killed by goose! Creating converted ally...');
+                        }
+                        
                         // Play death sound
                         if (audioEnemyDie) {
                             audioEnemyDie.currentTime = 0;

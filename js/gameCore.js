@@ -539,6 +539,11 @@ function handleProjectileEnemyCollision(bodyA, bodyB) {
 
         // Check if enemy is dead
         if (enemyBody.health <= 0) {
+            // Debug logging for boss bufos
+            if (enemyBody.enemyType === 'boss_bufo') {
+                console.log('Boss Bufo killed by projectile! Creating XP orb...');
+            }
+            
             // Play death sound
             if (audioEnemyDie) {
                 audioEnemyDie.currentTime = 0;
