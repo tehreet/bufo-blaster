@@ -1,4 +1,5 @@
-// UI Rendering System
+// UI Rendering System - Updated to remove enemy type labels
+// Cache refresh: 2024-12-19
 import { GAME_CONFIG, DEFAULT_GAME_SETTINGS, CHARACTERS } from './constants.js';
 import { 
     gameWidth, 
@@ -284,27 +285,7 @@ export function renderEnemyHealthBars(context) {
             context.fillStyle = healthColor;
             context.fillRect(x, y, barWidth * healthPercentage, barHeight);
             
-            // Special enemy type indicator
-            if (enemy.enemyType && enemy.enemyType !== 'normal') {
-                context.fillStyle = 'white';
-                context.strokeStyle = 'black';
-                context.lineWidth = 1;
-                context.font = '10px Arial';
-                context.textAlign = 'center';
-                
-                let typeText = '';
-                switch (enemy.enemyType) {
-                    case 'buff_bufo': typeText = 'BUFF'; break;
-                    case 'gavel_bufo': typeText = 'GAVEL'; break;
-                    case 'ice_bufo': typeText = 'ICE'; break;
-                    case 'boss_bufo': typeText = 'BOSS'; break;
-                }
-                
-                if (typeText) {
-                    context.strokeText(typeText, enemy.position.x, y - 8);
-                    context.fillText(typeText, enemy.position.x, y - 8);
-                }
-            }
+            // Removed type indicators - size will indicate special enemy types
         }
     });
 }

@@ -104,7 +104,7 @@ function getEnemyProperties(enemyType) {
                 sprite: buffAsset && buffAsset.complete && buffAsset.naturalHeight > 0 
                     ? buffAsset.src 
                     : null,
-                scale: 0.35 // Larger sprite
+                scale: 0.5 // Much larger sprite (was 0.35)
             };
         case ENEMY_TYPES.GAVEL_BUFO:
             const gavelAsset = imageAssets['special_enemy_gavel_bufo'];
@@ -115,7 +115,7 @@ function getEnemyProperties(enemyType) {
                 sprite: gavelAsset && gavelAsset.complete && gavelAsset.naturalHeight > 0 
                     ? gavelAsset.src 
                     : null,
-                scale: 0.32 // Larger sprite
+                scale: 0.45 // Much larger sprite (was 0.32)
             };
         case ENEMY_TYPES.ICE_BUFO:
             const iceAsset = imageAssets['special_enemy_ice_bufo'];
@@ -126,7 +126,7 @@ function getEnemyProperties(enemyType) {
                 sprite: iceAsset && iceAsset.complete && iceAsset.naturalHeight > 0 
                     ? iceAsset.src 
                     : null,
-                scale: 0.28 // Larger sprite
+                scale: 0.42 // Much larger sprite (was 0.28)
             };
         case ENEMY_TYPES.BOSS_BUFO:
             const bossAsset = imageAssets['special_enemy_boss_bufo'];
@@ -137,7 +137,7 @@ function getEnemyProperties(enemyType) {
                 sprite: bossAsset && bossAsset.complete && bossAsset.naturalHeight > 0 
                     ? bossAsset.src 
                     : null,
-                scale: 0.4
+                scale: 0.6 // Much larger sprite (was 0.4)
             };
         default: // NORMAL
             const enemyImageFile = ASSET_URLS.ENEMY_IMAGE_FILES[Math.floor(Math.random() * ASSET_URLS.ENEMY_IMAGE_FILES.length)];
