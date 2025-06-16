@@ -1,5 +1,5 @@
 // UI Rendering System
-import { GAME_CONFIG } from './constants.js';
+import { GAME_CONFIG, DEFAULT_GAME_SETTINGS } from './constants.js';
 import { 
     gameWidth, 
     gameHeight, 
@@ -42,7 +42,7 @@ export function renderPlayerHealthBar(context) {
 
     const barX = player.position.x - GAME_CONFIG.PLAYER_HEALTHBAR_WIDTH / 2;
     const barY = player.position.y - GAME_CONFIG.PLAYER_RADIUS - GAME_CONFIG.PLAYER_HEALTHBAR_OFFSET_Y;
-    const healthPercentage = Math.max(0, playerHealth / 100); // Assuming max health is 100
+    const healthPercentage = Math.max(0, playerHealth / DEFAULT_GAME_SETTINGS.playerHealth); // Use actual max health
 
     // Background (red)
     context.fillStyle = 'red';
@@ -105,7 +105,7 @@ export function renderHUD(context) {
     context.textAlign = 'left';
     
     // Game statistics
-    context.fillText(`Health: ${playerHealth}`, 10, 30);
+    context.fillText(`Health: ${playerHealth}/${DEFAULT_GAME_SETTINGS.playerHealth}`, 10, 30);
     context.fillText(`Level: ${playerLevel}`, 10, 50);
     context.fillText(`XP: ${playerXP}/${xpToNextLevel}`, 10, 70);
     context.fillText(`Time: ${elapsedRunTimeFormatted}`, 10, 90);

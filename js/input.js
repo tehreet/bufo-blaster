@@ -77,23 +77,7 @@ export function setupGamepadEventListeners() {
         }
     });
 
-    // Add a manual detection button for debugging
-    const detectButton = document.createElement('button');
-    detectButton.textContent = 'Detect Gamepad';
-    detectButton.style.position = 'fixed';
-    detectButton.style.top = '10px';
-    detectButton.style.right = '10px';
-    detectButton.style.zIndex = '1000';
-    detectButton.style.padding = '10px';
-    detectButton.style.backgroundColor = '#333';
-    detectButton.style.color = 'white';
-    detectButton.style.border = 'none';
-    detectButton.style.borderRadius = '5px';
-    detectButton.onclick = () => {
-        console.log("Manual gamepad detection triggered");
-        selectPrimaryGamepad();
-    };
-    document.body.appendChild(detectButton);
+    // Debug button removed - gamepad detection is working
 }
 
 // Keyboard event handlers

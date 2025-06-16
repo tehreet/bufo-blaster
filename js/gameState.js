@@ -1,5 +1,5 @@
 // Game State Management
-import { DEFAULT_GAME_SETTINGS } from './constants.js';
+import { DEFAULT_GAME_SETTINGS, GAME_CONFIG } from './constants.js';
 
 // Matter.js instances
 export let engine = null;
@@ -28,8 +28,8 @@ export let gameInitialized = false;
 export let enemySpawnIntervalId = null;
 export let shootIntervalId = null;
 export let healthRegenIntervalId = null;
-export let currentPlayerHealthRegenInterval = 10000; // 10 seconds
-export let currentPlayerHealthRegenAmount = 1;
+export let currentPlayerHealthRegenInterval = GAME_CONFIG.PLAYER_HEALTH_REGEN_INTERVAL;
+export let currentPlayerHealthRegenAmount = GAME_CONFIG.PLAYER_HEALTH_REGEN_AMOUNT;
 
 // Game statistics
 export let runStartTime = 0;

@@ -11,8 +11,8 @@ export const GAME_CONFIG = {
     
     // Player Constants
     PLAYER_RADIUS: 18,
-    PLAYER_HEALTH_REGEN_AMOUNT: 1,
-    PLAYER_HEALTH_REGEN_INTERVAL: 10000, // 10 seconds
+    PLAYER_HEALTH_REGEN_AMOUNT: 2, // Increased regen for bruiser
+    PLAYER_HEALTH_REGEN_INTERVAL: 8000, // 8 seconds (faster regen)
     PLAYER_HEALTHBAR_WIDTH: 50,
     PLAYER_HEALTHBAR_HEIGHT: 5,
     PLAYER_HEALTHBAR_OFFSET_Y: 30,
@@ -36,9 +36,10 @@ export const GAME_CONFIG = {
     GAMEPAD_DEAD_ZONE: 0.2,
     
     // Stab Bufo Aura Constants
-    STAB_BUFO_AURA_RADIUS: 75,
-    STAB_BUFO_AURA_DAMAGE_PER_TICK: 0.5,
-    STAB_BUFO_AURA_TICK_INTERVAL_MS: 500,
+    STAB_BUFO_AURA_RADIUS: 85, // Slightly larger for melee range
+    STAB_BUFO_AURA_DAMAGE_PER_TICK: 0.8, // More damage for melee focus
+    STAB_BUFO_AURA_TICK_INTERVAL_MS: 400, // Faster ticks
+    STAB_BUFO_AURA_KNOCKBACK_FORCE: 2, // New: knockback force
 };
 
 // Collision Categories
@@ -51,13 +52,13 @@ export const COLLISION_CATEGORIES = {
 
 // Default Game Settings
 export const DEFAULT_GAME_SETTINGS = {
-    playerHealth: 100,
+    playerHealth: 150, // Increased health for tankiness
     playerXP: 0,
     playerLevel: 1,
     xpToNextLevel: 30,
-    projectileDamage: 1.5,
-    shootInterval: 1000,
-    playerSpeed: 5,
+    projectileDamage: 1.5, // Not used for Stab Bufo
+    shootInterval: 1000, // Not used for Stab Bufo
+    playerSpeed: 4, // Slightly slower for melee bruiser
     xpOrbPickupRadius: 100,
     enemySpawnInterval: 2000,
 };

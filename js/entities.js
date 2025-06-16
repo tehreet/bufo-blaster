@@ -277,6 +277,18 @@ export function applyStabBufoAura() {
         if (distance <= GAME_CONFIG.STAB_BUFO_AURA_RADIUS) {
             enemy.health -= GAME_CONFIG.STAB_BUFO_AURA_DAMAGE_PER_TICK;
 
+            // Apply knockback force - push enemy away from player
+            if (distance > 0) { // Avoid division by zero
+                const knockbackX = (dx / distance) * GAME_CONFIG.STAB_BUFO_AURA_KNOCKBACK_FORCE;
+                const knockbackY = (dy / distance) * GAME_CONFIG.STAB_BUFO_AURA_KNOCKBACK_FORCE;
+                
+                // Apply the knockback velocity
+                Matter.Body.applyForce(enemy, enemy.position, { 
+                    x: knockbackX * 0.001, // Scale down for Matter.js force system
+                    y: knockbackY * 0.001 
+                });
+            }
+
             // Check if enemy dies from aura damage
             if (enemy.health <= 0) {
                 // Play death sound
