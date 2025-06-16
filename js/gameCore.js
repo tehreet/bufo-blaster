@@ -278,7 +278,7 @@ function setupMouseEventListeners() {
         }
     });
 
-    // Add mouse move event listener for upgrade menu hover
+    // Add mouse move event listener for hover effects
     canvas.addEventListener('mousemove', (event) => {
         const rect = canvas.getBoundingClientRect();
         const scaleX = canvas.width / rect.width;
@@ -286,6 +286,11 @@ function setupMouseEventListeners() {
         const mouseX = (event.clientX - rect.left) * scaleX;
         const mouseY = (event.clientY - rect.top) * scaleY;
 
+        // Handle character selection hover
+        if (characterSelectionActive) {
+            handleCharacterSelectionHover(mouseX, mouseY);
+        }
+        
         // Handle upgrade menu hover
         if (gamePausedForUpgrade && availableUpgrades.length > 0) {
             handleUpgradeMenuHover(mouseX, mouseY);
@@ -356,6 +361,32 @@ function handleUpgradeMenuHover(mouseX, mouseY) {
             return; // Found the hovered upgrade, no need to check others
         }
     }
+}
+
+// Handle character selection mouse hover
+function handleCharacterSelectionHover(mouseX, mouseY) {
+    const cardWidth = 300;
+    const cardHeight = 400;
+    const spacing = 50;
+    const charactersArray = Object.values(CHARACTERS);
+    const totalWidth = (cardWidth * charactersArray.length) + (spacing * (charactersArray.length - 1));
+    const startX = (gameWidth - totalWidth) / 2;
+    const cardY = 150;
+
+    charactersArray.forEach((character, index) => {
+        const cardX = startX + index * (cardWidth + spacing);
+        
+        // Check if mouse is within this character card
+        if (mouseX >= cardX && mouseX <= cardX + cardWidth &&
+            mouseY >= cardY && mouseY <= cardY + cardHeight) {
+            
+            // Update selected character to highlight this one
+            import('./gameState.js').then(({ setSelectedCharacter }) => {
+                setSelectedCharacter(character);
+            });
+            return; // Found the hovered character, no need to check others
+        }
+    });
 }
 
 // Handle character selection mouse clicks
