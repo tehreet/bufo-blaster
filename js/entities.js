@@ -81,10 +81,15 @@ function getEnemyFallbackColor(enemyType) {
     }
 }
 
+// Check if mega boss is already spawned
+function isMegaBossAlive() {
+    return enemies.some(enemy => enemy.enemyType === ENEMY_TYPES.MEGA_BOSS_BUFO);
+}
+
 // Determine what type of enemy to spawn based on current level
 function determineEnemyType() {
-    // Mega Boss spawns only on level 7 (100% chance)
-    if (playerLevel === 7) {
+    // Mega Boss spawns only on level 7 (100% chance) - but only spawn one at a time
+    if (playerLevel === 7 && !isMegaBossAlive()) {
         return ENEMY_TYPES.MEGA_BOSS_BUFO;
     }
     
@@ -389,6 +394,11 @@ export function updateEnemyMovement() {
                 return; // Don't override knockback velocity
             }
             
+            // Skip movement for mega boss if channeling
+            if (enemy.enemyType === ENEMY_TYPES.MEGA_BOSS_BUFO && enemy.isChanneling) {
+                return;
+            }
+            
             const directionX = player.position.x - enemy.position.x;
             const directionY = player.position.y - enemy.position.y;
             const magnitude = Math.sqrt(directionX * directionX + directionY * directionY);
@@ -409,6 +419,12 @@ export function updateEnemyMovement() {
                 const velocityX = (directionX / magnitude) * speed;
                 const velocityY = (directionY / magnitude) * speed;
                 Matter.Body.setVelocity(enemy, { x: velocityX, y: velocityY });
+                
+                // Store movement direction for mega boss (for laser direction)
+                if (enemy.enemyType === ENEMY_TYPES.MEGA_BOSS_BUFO) {
+                    enemy.lastMovementDirectionX = directionX / magnitude;
+                    enemy.lastMovementDirectionY = directionY / magnitude;
+                }
             }
         }
     });
@@ -1157,44 +1173,54 @@ function triggerLaserEyes(boss, currentTime) {
     
     console.log('Mega Boss firing LASER EYES!');
     
-    // Calculate direction to player
-    const dx = player.position.x - boss.position.x;
-    const dy = player.position.y - boss.position.y;
-    const magnitude = Math.sqrt(dx * dx + dy * dy);
-    
-    if (magnitude > 0) {
-        const dirX = dx / magnitude;
-        const dirY = dy / magnitude;
-        
-        // Create two laser beams (for the eyes)
-        const laserOffset = 15; // Offset for two eyes
-        
-        // Left eye laser
-        const leftLaser = {
-            startX: boss.position.x - dirY * laserOffset,
-            startY: boss.position.y + dirX * laserOffset,
-            dirX: dirX,
-            dirY: dirY,
-            startTime: currentTime,
-            endTime: currentTime + GAME_CONFIG.MEGA_BOSS_LASER_DURATION,
-            damage: GAME_CONFIG.MEGA_BOSS_LASER_DAMAGE_BASE,
-            lastDamageTime: 0
-        };
-        
-        // Right eye laser
-        const rightLaser = {
-            startX: boss.position.x + dirY * laserOffset,
-            startY: boss.position.y - dirX * laserOffset,
-            dirX: dirX,
-            dirY: dirY,
-            startTime: currentTime,
-            endTime: currentTime + GAME_CONFIG.MEGA_BOSS_LASER_DURATION,
-            damage: GAME_CONFIG.MEGA_BOSS_LASER_DAMAGE_BASE,
-            lastDamageTime: 0
-        };
-        
-        megaBossLasers.push(leftLaser, rightLaser);
+    // Use the direction the boss is moving (facing) or calculate direction to player if not moving
+    let dirX, dirY;
+    if (boss.lastMovementDirectionX && boss.lastMovementDirectionY) {
+        dirX = boss.lastMovementDirectionX;
+        dirY = boss.lastMovementDirectionY;
+    } else {
+        // Fallback to direction toward player
+        const dx = player.position.x - boss.position.x;
+        const dy = player.position.y - boss.position.y;
+        const magnitude = Math.sqrt(dx * dx + dy * dy);
+        if (magnitude > 0) {
+            dirX = dx / magnitude;
+            dirY = dy / magnitude;
+        } else {
+            return; // Can't determine direction
+        }
     }
+    
+    // Create two laser beams (for the eyes) that originate from the boss
+    const laserOffset = 15; // Offset for two eyes
+    
+    // Left eye laser (perpendicular offset from movement direction)
+    const leftLaser = {
+        bossId: boss.id, // Track which boss this belongs to
+        startX: boss.position.x - dirY * laserOffset,
+        startY: boss.position.y + dirX * laserOffset,
+        dirX: dirX,
+        dirY: dirY,
+        startTime: currentTime,
+        endTime: currentTime + GAME_CONFIG.MEGA_BOSS_LASER_DURATION,
+        damage: GAME_CONFIG.MEGA_BOSS_LASER_DAMAGE_BASE,
+        lastDamageTime: 0
+    };
+    
+    // Right eye laser
+    const rightLaser = {
+        bossId: boss.id, // Track which boss this belongs to
+        startX: boss.position.x + dirY * laserOffset,
+        startY: boss.position.y - dirX * laserOffset,
+        dirX: dirX,
+        dirY: dirY,
+        startTime: currentTime,
+        endTime: currentTime + GAME_CONFIG.MEGA_BOSS_LASER_DURATION,
+        damage: GAME_CONFIG.MEGA_BOSS_LASER_DAMAGE_BASE,
+        lastDamageTime: 0
+    };
+    
+    megaBossLasers.push(leftLaser, rightLaser);
 }
 
 // Start channeling lava crack
@@ -1245,6 +1271,26 @@ function updateLaserBeams(currentTime) {
         if (currentTime >= laser.endTime) {
             megaBossLasers.splice(i, 1);
             continue;
+        }
+        
+        // Find the boss that owns this laser and update laser position
+        const boss = enemies.find(enemy => enemy.id === laser.bossId && enemy.enemyType === ENEMY_TYPES.MEGA_BOSS_BUFO);
+        if (!boss) {
+            // Boss is dead, remove laser
+            megaBossLasers.splice(i, 1);
+            continue;
+        }
+        
+        // Update laser start position to boss's current position
+        const laserOffset = 15;
+        // Determine if this is left or right laser based on original offset
+        const isLeftLaser = (laser.startX - boss.position.x) * laser.dirY < 0;
+        if (isLeftLaser) {
+            laser.startX = boss.position.x - laser.dirY * laserOffset;
+            laser.startY = boss.position.y + laser.dirX * laserOffset;
+        } else {
+            laser.startX = boss.position.x + laser.dirY * laserOffset;
+            laser.startY = boss.position.y - laser.dirX * laserOffset;
         }
         
         // Check if laser hits player (damage scales with time)

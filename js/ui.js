@@ -565,13 +565,16 @@ export function renderMegaBossLasers(context) {
         context.globalAlpha = 1;
         context.strokeStyle = '#FFAAAA';
         context.lineWidth = 3;
+        context.beginPath();
+        context.moveTo(laser.startX, laser.startY);
+        context.lineTo(endX, endY);
         context.stroke();
         
-        // Eye glow at start
-        context.globalAlpha = 0.6;
+        // Eye glow at start (from the mega boss's eyes)
+        context.globalAlpha = 0.8;
         context.fillStyle = '#FF0000';
         context.beginPath();
-        context.arc(laser.startX, laser.startY, 8, 0, 2 * Math.PI);
+        context.arc(laser.startX, laser.startY, 6, 0, 2 * Math.PI);
         context.fill();
         
         context.restore();
