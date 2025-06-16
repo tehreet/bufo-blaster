@@ -242,51 +242,28 @@ export function renderGooseOrbit(context) {
 
 // Render converted allies (goose-riding bufos)
 export function renderConvertedAllies(context) {
+    // Note: Converted allies now use Matter.js sprite rendering
+    // This function is kept for potential additional effects or debugging
     convertedAllies.forEach(ally => {
-        // Draw a simple representation of bufo riding goose
+        // Add a subtle glow effect around converted allies
         context.save();
-        
-        // Calculate movement direction for orientation
-        const velocity = ally.velocity || { x: 0, y: 0 };
-        const speed = Math.sqrt(velocity.x * velocity.x + velocity.y * velocity.y);
-        const angle = speed > 0 ? Math.atan2(velocity.y, velocity.x) : 0;
-        
-        context.translate(ally.position.x, ally.position.y);
-        context.rotate(angle);
-        
-        // Goose (slightly larger)
-        context.fillStyle = 'lightblue';
-        context.strokeStyle = 'blue';
-        context.lineWidth = 2;
-        context.beginPath();
-        context.ellipse(0, 0, 12, 8, 0, 0, 2 * Math.PI);
-        context.fill();
-        context.stroke();
-        
-        // Bufo rider on top
+        context.globalAlpha = 0.3;
         context.fillStyle = 'lightgreen';
-        context.strokeStyle = 'green';
-        context.lineWidth = 1;
         context.beginPath();
-        context.arc(0, -3, 6, 0, 2 * Math.PI);
+        context.arc(ally.position.x, ally.position.y, 20, 0, 2 * Math.PI);
         context.fill();
-        context.stroke();
-        
-        // Add a simple wing flap effect
-        const flapTime = Date.now() * 0.02;
-        const wingOffset = Math.sin(flapTime) * 3;
-        
-        // Wings
-        context.strokeStyle = 'darkblue';
-        context.lineWidth = 2;
-        context.beginPath();
-        context.moveTo(-8, wingOffset);
-        context.lineTo(-15, wingOffset - 5);
-        context.moveTo(8, wingOffset);
-        context.lineTo(15, wingOffset - 5);
-        context.stroke();
-        
         context.restore();
+        
+        // Add a timer indicator above the ally
+        const timeLeft = (GAME_CONFIG.GOOSE_BUFO_CONVERTED_ALLY_LIFETIME - (Date.now() - ally.creationTime)) / 1000;
+        if (timeLeft > 0 && timeLeft < 3) { // Show countdown in last 3 seconds
+            context.save();
+            context.fillStyle = 'yellow';
+            context.font = '12px Arial';
+            context.textAlign = 'center';
+            context.fillText(Math.ceil(timeLeft).toString(), ally.position.x, ally.position.y - 25);
+            context.restore();
+        }
     });
 }
 

@@ -55,8 +55,8 @@ export const GAME_CONFIG = {
     GOOSE_BUFO_ORBIT_SPEED: 2, // Rotation speed of geese
     GOOSE_BUFO_GOOSE_DAMAGE: 1, // Damage per goose hit
     GOOSE_BUFO_KNOCKBACK_FORCE: 3, // Knockback force from geese
-    GOOSE_BUFO_CONVERTED_ALLY_LIFETIME: 8000, // 8 seconds for converted allies
-    GOOSE_BUFO_CONVERTED_ALLY_DAMAGE: 2, // Damage converted allies deal
+    GOOSE_BUFO_CONVERTED_ALLY_LIFETIME: 12000, // 12 seconds for converted allies (increased from 8)
+    GOOSE_BUFO_CONVERTED_ALLY_DAMAGE: 3, // Damage converted allies deal (increased from 2)
     GOOSE_BUFO_CONVERTED_ALLY_SPEED: 2, // Speed of converted allies
 };
 

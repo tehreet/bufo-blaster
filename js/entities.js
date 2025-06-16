@@ -700,9 +700,11 @@ export function createConvertedAlly(x, y) {
         label: 'convertedAlly',
         isSensor: true,
         render: { 
-            fillStyle: 'lightgreen',
-            strokeStyle: 'green',
-            lineWidth: 2
+            sprite: {
+                texture: 'https://all-the.bufo.zone/bufo-riding-goose.gif',
+                xScale: 0.3,
+                yScale: 0.3
+            }
         }
     });
 
