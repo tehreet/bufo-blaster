@@ -608,8 +608,10 @@ function handleStarfallEnemyCollision(bodyA, bodyB) {
             
             // Remove starfall projectile after a short delay to allow visual feedback
             setTimeout(() => {
-                const starfallIndex = starfallProjectiles.indexOf(starfallBody);
-                if (starfallIndex > -1) starfallProjectiles.splice(starfallIndex, 1);
+                if (starfallProjectiles && starfallProjectiles.length > 0) {
+                    const starfallIndex = starfallProjectiles.indexOf(starfallBody);
+                    if (starfallIndex > -1) starfallProjectiles.splice(starfallIndex, 1);
+                }
                 Composite.remove(world, starfallBody);
             }, 100); // 100ms delay
             

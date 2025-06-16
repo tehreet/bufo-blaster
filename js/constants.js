@@ -136,7 +136,7 @@ export const COLLISION_CATEGORIES = {
 export const DEFAULT_GAME_SETTINGS = {
     playerHealth: 120, // Reduced from 150 for better balance
     playerXP: 0,
-    playerLevel: 7, // Start at level 7 for mega boss testing
+    playerLevel: 1, // Start at level 1 normally
     xpToNextLevel: 30,
     projectileDamage: 1.5, // Not used for Stab Bufo
     shootInterval: 1000, // Not used for Stab Bufo
@@ -145,8 +145,8 @@ export const DEFAULT_GAME_SETTINGS = {
     enemySpawnInterval: 2000,
     
     // Testing flags
-    testingMode: true, // Enable testing features
-    playerInvincible: true, // Make player invincible for testing
+    testingMode: false, // Disable testing features
+    playerInvincible: false, // Player can take damage normally
 };
 
 // Character Definitions
