@@ -16,7 +16,9 @@ import {
     audioEnemyDie,
     currentAuraCooldown,
     currentAuraDamage,
-    currentAuraKnockback
+    currentAuraKnockback,
+    gamePausedForUpgrade,
+    gameOver
 } from './gameState.js';
 
 const { Bodies, World, Composite } = Matter;
@@ -44,6 +46,11 @@ export function createPlayerBody() {
 
 // Spawn enemy at random edge position
 export function spawnEnemy() {
+    // Don't spawn enemies if game is paused or over
+    if (gamePausedForUpgrade || gameOver) {
+        return;
+    }
+    
     const side = Math.floor(Math.random() * 4);
     const inset = GAME_CONFIG.ENEMY_RADIUS * 3; // Spawn well inside the boundaries
     let x, y;
