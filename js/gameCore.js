@@ -1,8 +1,8 @@
 // Game Core System
-import { GAME_CONFIG, COLLISION_CATEGORIES, ASSET_URLS, DEFAULT_GAME_SETTINGS, CHARACTERS } from './constants.js';
+import { GAME_CONFIG, COLLISION_CATEGORIES, ASSET_URLS, DEFAULT_GAME_SETTINGS, CHARACTERS, ENEMY_TYPES } from './constants.js';
 import { initializeAudio, scaleGameContainer } from './assetLoader.js';
 import { setupKeyboardControls, selectPrimaryGamepad, setupGamepadEventListeners, getMovementInput, pollGamepadForUpgradeMenu, handleGameOverInput, handleCharacterSelectionInput, handlePauseInput } from './input.js';
-import { createPlayerBody, spawnEnemy, shootProjectile, updateEnemyMovement, cleanupOffScreenEntities, updateXPOrbMagnetism, applyPlayerMovement, createXPOrb, applyStabBufoAura, castStarfall, updateStarfallProjectiles, updateConfusedEnemyMovement, initializeGooseOrbit, updateGooseOrbit, updateConvertedAllies } from './entities.js';
+import { createPlayerBody, spawnEnemy, shootProjectile, updateEnemyMovement, cleanupOffScreenEntities, updateXPOrbMagnetism, applyPlayerMovement, createXPOrb, applyStabBufoAura, castStarfall, updateStarfallProjectiles, updateConfusedEnemyMovement, initializeGooseOrbit, updateGooseOrbit, updateConvertedAllies, updateSpecialEnemyEffects } from './entities.js';
 import { presentUpgradeOptions } from './upgrades.js';
 import { renderUI } from './ui.js';
 import { 
@@ -82,7 +82,11 @@ import {
     shootIntervalId,
     healthRegenIntervalId,
     currentPlayerHealthRegenInterval,
-    currentPlayerHealthRegenAmount
+    currentPlayerHealthRegenAmount,
+    playerStunned,
+    playerSpeedMultiplier,
+    setPlayerStunned,
+    setStunEndTime
 } from './gameState.js';
 
 const { Engine, Render, Runner, World, Bodies, Body, Composite, Events } = Matter;
@@ -217,6 +221,7 @@ function setupEventListeners() {
 
         updateRunTimer();
         updateEnemyMovement();
+        updateSpecialEnemyEffects(); // Handle special enemy effects like ice bufo slow
         updateConfusedEnemyMovement(); // Handle confused enemies separately
         cleanupOffScreenEntities();
         updateXPOrbMagnetism();
@@ -463,13 +468,35 @@ function handlePlayerEnemyCollision(bodyA, bodyB) {
     }
 
     if (playerBody && enemyBody && !playerIsInvincible) {
-        const newHealth = playerHealth - GAME_CONFIG.ENEMY_CONTACT_DAMAGE;
+        // Use enemy's contact damage or default
+        const damage = enemyBody.contactDamage || GAME_CONFIG.ENEMY_CONTACT_DAMAGE;
+        const newHealth = playerHealth - damage;
         updatePlayerHealth(newHealth);
         
         // Play hit sound
         if (audioPlayerHit) {
             audioPlayerHit.currentTime = 0;
             audioPlayerHit.play().catch(e => console.warn("Player hit sound play failed:", e));
+        }
+
+        // Apply special enemy effects
+        const currentTime = Date.now();
+        
+        if (enemyBody.enemyType === ENEMY_TYPES.BUFF_BUFO) {
+            // Stun the player for 1 second
+            setPlayerStunned(true);
+            setStunEndTime(currentTime + GAME_CONFIG.BUFF_BUFO_STUN_DURATION);
+        } else if (enemyBody.enemyType === ENEMY_TYPES.GAVEL_BUFO) {
+            // Apply knockback to player
+            const dx = playerBody.position.x - enemyBody.position.x;
+            const dy = playerBody.position.y - enemyBody.position.y;
+            const distance = Math.sqrt(dx * dx + dy * dy);
+            
+            if (distance > 0) {
+                const knockbackX = (dx / distance) * GAME_CONFIG.GAVEL_BUFO_KNOCKBACK_FORCE;
+                const knockbackY = (dy / distance) * GAME_CONFIG.GAVEL_BUFO_KNOCKBACK_FORCE;
+                Matter.Body.setVelocity(playerBody, { x: knockbackX, y: knockbackY });
+            }
         }
 
         // Set invincibility
@@ -755,6 +782,13 @@ export function resetGame() {
     
     // Reset goose abilities to base values
     setGooseOrbitSpeedMultiplier(1.0);
+    
+    // Reset special enemy effects
+    setPlayerStunned(false);
+    setStunEndTime(0);
+    import('./gameState.js').then(({ setPlayerSpeedMultiplier }) => {
+        setPlayerSpeedMultiplier(1.0);
+    });
 
     // Clear dynamic objects
     [...enemies, ...projectiles, ...xpOrbs, ...starfallProjectiles, ...convertedAllies].forEach(obj => {

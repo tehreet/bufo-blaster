@@ -24,6 +24,35 @@ export const GAME_CONFIG = {
     ENEMY_MAX_HEALTH: 3,
     ENEMY_CONTACT_DAMAGE: 10,
     
+    // Special Enemy Constants
+    SPECIAL_ENEMY_SPAWN_CHANCE: 0.15, // 15% chance to spawn special enemies on eligible levels
+    
+    // Buff Bufo (stuns player on hit)
+    BUFF_BUFO_RADIUS: 15, // Larger than normal
+    BUFF_BUFO_HEALTH: 8, // Increased HP
+    BUFF_BUFO_CONTACT_DAMAGE: 15,
+    BUFF_BUFO_STUN_DURATION: 1000, // 1 second stun
+    
+    // Gavel Bufo (knockback and damage)
+    GAVEL_BUFO_RADIUS: 12,
+    GAVEL_BUFO_HEALTH: 6,
+    GAVEL_BUFO_CONTACT_DAMAGE: 12,
+    GAVEL_BUFO_KNOCKBACK_FORCE: 8,
+    
+    // Ice Bufo (slows player when close)
+    ICE_BUFO_RADIUS: 10,
+    ICE_BUFO_HEALTH: 5,
+    ICE_BUFO_CONTACT_DAMAGE: 8,
+    ICE_BUFO_SLOW_RADIUS: 80, // Range to apply slow effect
+    ICE_BUFO_SLOW_FACTOR: 0.5, // Reduces player speed to 50%
+    
+    // Boss Bufo (every 7 levels)
+    BOSS_BUFO_RADIUS: 20,
+    BOSS_BUFO_HEALTH: 20,
+    BOSS_BUFO_CONTACT_DAMAGE: 25,
+    BOSS_BUFO_SPEED_MULTIPLIER: 0.8, // Slower but tankier
+    BOSS_BUFO_LEVEL_INTERVAL: 7, // Spawn every 7 levels
+    
     // Projectile Constants
     PROJECTILE_RADIUS: 5,
     PROJECTILE_SPEED: 12,
@@ -58,6 +87,15 @@ export const GAME_CONFIG = {
     GOOSE_BUFO_CONVERTED_ALLY_LIFETIME: 12000, // 12 seconds for converted allies (increased from 8)
     GOOSE_BUFO_CONVERTED_ALLY_DAMAGE: 3, // Damage converted allies deal (increased from 2)
     GOOSE_BUFO_CONVERTED_ALLY_SPEED: 2, // Speed of converted allies
+};
+
+// Enemy Types
+export const ENEMY_TYPES = {
+    NORMAL: 'normal',
+    BUFF_BUFO: 'buff_bufo',
+    GAVEL_BUFO: 'gavel_bufo',
+    ICE_BUFO: 'ice_bufo',
+    BOSS_BUFO: 'boss_bufo'
 };
 
 // Collision Categories
@@ -126,6 +164,13 @@ export const ASSET_URLS = {
         'bufo-evil.png',
         'bufo-dizzy.gif'
     ],
+    // Special Enemy Sprites
+    SPECIAL_ENEMIES: {
+        BUFF_BUFO: 'https://all-the.bufo.zone/buff-bufo.png',
+        GAVEL_BUFO: 'https://all-the.bufo.zone/bufo-brings-a-new-meaning-to-gaveled-by-slamming-the-hammer-very-loud.gif',
+        ICE_BUFO: 'https://all-the.bufo.zone/bufo-code-freeze.png',
+        BOSS_BUFO: 'https://all-the.bufo.zone/buff-bufo.png' // Using buff bufo but even larger for boss
+    }
 };
 
 // Audio file paths

@@ -1,5 +1,5 @@
 // Game Entities System
-import { GAME_CONFIG, COLLISION_CATEGORIES, ASSET_URLS } from './constants.js';
+import { GAME_CONFIG, COLLISION_CATEGORIES, ASSET_URLS, ENEMY_TYPES } from './constants.js';
 import { 
     gameWidth, 
     gameHeight, 
@@ -30,7 +30,8 @@ import {
     gamePausedForUpgrade,
     gamePaused,
     gameOver,
-    characterSelectionActive
+    characterSelectionActive,
+    playerLevel
 } from './gameState.js';
 
 const { Bodies, World, Composite } = Matter;
@@ -56,6 +57,72 @@ export function createPlayerBody() {
     });
 }
 
+// Determine what type of enemy to spawn based on current level
+function determineEnemyType() {
+    // Boss every 7 levels
+    if (playerLevel > 0 && playerLevel % GAME_CONFIG.BOSS_BUFO_LEVEL_INTERVAL === 0) {
+        return ENEMY_TYPES.BOSS_BUFO;
+    }
+    
+    // Special enemies on certain levels (starting from level 2, every other level)
+    if (playerLevel >= 2 && playerLevel % 2 === 0) {
+        const shouldSpawnSpecial = Math.random() < GAME_CONFIG.SPECIAL_ENEMY_SPAWN_CHANCE;
+        if (shouldSpawnSpecial) {
+            const specialTypes = [ENEMY_TYPES.BUFF_BUFO, ENEMY_TYPES.GAVEL_BUFO, ENEMY_TYPES.ICE_BUFO];
+            return specialTypes[Math.floor(Math.random() * specialTypes.length)];
+        }
+    }
+    
+    return ENEMY_TYPES.NORMAL;
+}
+
+// Get enemy properties based on type
+function getEnemyProperties(enemyType) {
+    switch (enemyType) {
+        case ENEMY_TYPES.BUFF_BUFO:
+            return {
+                radius: GAME_CONFIG.BUFF_BUFO_RADIUS,
+                health: GAME_CONFIG.BUFF_BUFO_HEALTH,
+                contactDamage: GAME_CONFIG.BUFF_BUFO_CONTACT_DAMAGE,
+                sprite: ASSET_URLS.SPECIAL_ENEMIES.BUFF_BUFO,
+                scale: 0.3
+            };
+        case ENEMY_TYPES.GAVEL_BUFO:
+            return {
+                radius: GAME_CONFIG.GAVEL_BUFO_RADIUS,
+                health: GAME_CONFIG.GAVEL_BUFO_HEALTH,
+                contactDamage: GAME_CONFIG.GAVEL_BUFO_CONTACT_DAMAGE,
+                sprite: ASSET_URLS.SPECIAL_ENEMIES.GAVEL_BUFO,
+                scale: 0.25
+            };
+        case ENEMY_TYPES.ICE_BUFO:
+            return {
+                radius: GAME_CONFIG.ICE_BUFO_RADIUS,
+                health: GAME_CONFIG.ICE_BUFO_HEALTH,
+                contactDamage: GAME_CONFIG.ICE_BUFO_CONTACT_DAMAGE,
+                sprite: ASSET_URLS.SPECIAL_ENEMIES.ICE_BUFO,
+                scale: 0.22
+            };
+        case ENEMY_TYPES.BOSS_BUFO:
+            return {
+                radius: GAME_CONFIG.BOSS_BUFO_RADIUS,
+                health: GAME_CONFIG.BOSS_BUFO_HEALTH,
+                contactDamage: GAME_CONFIG.BOSS_BUFO_CONTACT_DAMAGE,
+                sprite: ASSET_URLS.SPECIAL_ENEMIES.BOSS_BUFO,
+                scale: 0.4
+            };
+        default: // NORMAL
+            const enemyImageFile = ASSET_URLS.ENEMY_IMAGE_FILES[Math.floor(Math.random() * ASSET_URLS.ENEMY_IMAGE_FILES.length)];
+            return {
+                radius: GAME_CONFIG.ENEMY_RADIUS,
+                health: GAME_CONFIG.ENEMY_MAX_HEALTH,
+                contactDamage: GAME_CONFIG.ENEMY_CONTACT_DAMAGE,
+                sprite: ASSET_URLS.ENEMY_SPRITE_BASE + enemyImageFile,
+                scale: 0.22
+            };
+    }
+}
+
 // Spawn enemy at random edge position
 export function spawnEnemy() {
     // Don't spawn enemies if game is paused, over, or during character selection
@@ -63,35 +130,34 @@ export function spawnEnemy() {
         return;
     }
     
+    const enemyType = determineEnemyType();
+    const enemyProps = getEnemyProperties(enemyType);
+    
     const side = Math.floor(Math.random() * 4);
-    const inset = GAME_CONFIG.ENEMY_RADIUS * 3; // Spawn well inside the boundaries
+    const inset = enemyProps.radius * 3; // Spawn well inside the boundaries
     let x, y;
 
     switch (side) {
         case 0: // Top
             x = Math.random() * (gameWidth - 2 * inset) + inset;
-            y = -GAME_CONFIG.ENEMY_RADIUS;
+            y = -enemyProps.radius;
             break;
         case 1: // Right
-            x = gameWidth + GAME_CONFIG.ENEMY_RADIUS;
+            x = gameWidth + enemyProps.radius;
             y = Math.random() * (gameHeight - 2 * inset) + inset;
             break;
         case 2: // Bottom
             x = Math.random() * (gameWidth - 2 * inset) + inset;
-            y = gameHeight + GAME_CONFIG.ENEMY_RADIUS;
+            y = gameHeight + enemyProps.radius;
             break;
         case 3: // Left
-            x = -GAME_CONFIG.ENEMY_RADIUS;
+            x = -enemyProps.radius;
             y = Math.random() * (gameHeight - 2 * inset) + inset;
             break;
     }
 
-    // Select random enemy image
-    const enemyImageFile = ASSET_URLS.ENEMY_IMAGE_FILES[Math.floor(Math.random() * ASSET_URLS.ENEMY_IMAGE_FILES.length)];
-    const enemyImageAsset = imageAssets[enemyImageFile];
-
     // Create enemy body
-    const enemy = Bodies.circle(x, y, GAME_CONFIG.ENEMY_RADIUS, {
+    const enemy = Bodies.circle(x, y, enemyProps.radius, {
         collisionFilter: { 
             category: COLLISION_CATEGORIES.ENEMY, 
             mask: COLLISION_CATEGORIES.DEFAULT | COLLISION_CATEGORIES.PLAYER | COLLISION_CATEGORIES.PROJECTILE 
@@ -99,18 +165,25 @@ export function spawnEnemy() {
         label: 'enemy',
         frictionAir: 0.01,
         render: {
-            sprite: enemyImageAsset && enemyImageAsset.complete && enemyImageAsset.naturalHeight > 0 ? {
-                texture: enemyImageAsset.src,
-                xScale: 0.22,
-                yScale: 0.22
-            } : {
-                fillStyle: 'red'
+            sprite: {
+                texture: enemyProps.sprite,
+                xScale: enemyProps.scale,
+                yScale: enemyProps.scale
             }
         }
     });
 
-    enemy.health = GAME_CONFIG.ENEMY_MAX_HEALTH;
-    enemy.circleRadius = GAME_CONFIG.ENEMY_RADIUS;
+    enemy.health = enemyProps.health;
+    enemy.maxHealth = enemyProps.health;
+    enemy.circleRadius = enemyProps.radius;
+    enemy.enemyType = enemyType;
+    enemy.contactDamage = enemyProps.contactDamage;
+    
+    // Special properties for boss
+    if (enemyType === ENEMY_TYPES.BOSS_BUFO) {
+        enemy.speedMultiplier = GAME_CONFIG.BOSS_BUFO_SPEED_MULTIPLIER;
+    }
+    
     enemies.push(enemy);
     World.add(world, enemy);
 }
@@ -205,10 +278,56 @@ export function updateEnemyMovement() {
             const magnitude = Math.sqrt(directionX * directionX + directionY * directionY);
             
             if (magnitude > 0) {
-                const velocityX = (directionX / magnitude) * GAME_CONFIG.ENEMY_SPEED;
-                const velocityY = (directionY / magnitude) * GAME_CONFIG.ENEMY_SPEED;
+                let speed = GAME_CONFIG.ENEMY_SPEED;
+                
+                // Apply boss speed multiplier
+                if (enemy.speedMultiplier) {
+                    speed *= enemy.speedMultiplier;
+                }
+                
+                const velocityX = (directionX / magnitude) * speed;
+                const velocityY = (directionY / magnitude) * speed;
                 Matter.Body.setVelocity(enemy, { x: velocityX, y: velocityY });
             }
+        }
+    });
+}
+
+// Update special enemy effects (like ice bufo slowing)
+export function updateSpecialEnemyEffects() {
+    import('./gameState.js').then(({ 
+        playerSpeedMultiplier, 
+        setPlayerSpeedMultiplier,
+        playerStunned,
+        stunEndTime,
+        setPlayerStunned 
+    }) => {
+        const currentTime = Date.now();
+        
+        // Reset speed multiplier
+        let newSpeedMultiplier = 1.0;
+        
+        // Check for ice bufo slow effects
+        enemies.forEach(enemy => {
+            if (enemy.enemyType === ENEMY_TYPES.ICE_BUFO && player) {
+                const dx = player.position.x - enemy.position.x;
+                const dy = player.position.y - enemy.position.y;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+                
+                if (distance <= GAME_CONFIG.ICE_BUFO_SLOW_RADIUS) {
+                    newSpeedMultiplier = Math.min(newSpeedMultiplier, GAME_CONFIG.ICE_BUFO_SLOW_FACTOR);
+                }
+            }
+        });
+        
+        // Update speed multiplier if changed
+        if (newSpeedMultiplier !== playerSpeedMultiplier) {
+            setPlayerSpeedMultiplier(newSpeedMultiplier);
+        }
+        
+        // Check if stun has ended
+        if (playerStunned && currentTime >= stunEndTime) {
+            setPlayerStunned(false);
         }
     });
 }
@@ -272,20 +391,25 @@ export function updateXPOrbMagnetism() {
 export function applyPlayerMovement(velocityX, velocityY) {
     if (!player) return;
 
-    // Scale velocity by player speed
-    const scaledVelocityX = velocityX * playerSpeed;
-    const scaledVelocityY = velocityY * playerSpeed;
+    import('./gameState.js').then(({ playerSpeedMultiplier, playerStunned }) => {
+        // Don't move if stunned
+        if (playerStunned) return;
+        
+        // Scale velocity by player speed and any speed multipliers (like ice bufo slow)
+        const scaledVelocityX = velocityX * playerSpeed * playerSpeedMultiplier;
+        const scaledVelocityY = velocityY * playerSpeed * playerSpeedMultiplier;
 
-    Matter.Body.setVelocity(player, { x: scaledVelocityX, y: scaledVelocityY });
+        Matter.Body.setVelocity(player, { x: scaledVelocityX, y: scaledVelocityY });
 
-    // Player boundary clamp
-    const { x, y } = player.position;
-    const clampedX = Math.max(GAME_CONFIG.PLAYER_RADIUS, Math.min(x, gameWidth - GAME_CONFIG.PLAYER_RADIUS));
-    const clampedY = Math.max(GAME_CONFIG.PLAYER_RADIUS, Math.min(y, gameHeight - GAME_CONFIG.PLAYER_RADIUS));
+        // Player boundary clamp
+        const { x, y } = player.position;
+        const clampedX = Math.max(GAME_CONFIG.PLAYER_RADIUS, Math.min(x, gameWidth - GAME_CONFIG.PLAYER_RADIUS));
+        const clampedY = Math.max(GAME_CONFIG.PLAYER_RADIUS, Math.min(y, gameHeight - GAME_CONFIG.PLAYER_RADIUS));
 
-    if (x !== clampedX || y !== clampedY) {
-        Matter.Body.setPosition(player, { x: clampedX, y: clampedY });
-    }
+        if (x !== clampedX || y !== clampedY) {
+            Matter.Body.setPosition(player, { x: clampedX, y: clampedY });
+        }
+    });
 }
 
 // Apply Stab Bufo aura damage

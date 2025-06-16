@@ -59,6 +59,11 @@ export let playerIsInvincible = false;
 export let invincibilityTimerId = null;
 export let lastAuraTickTime = 0;
 
+// Special enemy effects
+export let playerStunned = false;
+export let stunEndTime = 0;
+export let playerSpeedMultiplier = 1.0; // For ice bufo slow effect
+
 // Character selection
 export let selectedCharacter = CHARACTERS.STAB_BUFO; // Default to Stab Bufo
 export let characterSelectionActive = true;
@@ -200,4 +205,9 @@ export const resetRunTimer = () => {
     enemyKillCount = 0;
 };
 
-export const incrementEnemyKillCount = () => { enemyKillCount++; }; 
+export const incrementEnemyKillCount = () => { enemyKillCount++; };
+
+// Special enemy effects setters
+export const setPlayerStunned = (stunned) => { playerStunned = stunned; };
+export const setStunEndTime = (endTime) => { stunEndTime = endTime; };
+export const setPlayerSpeedMultiplier = (multiplier) => { playerSpeedMultiplier = multiplier; }; 

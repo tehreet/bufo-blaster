@@ -58,6 +58,15 @@ export function loadCharacterAssets() {
     });
 }
 
+export function loadSpecialEnemyAssets() {
+    console.log("Loading special enemy assets...");
+    if (ASSET_URLS.SPECIAL_ENEMIES) {
+        Object.entries(ASSET_URLS.SPECIAL_ENEMIES).forEach(([key, url]) => {
+            preloadImage(url, `special_enemy_${key.toLowerCase()}`);
+        });
+    }
+}
+
 export function setupGameAssets() {
     console.log("Setting up game assets...");
     const canvas = document.getElementById('gameCanvas');
@@ -67,6 +76,7 @@ export function setupGameAssets() {
     }
     loadEnemyAssets();
     loadCharacterAssets();
+    loadSpecialEnemyAssets();
 }
 
 export function initializeAudio() {

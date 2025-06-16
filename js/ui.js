@@ -21,7 +21,9 @@ import {
     gameOver,
     characterSelectionActive,
     selectedCharacter,
-    imageAssets
+    imageAssets,
+    playerStunned,
+    playerSpeedMultiplier
 } from './gameState.js';
 
 // Helper function for text wrapping
@@ -177,23 +179,109 @@ export function renderConfusedEnemies(context) {
     });
 }
 
+// Render special status effects on player
+export function renderPlayerStatusEffects(context) {
+    if (!player) return;
+    
+    const statusY = player.position.y - GAME_CONFIG.PLAYER_RADIUS - 45;
+    let statusIndex = 0;
+    
+    // Stunned indicator
+    if (playerStunned) {
+        const time = Date.now();
+        const pulse = Math.sin(time * 0.01) * 0.3 + 0.7; // Pulsing effect
+        
+        context.save();
+        context.globalAlpha = pulse;
+        context.fillStyle = '#FFD700';
+        context.strokeStyle = '#FF6B6B';
+        context.lineWidth = 2;
+        context.font = 'bold 14px Arial';
+        context.textAlign = 'center';
+        
+        const text = 'STUNNED';
+        const y = statusY - (statusIndex * 18);
+        context.strokeText(text, player.position.x, y);
+        context.fillText(text, player.position.x, y);
+        context.restore();
+        
+        statusIndex++;
+    }
+    
+    // Slowed indicator
+    if (playerSpeedMultiplier < 1.0) {
+        const time = Date.now();
+        const pulse = Math.sin(time * 0.008) * 0.2 + 0.8; // Slower pulsing
+        
+        context.save();
+        context.globalAlpha = pulse;
+        context.fillStyle = '#87CEEB';
+        context.strokeStyle = '#4169E1';
+        context.lineWidth = 2;
+        context.font = 'bold 14px Arial';
+        context.textAlign = 'center';
+        
+        const text = 'SLOWED';
+        const y = statusY - (statusIndex * 18);
+        context.strokeText(text, player.position.x, y);
+        context.fillText(text, player.position.x, y);
+        context.restore();
+        
+        statusIndex++;
+    }
+}
+
 // Render enemy health bars
 export function renderEnemyHealthBars(context) {
     enemies.forEach(enemy => {
-        if (enemy.health !== undefined) {
-            const barWidth = 30;
+        if (enemy.health !== undefined && enemy.maxHealth !== undefined) {
+            const barWidth = enemy.enemyType && enemy.enemyType !== 'normal' ? 40 : 30; // Wider bars for special enemies
             const barHeight = 5;
             const x = enemy.position.x - barWidth / 2;
             const y = enemy.position.y - (enemy.circleRadius || GAME_CONFIG.ENEMY_RADIUS) - barHeight - 5;
-            const healthPercentage = Math.max(0, enemy.health / GAME_CONFIG.ENEMY_MAX_HEALTH);
+            const healthPercentage = Math.max(0, enemy.health / enemy.maxHealth);
 
             // Background (red)
             context.fillStyle = 'red';
             context.fillRect(x, y, barWidth, barHeight);
 
-            // Foreground (green)
-            context.fillStyle = 'green';
+            // Different colors for special enemies
+            let healthColor = 'green';
+            if (enemy.enemyType === 'buff_bufo') {
+                healthColor = '#FFD700'; // Gold for buff bufo
+            } else if (enemy.enemyType === 'gavel_bufo') {
+                healthColor = '#8B4513'; // Brown for gavel bufo
+            } else if (enemy.enemyType === 'ice_bufo') {
+                healthColor = '#87CEEB'; // Light blue for ice bufo
+            } else if (enemy.enemyType === 'boss_bufo') {
+                healthColor = '#FF6B6B'; // Red for boss bufo
+            }
+
+            // Foreground
+            context.fillStyle = healthColor;
             context.fillRect(x, y, barWidth * healthPercentage, barHeight);
+            
+            // Special enemy type indicator
+            if (enemy.enemyType && enemy.enemyType !== 'normal') {
+                context.fillStyle = 'white';
+                context.strokeStyle = 'black';
+                context.lineWidth = 1;
+                context.font = '10px Arial';
+                context.textAlign = 'center';
+                
+                let typeText = '';
+                switch (enemy.enemyType) {
+                    case 'buff_bufo': typeText = 'BUFF'; break;
+                    case 'gavel_bufo': typeText = 'GAVEL'; break;
+                    case 'ice_bufo': typeText = 'ICE'; break;
+                    case 'boss_bufo': typeText = 'BOSS'; break;
+                }
+                
+                if (typeText) {
+                    context.strokeText(typeText, enemy.position.x, y - 8);
+                    context.fillText(typeText, enemy.position.x, y - 8);
+                }
+            }
         }
     });
 }
@@ -473,6 +561,9 @@ export function renderUI(context) {
         
         // Render player health bar
         renderPlayerHealthBar(context);
+        
+        // Render player status effects
+        renderPlayerStatusEffects(context);
         
         // Render enemy health bars
         renderEnemyHealthBars(context);
