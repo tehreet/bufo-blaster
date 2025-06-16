@@ -23,6 +23,7 @@ import {
     currentStarfallCooldown,
     currentStarfallDamage,
     currentStarfallCount,
+    currentGooseOrbitSpeedMultiplier,
     lastStarfallTime,
     setLastStarfallTime,
     selectedCharacter,
@@ -642,8 +643,8 @@ export function updateGooseOrbit() {
     const currentTime = Date.now();
     
     orbitingGeese.forEach(goose => {
-        // Update rotation
-        goose.angle += GAME_CONFIG.GOOSE_BUFO_ORBIT_SPEED * 0.016; // Assuming 60fps
+        // Update rotation with speed multiplier from Ability Haste upgrades
+        goose.angle += GAME_CONFIG.GOOSE_BUFO_ORBIT_SPEED * 0.016 * currentGooseOrbitSpeedMultiplier; // Assuming 60fps
         
         // Calculate position
         const gooseX = player.position.x + Math.cos(goose.angle) * goose.radius;

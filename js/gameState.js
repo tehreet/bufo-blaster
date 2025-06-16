@@ -73,6 +73,9 @@ export let currentAuraKnockback = GAME_CONFIG.STAB_BUFO_AURA_KNOCKBACK_FORCE;
 export let currentStarfallCooldown = GAME_CONFIG.WIZARD_STARFALL_COOLDOWN;
 export let currentStarfallDamage = GAME_CONFIG.WIZARD_STARFALL_DAMAGE;
 export let currentStarfallCount = GAME_CONFIG.WIZARD_STARFALL_COUNT;
+
+// Goose Bufo state
+export let currentGooseOrbitSpeedMultiplier = 1.0; // Base speed multiplier
 export let lastStarfallTime = 0;
 
 // Upgrade system state
@@ -172,6 +175,9 @@ export const setStarfallCooldown = (cooldown) => { currentStarfallCooldown = coo
 export const setStarfallDamage = (damage) => { currentStarfallDamage = damage; };
 export const setStarfallCount = (count) => { currentStarfallCount = count; };
 export const setLastStarfallTime = (time) => { lastStarfallTime = time; };
+
+// Goose Bufo setters
+export const setGooseOrbitSpeedMultiplier = (multiplier) => { currentGooseOrbitSpeedMultiplier = multiplier; };
 
 // Character selection setters
 export const setSelectedCharacter = (character) => { selectedCharacter = character; };

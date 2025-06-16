@@ -63,6 +63,7 @@ import {
     setStarfallCooldown,
     setStarfallDamage,
     setStarfallCount,
+    setGooseOrbitSpeedMultiplier,
     setCharacterSelectionActive,
     setGameStarted,
     selectedCharacter,
@@ -751,6 +752,9 @@ export function resetGame() {
     setStarfallCooldown(GAME_CONFIG.WIZARD_STARFALL_COOLDOWN);
     setStarfallDamage(GAME_CONFIG.WIZARD_STARFALL_DAMAGE);
     setStarfallCount(GAME_CONFIG.WIZARD_STARFALL_COUNT);
+    
+    // Reset goose abilities to base values
+    setGooseOrbitSpeedMultiplier(1.0);
 
     // Clear dynamic objects
     [...enemies, ...projectiles, ...xpOrbs, ...starfallProjectiles, ...convertedAllies].forEach(obj => {

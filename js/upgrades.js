@@ -22,6 +22,7 @@ import {
     currentStarfallCooldown,
     currentStarfallDamage,
     currentStarfallCount,
+    currentGooseOrbitSpeedMultiplier,
     selectedCharacter,
     setIntervals,
     setCurrentUpgradeSelectionIndex,
@@ -32,7 +33,8 @@ import {
     setAuraKnockback,
     setStarfallCooldown,
     setStarfallDamage,
-    setStarfallCount
+    setStarfallCount,
+    setGooseOrbitSpeedMultiplier
 } from './gameState.js';
 
 // Upgrade Definitions
@@ -51,6 +53,11 @@ export const allUpgrades = [
                 const newCooldown = Math.max(1000, Math.floor(currentStarfallCooldown * 0.85)); // Min 1 second
                 setStarfallCooldown(newCooldown);
                 console.log(`Starfall cooldown reduced to: ${newCooldown}ms`);
+            } else if (selectedCharacter.id === 'goose') {
+                // Increase goose orbit speed
+                const newSpeedMultiplier = currentGooseOrbitSpeedMultiplier * 1.3; // 30% faster each time
+                setGooseOrbitSpeedMultiplier(newSpeedMultiplier);
+                console.log(`Goose orbit speed increased! New multiplier: ${newSpeedMultiplier.toFixed(2)}x`);
             }
         }
     },
