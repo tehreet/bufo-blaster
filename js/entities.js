@@ -195,24 +195,25 @@ export function spawnEnemy() {
     const enemyProps = getEnemyProperties(enemyType);
     
     const side = Math.floor(Math.random() * 4);
-    const inset = enemyProps.radius * 3; // Spawn well inside the boundaries
+    // For mega boss, spawn closer to screen edge to ensure visibility
+    const inset = enemyType === ENEMY_TYPES.MEGA_BOSS_BUFO ? enemyProps.radius * 1.5 : enemyProps.radius * 3;
     let x, y;
 
     switch (side) {
         case 0: // Top
             x = Math.random() * (gameWidth - 2 * inset) + inset;
-            y = -enemyProps.radius;
+            y = enemyType === ENEMY_TYPES.MEGA_BOSS_BUFO ? -enemyProps.radius * 0.5 : -enemyProps.radius;
             break;
         case 1: // Right
-            x = gameWidth + enemyProps.radius;
+            x = enemyType === ENEMY_TYPES.MEGA_BOSS_BUFO ? gameWidth + enemyProps.radius * 0.5 : gameWidth + enemyProps.radius;
             y = Math.random() * (gameHeight - 2 * inset) + inset;
             break;
         case 2: // Bottom
             x = Math.random() * (gameWidth - 2 * inset) + inset;
-            y = gameHeight + enemyProps.radius;
+            y = enemyType === ENEMY_TYPES.MEGA_BOSS_BUFO ? gameHeight + enemyProps.radius * 0.5 : gameHeight + enemyProps.radius;
             break;
         case 3: // Left
-            x = -enemyProps.radius;
+            x = enemyType === ENEMY_TYPES.MEGA_BOSS_BUFO ? -enemyProps.radius * 0.5 : -enemyProps.radius;
             y = Math.random() * (gameHeight - 2 * inset) + inset;
             break;
     }
@@ -267,7 +268,9 @@ export function spawnEnemy() {
     if (enemyType === ENEMY_TYPES.XLBUFF_BUFO) {
         console.log(`XL Buff Bufo spawned at level ${playerLevel}! Health: ${enemy.health}`);
     } else if (enemyType === ENEMY_TYPES.MEGA_BOSS_BUFO) {
-        console.log(`MEGA BOSS BUFO spawned at level ${playerLevel}! Health: ${enemy.health}`);
+        console.log(`MEGA BOSS BUFO spawned at (${x.toFixed(0)}, ${y.toFixed(0)}) with radius ${enemyProps.radius} at level ${playerLevel}! Health: ${enemy.health}`);
+        console.log(`Game dimensions: ${gameWidth}x${gameHeight}`);
+        console.log(`Enemy added to world with ID: ${enemy.id}`);
     }
 }
 
@@ -424,6 +427,11 @@ export function updateEnemyMovement() {
                 if (enemy.enemyType === ENEMY_TYPES.MEGA_BOSS_BUFO) {
                     enemy.lastMovementDirectionX = directionX / magnitude;
                     enemy.lastMovementDirectionY = directionY / magnitude;
+                    
+                    // Debug logging for mega boss movement
+                    if (Math.random() < 0.01) { // Log occasionally to avoid spam
+                        console.log(`Mega Boss moving: pos(${enemy.position.x.toFixed(0)}, ${enemy.position.y.toFixed(0)}) -> player(${player.position.x.toFixed(0)}, ${player.position.y.toFixed(0)}) speed: ${speed.toFixed(2)}`);
+                    }
                 }
             }
         }
@@ -1312,11 +1320,17 @@ function updateLaserBeams(currentTime) {
                 const scalingBonus = Math.floor(activeDuration / 1000) * GAME_CONFIG.MEGA_BOSS_LASER_DAMAGE_SCALING;
                 const totalDamage = laser.damage + scalingBonus;
                 
-                // Apply damage to player
+                // Apply damage to player (respect invincibility)
                 import('./gameState.js').then(({ playerHealth, updatePlayerHealth }) => {
-                    const newHealth = Math.max(0, playerHealth - totalDamage);
-                    updatePlayerHealth(newHealth);
-                    console.log(`Player hit by laser! Damage: ${totalDamage}, Health: ${newHealth}`);
+                    import('./constants.js').then(({ DEFAULT_GAME_SETTINGS }) => {
+                        if (!DEFAULT_GAME_SETTINGS.playerInvincible) {
+                            const newHealth = Math.max(0, playerHealth - totalDamage);
+                            updatePlayerHealth(newHealth);
+                            console.log(`Player hit by laser! Damage: ${totalDamage}, Health: ${newHealth}`);
+                        } else {
+                            console.log(`Player hit by laser but is invincible! Damage blocked: ${totalDamage}`);
+                        }
+                    });
                 });
                 
                 laser.lastDamageTime = currentTime;
@@ -1345,11 +1359,17 @@ function updateLavaCracks(currentTime) {
             );
             
             if (distanceToCrack <= GAME_CONFIG.MEGA_BOSS_LAVA_CRACK_WIDTH) {
-                // Apply damage to player
+                // Apply damage to player (respect invincibility)
                 import('./gameState.js').then(({ playerHealth, updatePlayerHealth }) => {
-                    const newHealth = Math.max(0, playerHealth - crack.damage);
-                    updatePlayerHealth(newHealth);
-                    console.log(`Player hit by lava crack! Damage: ${crack.damage}, Health: ${newHealth}`);
+                    import('./constants.js').then(({ DEFAULT_GAME_SETTINGS }) => {
+                        if (!DEFAULT_GAME_SETTINGS.playerInvincible) {
+                            const newHealth = Math.max(0, playerHealth - crack.damage);
+                            updatePlayerHealth(newHealth);
+                            console.log(`Player hit by lava crack! Damage: ${crack.damage}, Health: ${newHealth}`);
+                        } else {
+                            console.log(`Player hit by lava crack but is invincible! Damage blocked: ${crack.damage}`);
+                        }
+                    });
                 });
                 
                 crack.lastDamageTime = currentTime;

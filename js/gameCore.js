@@ -472,7 +472,7 @@ function handlePlayerEnemyCollision(bodyA, bodyB) {
         enemyBody = bodyA;
     }
 
-    if (playerBody && enemyBody && !playerIsInvincible) {
+    if (playerBody && enemyBody && !playerIsInvincible && !DEFAULT_GAME_SETTINGS.playerInvincible) {
         // Use enemy's contact damage or default
         let damage = enemyBody.contactDamage || GAME_CONFIG.ENEMY_CONTACT_DAMAGE;
         
