@@ -166,7 +166,7 @@ function getEnemyProperties(enemyType) {
                 sprite: megaBossAsset && megaBossAsset.complete && megaBossAsset.naturalHeight > 0 
                     ? megaBossAsset.src 
                     : null,
-                scale: 1.2 // Massive sprite for mega boss
+                scale: 0.8 // Reduced scale for better visibility
             };
         default: // NORMAL
             const enemyImageFile = ASSET_URLS.ENEMY_IMAGE_FILES[Math.floor(Math.random() * ASSET_URLS.ENEMY_IMAGE_FILES.length)];
@@ -194,28 +194,57 @@ export function spawnEnemy() {
     const enemyType = determineEnemyType();
     const enemyProps = getEnemyProperties(enemyType);
     
-    const side = Math.floor(Math.random() * 4);
-    // For mega boss, spawn closer to screen edge to ensure visibility
-    const inset = enemyType === ENEMY_TYPES.MEGA_BOSS_BUFO ? enemyProps.radius * 1.5 : enemyProps.radius * 3;
     let x, y;
+    
+    if (enemyType === ENEMY_TYPES.MEGA_BOSS_BUFO) {
+        // Mega boss spawns directly on screen at a safe distance from player
+        const margin = enemyProps.radius + 20; // Reduced margin
+        const minDistance = 150; // Reduced minimum distance from player
+        
+        let attempts = 0;
+        do {
+            x = Math.random() * (gameWidth - 2 * margin) + margin;
+            y = Math.random() * (gameHeight - 2 * margin) + margin;
+            
+            // Calculate distance from player
+            const dx = x - player.position.x;
+            const dy = y - player.position.y;
+            const distanceFromPlayer = Math.sqrt(dx * dx + dy * dy);
+            
+            attempts++;
+            if (attempts > 10) {
+                // Fallback: spawn at a fixed safe position if we can't find a good spot
+                x = gameWidth * 0.75; // 3/4 across the screen
+                y = gameHeight * 0.25; // 1/4 down the screen
+                console.log(`⚠️ Mega boss fallback spawn at (${x.toFixed(0)}, ${y.toFixed(0)})`);
+                break;
+            }
+            
+        } while (distanceFromPlayer < minDistance);
+        
+    } else {
+        // Normal enemies spawn at screen edges
+        const side = Math.floor(Math.random() * 4);
+        const inset = enemyProps.radius * 3;
 
-    switch (side) {
-        case 0: // Top
-            x = Math.random() * (gameWidth - 2 * inset) + inset;
-            y = enemyType === ENEMY_TYPES.MEGA_BOSS_BUFO ? -enemyProps.radius * 0.5 : -enemyProps.radius;
-            break;
-        case 1: // Right
-            x = enemyType === ENEMY_TYPES.MEGA_BOSS_BUFO ? gameWidth + enemyProps.radius * 0.5 : gameWidth + enemyProps.radius;
-            y = Math.random() * (gameHeight - 2 * inset) + inset;
-            break;
-        case 2: // Bottom
-            x = Math.random() * (gameWidth - 2 * inset) + inset;
-            y = enemyType === ENEMY_TYPES.MEGA_BOSS_BUFO ? gameHeight + enemyProps.radius * 0.5 : gameHeight + enemyProps.radius;
-            break;
-        case 3: // Left
-            x = enemyType === ENEMY_TYPES.MEGA_BOSS_BUFO ? -enemyProps.radius * 0.5 : -enemyProps.radius;
-            y = Math.random() * (gameHeight - 2 * inset) + inset;
-            break;
+        switch (side) {
+            case 0: // Top
+                x = Math.random() * (gameWidth - 2 * inset) + inset;
+                y = -enemyProps.radius;
+                break;
+            case 1: // Right
+                x = gameWidth + enemyProps.radius;
+                y = Math.random() * (gameHeight - 2 * inset) + inset;
+                break;
+            case 2: // Bottom
+                x = Math.random() * (gameWidth - 2 * inset) + inset;
+                y = gameHeight + enemyProps.radius;
+                break;
+            case 3: // Left
+                x = -enemyProps.radius;
+                y = Math.random() * (gameHeight - 2 * inset) + inset;
+                break;
+        }
     }
 
     // Create enemy body with proper sprite handling
@@ -268,9 +297,11 @@ export function spawnEnemy() {
     if (enemyType === ENEMY_TYPES.XLBUFF_BUFO) {
         console.log(`XL Buff Bufo spawned at level ${playerLevel}! Health: ${enemy.health}`);
     } else if (enemyType === ENEMY_TYPES.MEGA_BOSS_BUFO) {
-        console.log(`MEGA BOSS BUFO spawned at (${x.toFixed(0)}, ${y.toFixed(0)}) with radius ${enemyProps.radius} at level ${playerLevel}! Health: ${enemy.health}`);
+        console.log(`🔥 MEGA BOSS BUFO spawned at (${x.toFixed(0)}, ${y.toFixed(0)}) with radius ${enemyProps.radius} at level ${playerLevel}! Health: ${enemy.health}`);
         console.log(`Game dimensions: ${gameWidth}x${gameHeight}`);
-        console.log(`Enemy added to world with ID: ${enemy.id}`);
+        console.log(`Player position: (${player.position.x.toFixed(0)}, ${player.position.y.toFixed(0)})`);
+        console.log(`Enemy added to world with ID: ${enemy.id}, Total enemies: ${enemies.length}`);
+        console.log(`Enemy render options:`, enemy.render);
     }
 }
 
@@ -278,6 +309,12 @@ export function spawnEnemy() {
 export function findNearestEnemy() {
     let nearestEnemy = null;
     let minDistanceSq = Infinity;
+
+    // Debug: Check if mega boss is in enemies array
+    const megaBoss = enemies.find(e => e.enemyType === ENEMY_TYPES.MEGA_BOSS_BUFO);
+    if (megaBoss && Math.random() < 0.01) { // Log occasionally
+        console.log(`🔥 Mega boss found in enemies array at (${megaBoss.position.x.toFixed(0)}, ${megaBoss.position.y.toFixed(0)}), Health: ${megaBoss.health}`);
+    }
 
     enemies.forEach(enemy => {
         if (enemy) {
@@ -495,9 +532,15 @@ export function updateSpecialEnemyEffects() {
 
 // Clean up off-screen entities
 export function cleanupOffScreenEntities() {
-    // Clean up enemies
+    // Clean up enemies (but never remove mega boss)
     for (let i = enemies.length - 1; i >= 0; i--) {
         const enemy = enemies[i];
+        
+        // Never cleanup mega boss - let it move freely
+        if (enemy.enemyType === ENEMY_TYPES.MEGA_BOSS_BUFO) {
+            continue;
+        }
+        
         if (enemy.position.x < -100 || enemy.position.x > gameWidth + 100 || 
             enemy.position.y < -100 || enemy.position.y > gameHeight + 100) {
             Composite.remove(world, enemy);
