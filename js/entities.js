@@ -13,7 +13,10 @@ import {
     playerSpeed,
     incrementEnemyKillCount,
     lastAuraTickTime,
-    audioEnemyDie
+    audioEnemyDie,
+    currentAuraCooldown,
+    currentAuraDamage,
+    currentAuraKnockback
 } from './gameState.js';
 
 const { Bodies, World, Composite } = Matter;
@@ -263,7 +266,7 @@ export function applyStabBufoAura() {
     const currentTime = Date.now();
     
     // Check if enough time has passed since last aura tick
-    if (currentTime - lastAuraTickTime < GAME_CONFIG.STAB_BUFO_AURA_TICK_INTERVAL_MS) {
+    if (currentTime - lastAuraTickTime < currentAuraCooldown) {
         return;
     }
 
@@ -282,12 +285,12 @@ export function applyStabBufoAura() {
         const distance = Math.sqrt(dx * dx + dy * dy);
 
         if (distance <= GAME_CONFIG.STAB_BUFO_AURA_RADIUS) {
-            enemy.health -= GAME_CONFIG.STAB_BUFO_AURA_DAMAGE_PER_TICK;
+            enemy.health -= currentAuraDamage;
 
             // Apply knockback force - push enemy away from player
             if (distance > 0) { // Avoid division by zero
-                const knockbackX = (dx / distance) * GAME_CONFIG.STAB_BUFO_AURA_KNOCKBACK_FORCE;
-                const knockbackY = (dy / distance) * GAME_CONFIG.STAB_BUFO_AURA_KNOCKBACK_FORCE;
+                const knockbackX = (dx / distance) * currentAuraKnockback;
+                const knockbackY = (dy / distance) * currentAuraKnockback;
                 
                 // Apply knockback directly as velocity (more immediate effect)
                 Matter.Body.setVelocity(enemy, { 

@@ -53,6 +53,11 @@ export let playerIsInvincible = false;
 export let invincibilityTimerId = null;
 export let lastAuraTickTime = 0;
 
+// Dynamic aura properties (can be upgraded)
+export let currentAuraCooldown = GAME_CONFIG.STAB_BUFO_AURA_TICK_INTERVAL_MS;
+export let currentAuraDamage = GAME_CONFIG.STAB_BUFO_AURA_DAMAGE_PER_TICK;
+export let currentAuraKnockback = GAME_CONFIG.STAB_BUFO_AURA_KNOCKBACK_FORCE;
+
 // Upgrade system state
 export let availableUpgrades = [];
 export let currentUpgradeSelectionIndex = 0;
@@ -134,6 +139,11 @@ export const setIntervals = (enemySpawn, shoot, healthRegen) => {
 
 export const updateHealthRegenInterval = (interval) => { currentPlayerHealthRegenInterval = interval; };
 export const setLastAuraTickTime = (time) => { lastAuraTickTime = time; };
+
+// Aura upgrade setters
+export const setAuraCooldown = (cooldown) => { currentAuraCooldown = cooldown; };
+export const setAuraDamage = (damage) => { currentAuraDamage = damage; };
+export const setAuraKnockback = (knockback) => { currentAuraKnockback = knockback; };
 
 export const updateRunTimer = () => {
     if (runStartTime > 0) {

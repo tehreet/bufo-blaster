@@ -16,31 +16,28 @@ import {
     healthRegenIntervalId,
     currentPlayerHealthRegenInterval,
     currentPlayerHealthRegenAmount,
+    currentAuraCooldown,
+    currentAuraDamage,
+    currentAuraKnockback,
     setIntervals,
     setCurrentUpgradeSelectionIndex,
     setUpgradeButtonStates,
-    setAvailableUpgrades
+    setAvailableUpgrades,
+    setAuraCooldown,
+    setAuraDamage,
+    setAuraKnockback
 } from './gameState.js';
 
 // Upgrade Definitions
 export const allUpgrades = [
     {
-        name: "Rapid Fire",
-        description: "Increases attack speed by 15%.",
+        name: "Ability Haste",
+        description: "Reduces ability cooldown by 15% (aura ticks faster).",
         apply: () => { 
-            const newInterval = shootInterval * 0.85;
-            updateShootInterval(newInterval);
-            
-            // Restart shooting interval
-            if (shootIntervalId) clearInterval(shootIntervalId);
-            const newShootIntervalId = setInterval(() => {
-                import('./entities.js').then(({ shootProjectile }) => {
-                    shootProjectile();
-                });
-            }, newInterval);
-            setIntervals(null, newShootIntervalId, null);
-            
-            console.log(`Attack speed increased. New interval: ${newInterval}`);
+            // Reduce aura tick interval for faster damage/knockback
+            const newInterval = Math.max(200, Math.floor(currentAuraCooldown * 0.85)); // Min 200ms
+            setAuraCooldown(newInterval);
+            console.log(`Ability cooldown reduced. New aura interval: ${newInterval}ms`);
         }
     },
     {
@@ -76,12 +73,17 @@ export const allUpgrades = [
         }
     },
     {
-        name: "More Damage",
-        description: "Your projectiles deal more damage.",
+        name: "Ability Power",
+        description: "Increases ability damage by 25% (stronger aura).",
         apply: () => {
-            const newDamage = projectileDamage + 1;
-            updateProjectileDamage(newDamage);
-            console.log(`Upgrade: More Damage! New damage: ${newDamage}`);
+            // Increase aura damage and knockback
+            const newDamage = currentAuraDamage * 1.25;
+            const newKnockback = currentAuraKnockback * 1.15;
+            
+            setAuraDamage(newDamage);
+            setAuraKnockback(newKnockback);
+            
+            console.log(`Ability Power increased! Damage: ${newDamage.toFixed(2)}, Knockback: ${newKnockback.toFixed(1)}`);
         }
     },
     {

@@ -51,6 +51,9 @@ import {
     updateXpOrbPickupRadius,
     updateHealthRegenInterval,
     setLastAuraTickTime,
+    setAuraCooldown,
+    setAuraDamage,
+    setAuraKnockback,
     setGameOver,
     setGamePausedForUpgrade,
     setPlayerInvincible,
@@ -504,6 +507,11 @@ export function resetGame() {
     updateXpOrbPickupRadius(DEFAULT_GAME_SETTINGS.xpOrbPickupRadius);
     updateHealthRegenInterval(GAME_CONFIG.PLAYER_HEALTH_REGEN_INTERVAL);
     setLastAuraTickTime(0); // Reset aura timer
+    
+    // Reset aura abilities to base values
+    setAuraCooldown(GAME_CONFIG.STAB_BUFO_AURA_TICK_INTERVAL_MS);
+    setAuraDamage(GAME_CONFIG.STAB_BUFO_AURA_DAMAGE_PER_TICK);
+    setAuraKnockback(GAME_CONFIG.STAB_BUFO_AURA_KNOCKBACK_FORCE);
 
     // Clear dynamic objects
     [...enemies, ...projectiles, ...xpOrbs].forEach(obj => {
