@@ -107,7 +107,7 @@ export const CHARACTERS = {
         id: 'goose',
         name: 'Goose Bufo',
         description: 'Summoner with orbiting geese that convert enemies',
-        sprite: 'https://all-the.bufo.zone/bufo-goose-hat-happy-dance.gif',
+        sprite: 'https://all-the.bufo.zone/bufo-riding-goose.gif',
         health: 110,
         speed: 4.5,
         abilityName: 'Goose Guard',
