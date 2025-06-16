@@ -2,7 +2,7 @@
 import { GAME_CONFIG, COLLISION_CATEGORIES, ASSET_URLS, DEFAULT_GAME_SETTINGS, CHARACTERS, ENEMY_TYPES } from './constants.js';
 import { initializeAudio, scaleGameContainer } from './assetLoader.js';
 import { setupKeyboardControls, selectPrimaryGamepad, setupGamepadEventListeners, getMovementInput, pollGamepadForUpgradeMenu, handleGameOverInput, handleCharacterSelectionInput, handlePauseInput } from './input.js';
-import { createPlayerBody, spawnEnemy, shootProjectile, updateEnemyMovement, cleanupOffScreenEntities, updateXPOrbMagnetism, applyPlayerMovement, createXPOrb, applyStabBufoAura, castStarfall, updateStarfallProjectiles, updateConfusedEnemyMovement, initializeGooseOrbit, updateGooseOrbit, updateConvertedAllies, updateSpecialEnemyEffects } from './entities.js';
+import { createPlayerBody, spawnEnemy, shootProjectile, updateEnemyMovement, cleanupOffScreenEntities, updateXPOrbMagnetism, applyPlayerMovement, createXPOrb, createXPOrbsForEnemy, applyStabBufoAura, castStarfall, updateStarfallProjectiles, updateConfusedEnemyMovement, initializeGooseOrbit, updateGooseOrbit, updateConvertedAllies, updateSpecialEnemyEffects } from './entities.js';
 import { presentUpgradeOptions } from './upgrades.js';
 import { renderUI } from './ui.js';
 import { 
@@ -553,7 +553,7 @@ function handleProjectileEnemyCollision(bodyA, bodyB) {
             }
 
             // Create XP orb
-            createXPOrb(enemyBody.position.x, enemyBody.position.y);
+            createXPOrbsForEnemy(enemyBody.position.x, enemyBody.position.y, enemyBody.enemyType);
             incrementEnemyKillCount();
 
             // Remove enemy

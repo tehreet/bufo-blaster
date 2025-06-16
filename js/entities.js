@@ -290,22 +290,56 @@ export function shootProjectile() {
     });
 }
 
-// Create XP orb at position
-export function createXPOrb(x, y) {
-    console.log(`Creating XP orb at (${x.toFixed(0)}, ${y.toFixed(0)})`);
+// Create multiple XP orbs at position
+export function createXPOrbs(x, y, count = 1) {
+    console.log(`Creating ${count} XP orb(s) at (${x.toFixed(0)}, ${y.toFixed(0)})`);
     
-    const xpOrb = Bodies.circle(x, y, GAME_CONFIG.XP_ORB_RADIUS, {
-        label: 'xpOrb', 
-        isSensor: true, 
-        render: { fillStyle: 'cyan' },
-        collisionFilter: { 
-            category: COLLISION_CATEGORIES.DEFAULT, 
-            mask: COLLISION_CATEGORIES.PLAYER 
-        }
-    });
-    World.add(world, xpOrb);
-    xpOrbs.push(xpOrb);
-    return xpOrb;
+    for (let i = 0; i < count; i++) {
+        // Spread orbs slightly for visual variety
+        const offsetX = (Math.random() - 0.5) * 20; // Random offset -10 to +10
+        const offsetY = (Math.random() - 0.5) * 20;
+        
+        const xpOrb = Bodies.circle(x + offsetX, y + offsetY, GAME_CONFIG.XP_ORB_RADIUS, {
+            label: 'xpOrb', 
+            isSensor: true, 
+            render: { fillStyle: 'cyan' },
+            collisionFilter: { 
+                category: COLLISION_CATEGORIES.DEFAULT, 
+                mask: COLLISION_CATEGORIES.PLAYER 
+            }
+        });
+        World.add(world, xpOrb);
+        xpOrbs.push(xpOrb);
+    }
+}
+
+// Legacy function for backward compatibility
+export function createXPOrb(x, y) {
+    createXPOrbs(x, y, 1);
+}
+
+// Determine how many XP orbs an enemy should drop based on type
+function getXPOrbCount(enemyType) {
+    switch (enemyType) {
+        case ENEMY_TYPES.NORMAL:
+            return 1; // Normal enemies drop 1 orb
+        case ENEMY_TYPES.ICE_BUFO:
+            return 2; // Ice bufo drops 2 orbs (5 health vs 3 normal)
+        case ENEMY_TYPES.GAVEL_BUFO:
+            return 2; // Gavel bufo drops 2 orbs (6 health vs 3 normal)
+        case ENEMY_TYPES.BUFF_BUFO:
+            return 3; // Buff bufo drops 3 orbs (8 health vs 3 normal)
+        case ENEMY_TYPES.BOSS_BUFO:
+            return 7; // Boss bufo drops 7 orbs (20 health vs 3 normal)
+        default:
+            return 1;
+    }
+}
+
+// Create appropriate number of XP orbs for enemy type
+export function createXPOrbsForEnemy(x, y, enemyType) {
+    const orbCount = getXPOrbCount(enemyType);
+    createXPOrbs(x, y, orbCount);
 }
 
 // Update enemy movement towards player
@@ -535,7 +569,7 @@ export function applyStabBufoAura() {
                     }
 
                     // Create XP orb
-                    createXPOrb(enemy.position.x, enemy.position.y);
+                    createXPOrbsForEnemy(enemy.position.x, enemy.position.y, enemy.enemyType);
                     incrementEnemyKillCount();
 
                     // Remove enemy
@@ -813,7 +847,7 @@ export function applyStarfallAOE(impactX, impactY, damage, confusionDuration, cu
             }
 
             // Create XP orb
-            createXPOrb(enemy.position.x, enemy.position.y);
+            createXPOrbsForEnemy(enemy.position.x, enemy.position.y, enemy.enemyType);
             incrementEnemyKillCount();
 
             // Mark for removal (we'll remove them after processing all)
@@ -998,7 +1032,7 @@ export function updateConvertedAllies() {
                             }
 
                             // Create XP orb for converted ally kills
-                            createXPOrb(nearestEnemy.position.x, nearestEnemy.position.y);
+                            createXPOrbsForEnemy(nearestEnemy.position.x, nearestEnemy.position.y, nearestEnemy.enemyType);
                             incrementEnemyKillCount();
 
                             // Remove enemy
