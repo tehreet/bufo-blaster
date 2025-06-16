@@ -54,7 +54,7 @@ export const GAME_CONFIG = {
     XLBUFF_BUFO_LEVEL_INTERVAL: 7, // Spawn every 7 levels
 
     // Mega Boss Bufo (level 7+ with special abilities)
-    MEGA_BOSS_BUFO_RADIUS: 50, // 5x larger than normal bufo
+    MEGA_BOSS_BUFO_RADIUS: 100, // 10x larger than normal bufo (was 50, now doubled)
     MEGA_BOSS_BUFO_HEALTH: 150,
     MEGA_BOSS_BUFO_CONTACT_DAMAGE: 40,
     MEGA_BOSS_BUFO_SPEED_MULTIPLIER: 0.3, // Much slower

@@ -198,8 +198,8 @@ export function spawnEnemy() {
     
     if (enemyType === ENEMY_TYPES.MEGA_BOSS_BUFO) {
         // Mega boss spawns directly on screen at a safe distance from player
-        const margin = enemyProps.radius + 20; // Reduced margin
-        const minDistance = 150; // Reduced minimum distance from player
+        const margin = enemyProps.radius + 50; // Larger margin for bigger boss
+        const minDistance = 200; // Increased minimum distance from player
         
         let attempts = 0;
         let distanceFromPlayer = 0; // Declare variable in proper scope
@@ -1372,6 +1372,13 @@ function updateLaserBeams(currentTime) {
                             const newHealth = Math.max(0, playerHealth - totalDamage);
                             updatePlayerHealth(newHealth);
                             console.log(`Player hit by laser! Damage: ${totalDamage}, Health: ${newHealth}`);
+                            
+                            // Trigger game over if health reaches 0
+                            if (newHealth <= 0) {
+                                import('./gameCore.js').then(({ triggerGameOver }) => {
+                                    triggerGameOver();
+                                });
+                            }
                         } else {
                             console.log(`Player hit by laser but is invincible! Damage blocked: ${totalDamage}`);
                         }
@@ -1411,6 +1418,13 @@ function updateLavaCracks(currentTime) {
                             const newHealth = Math.max(0, playerHealth - crack.damage);
                             updatePlayerHealth(newHealth);
                             console.log(`Player hit by lava crack! Damage: ${crack.damage}, Health: ${newHealth}`);
+                            
+                            // Trigger game over if health reaches 0
+                            if (newHealth <= 0) {
+                                import('./gameCore.js').then(({ triggerGameOver }) => {
+                                    triggerGameOver();
+                                });
+                            }
                         } else {
                             console.log(`Player hit by lava crack but is invincible! Damage blocked: ${crack.damage}`);
                         }
