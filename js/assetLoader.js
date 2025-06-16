@@ -62,7 +62,9 @@ export function loadSpecialEnemyAssets() {
     console.log("Loading special enemy assets...");
     if (ASSET_URLS.SPECIAL_ENEMIES) {
         Object.entries(ASSET_URLS.SPECIAL_ENEMIES).forEach(([key, url]) => {
-            preloadImage(url, `special_enemy_${key.toLowerCase()}`);
+            if (url) { // Only load if URL is not null
+                preloadImage(url, `special_enemy_${key.toLowerCase()}`);
+            }
         });
     }
 }

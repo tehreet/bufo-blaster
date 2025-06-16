@@ -57,6 +57,22 @@ export function createPlayerBody() {
     });
 }
 
+// Get fallback color for enemy types
+function getEnemyFallbackColor(enemyType) {
+    switch (enemyType) {
+        case ENEMY_TYPES.BUFF_BUFO:
+            return '#FFD700'; // Gold
+        case ENEMY_TYPES.GAVEL_BUFO:
+            return '#8B4513'; // Brown
+        case ENEMY_TYPES.ICE_BUFO:
+            return '#87CEEB'; // Light blue
+        case ENEMY_TYPES.BOSS_BUFO:
+            return '#FF6B6B'; // Red
+        default:
+            return 'red'; // Normal enemy red
+    }
+}
+
 // Determine what type of enemy to spawn based on current level
 function determineEnemyType() {
     // Boss every 7 levels
@@ -113,11 +129,15 @@ function getEnemyProperties(enemyType) {
             };
         default: // NORMAL
             const enemyImageFile = ASSET_URLS.ENEMY_IMAGE_FILES[Math.floor(Math.random() * ASSET_URLS.ENEMY_IMAGE_FILES.length)];
+            const enemyImageAsset = imageAssets[enemyImageFile];
+            
             return {
                 radius: GAME_CONFIG.ENEMY_RADIUS,
                 health: GAME_CONFIG.ENEMY_MAX_HEALTH,
                 contactDamage: GAME_CONFIG.ENEMY_CONTACT_DAMAGE,
-                sprite: ASSET_URLS.ENEMY_SPRITE_BASE + enemyImageFile,
+                sprite: enemyImageAsset && enemyImageAsset.complete && enemyImageAsset.naturalHeight > 0 
+                    ? enemyImageAsset.src 
+                    : null, // Use null if image not loaded
                 scale: 0.22
             };
     }
@@ -156,7 +176,20 @@ export function spawnEnemy() {
             break;
     }
 
-    // Create enemy body
+    // Create enemy body with proper sprite handling
+    const renderOptions = {
+        fillStyle: getEnemyFallbackColor(enemyType) // Always provide fallback color
+    };
+    
+    // Only add sprite if texture is available and valid
+    if (enemyProps.sprite) {
+        renderOptions.sprite = {
+            texture: enemyProps.sprite,
+            xScale: enemyProps.scale,
+            yScale: enemyProps.scale
+        };
+    }
+    
     const enemy = Bodies.circle(x, y, enemyProps.radius, {
         collisionFilter: { 
             category: COLLISION_CATEGORIES.ENEMY, 
@@ -164,13 +197,7 @@ export function spawnEnemy() {
         },
         label: 'enemy',
         frictionAir: 0.01,
-        render: {
-            sprite: {
-                texture: enemyProps.sprite,
-                xScale: enemyProps.scale,
-                yScale: enemyProps.scale
-            }
-        }
+        render: renderOptions
     });
 
     enemy.health = enemyProps.health;
