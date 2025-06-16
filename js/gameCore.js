@@ -356,6 +356,9 @@ function handleCollisions(event) {
         // Projectile-Enemy collision
         handleProjectileEnemyCollision(bodyA, bodyB);
         
+        // Starfall-Enemy collision
+        handleStarfallEnemyCollision(bodyA, bodyB);
+        
         // Player-XP Orb collision
         handlePlayerXPOrbCollision(bodyA, bodyB);
     }
@@ -436,6 +439,51 @@ function handleProjectileEnemyCollision(bodyA, bodyB) {
             if (enemyIndex > -1) enemies.splice(enemyIndex, 1);
             Composite.remove(world, enemyBody);
         }
+    }
+}
+
+// Handle starfall-enemy collisions
+function handleStarfallEnemyCollision(bodyA, bodyB) {
+    let starfallBody, enemyBody;
+
+    if (bodyA.label === 'starfall' && bodyB.label === 'enemy') {
+        starfallBody = bodyA;
+        enemyBody = bodyB;
+    } else if (bodyB.label === 'starfall' && bodyA.label === 'enemy') {
+        starfallBody = bodyB;
+        enemyBody = bodyA;
+    }
+
+    if (starfallBody && enemyBody) {
+        const currentTime = Date.now();
+        
+        // Check if this starfall has already exploded recently (prevent multiple rapid explosions)
+        if (starfallBody.lastExplosionTime && currentTime - starfallBody.lastExplosionTime < 500) {
+            return; // Don't explode again so soon
+        }
+        
+        // Mark explosion time
+        starfallBody.lastExplosionTime = currentTime;
+        
+        // Trigger AOE explosion at starfall location
+        import('./entities.js').then(({ applyStarfallAOE, starfallProjectiles }) => {
+            const impactX = starfallBody.position.x;
+            const impactY = starfallBody.position.y;
+            const damage = starfallBody.damage || 2;
+            const confusionDuration = starfallBody.confusionDuration || 2000;
+            
+            // Apply AOE damage using the existing function
+            applyStarfallAOE(impactX, impactY, damage, confusionDuration, currentTime);
+            
+            // Remove starfall projectile after a short delay to allow visual feedback
+            setTimeout(() => {
+                const starfallIndex = starfallProjectiles.indexOf(starfallBody);
+                if (starfallIndex > -1) starfallProjectiles.splice(starfallIndex, 1);
+                Composite.remove(world, starfallBody);
+            }, 100); // 100ms delay
+            
+            console.log(`Starfall collision triggered at (${impactX.toFixed(0)}, ${impactY.toFixed(0)})`);
+        });
     }
 }
 

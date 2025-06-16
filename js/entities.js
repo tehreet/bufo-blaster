@@ -562,7 +562,7 @@ export function updateConfusedEnemyMovement() {
 }
 
 // Apply AOE damage from starfall impact
-function applyStarfallAOE(impactX, impactY, damage, confusionDuration, currentTime) {
+export function applyStarfallAOE(impactX, impactY, damage, confusionDuration, currentTime) {
     const affectedEnemies = [];
     const enemiesToRemove = [];
     
