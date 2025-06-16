@@ -5,6 +5,7 @@ import {
     gameHeight, 
     player,
     enemies,
+    starfallProjectiles,
     playerHealth,
     playerXP,
     playerLevel,
@@ -44,7 +45,8 @@ export function renderPlayerHealthBar(context) {
 
     const barX = player.position.x - GAME_CONFIG.PLAYER_HEALTHBAR_WIDTH / 2;
     const barY = player.position.y - GAME_CONFIG.PLAYER_RADIUS - GAME_CONFIG.PLAYER_HEALTHBAR_OFFSET_Y;
-    const healthPercentage = Math.max(0, playerHealth / DEFAULT_GAME_SETTINGS.playerHealth); // Use actual max health
+    const maxHealth = selectedCharacter ? selectedCharacter.health : DEFAULT_GAME_SETTINGS.playerHealth;
+    const healthPercentage = Math.max(0, playerHealth / maxHealth);
 
     // Background (red)
     context.fillStyle = 'red';
@@ -79,6 +81,85 @@ export function renderStabBufoAura(context) {
     context.restore();
 }
 
+// Render starfall projectiles with trail effects
+export function renderStarfallProjectiles(context) {
+    starfallProjectiles.forEach(starfall => {
+        const time = Date.now();
+        const age = time - starfall.creationTime;
+        const maxAge = 5000; // 5 seconds
+        const ageRatio = Math.min(age / maxAge, 1);
+        
+        // Create a glowing star effect
+        context.save();
+        
+        // Outer glow
+        const glowSize = 15 - (ageRatio * 5); // Shrink over time
+        context.globalAlpha = 0.3 - (ageRatio * 0.2);
+        context.fillStyle = '#FFD700';
+        context.beginPath();
+        context.arc(starfall.position.x, starfall.position.y, glowSize, 0, 2 * Math.PI);
+        context.fill();
+        
+        // Inner star
+        context.globalAlpha = 1 - (ageRatio * 0.3);
+        context.fillStyle = '#FFA500';
+        context.strokeStyle = '#FFD700';
+        context.lineWidth = 2;
+        
+        // Draw a 5-pointed star
+        const starSize = 8 - (ageRatio * 2);
+        drawStar(context, starfall.position.x, starfall.position.y, starSize, 5);
+        
+        context.restore();
+    });
+}
+
+// Helper function to draw a star
+function drawStar(context, x, y, radius, points) {
+    const angle = Math.PI / points;
+    context.beginPath();
+    for (let i = 0; i < 2 * points; i++) {
+        const r = i % 2 === 0 ? radius : radius * 0.5;
+        const currX = x + Math.cos(i * angle) * r;
+        const currY = y + Math.sin(i * angle) * r;
+        if (i === 0) {
+            context.moveTo(currX, currY);
+        } else {
+            context.lineTo(currX, currY);
+        }
+    }
+    context.closePath();
+    context.fill();
+    context.stroke();
+}
+
+// Render confused enemy indicators
+export function renderConfusedEnemies(context) {
+    const currentTime = Date.now();
+    enemies.forEach(enemy => {
+        if (enemy.confused && currentTime < enemy.confusionEndTime) {
+            // Draw spinning stars above confused enemies
+            const spinSpeed = 0.01;
+            const rotation = (currentTime * spinSpeed) % (2 * Math.PI);
+            
+            context.save();
+            context.translate(enemy.position.x, enemy.position.y - 25);
+            context.rotate(rotation);
+            
+            context.fillStyle = '#FFD700';
+            context.strokeStyle = '#FFA500';
+            context.lineWidth = 1;
+            
+            // Draw small spinning stars
+            drawStar(context, -8, 0, 4, 5);
+            drawStar(context, 8, 0, 4, 5);
+            drawStar(context, 0, -8, 4, 5);
+            
+            context.restore();
+        }
+    });
+}
+
 // Render enemy health bars
 export function renderEnemyHealthBars(context) {
     enemies.forEach(enemy => {
@@ -107,7 +188,8 @@ export function renderHUD(context) {
     context.textAlign = 'left';
     
     // Game statistics
-    context.fillText(`Health: ${playerHealth}/${DEFAULT_GAME_SETTINGS.playerHealth}`, 10, 30);
+    const maxHealth = selectedCharacter ? selectedCharacter.health : DEFAULT_GAME_SETTINGS.playerHealth;
+    context.fillText(`Health: ${playerHealth}/${maxHealth}`, 10, 30);
     context.fillText(`Level: ${playerLevel}`, 10, 50);
     context.fillText(`XP: ${playerXP}/${xpToNextLevel}`, 10, 70);
     context.fillText(`Time: ${elapsedRunTimeFormatted}`, 10, 90);
@@ -255,14 +337,18 @@ export function renderUI(context) {
         // Render character-specific abilities
         if (selectedCharacter.id === 'stab') {
             renderStabBufoAura(context);
+        } else if (selectedCharacter.id === 'wizard') {
+            renderStarfallProjectiles(context);
         }
-        // TODO: Add Wizard Bufo starfall visual effects here
         
         // Render player health bar
         renderPlayerHealthBar(context);
         
         // Render enemy health bars
         renderEnemyHealthBars(context);
+        
+        // Render confused enemy indicators
+        renderConfusedEnemies(context);
         
         // Render HUD
         renderHUD(context);

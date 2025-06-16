@@ -19,25 +19,39 @@ import {
     currentAuraCooldown,
     currentAuraDamage,
     currentAuraKnockback,
+    currentStarfallCooldown,
+    currentStarfallDamage,
+    currentStarfallCount,
+    selectedCharacter,
     setIntervals,
     setCurrentUpgradeSelectionIndex,
     setUpgradeButtonStates,
     setAvailableUpgrades,
     setAuraCooldown,
     setAuraDamage,
-    setAuraKnockback
+    setAuraKnockback,
+    setStarfallCooldown,
+    setStarfallDamage,
+    setStarfallCount
 } from './gameState.js';
 
 // Upgrade Definitions
 export const allUpgrades = [
     {
         name: "Ability Haste",
-        description: "Reduces ability cooldown by 15% (aura ticks faster).",
+        description: "Reduces ability cooldown by 15%.",
         apply: () => { 
-            // Reduce aura tick interval for faster damage/knockback
-            const newInterval = Math.max(200, Math.floor(currentAuraCooldown * 0.85)); // Min 200ms
-            setAuraCooldown(newInterval);
-            console.log(`Ability cooldown reduced. New aura interval: ${newInterval}ms`);
+            if (selectedCharacter.id === 'stab') {
+                // Reduce aura tick interval for faster damage/knockback
+                const newInterval = Math.max(200, Math.floor(currentAuraCooldown * 0.85)); // Min 200ms
+                setAuraCooldown(newInterval);
+                console.log(`Ability cooldown reduced. New aura interval: ${newInterval}ms`);
+            } else if (selectedCharacter.id === 'wizard') {
+                // Reduce starfall cooldown
+                const newCooldown = Math.max(1000, Math.floor(currentStarfallCooldown * 0.85)); // Min 1 second
+                setStarfallCooldown(newCooldown);
+                console.log(`Starfall cooldown reduced to: ${newCooldown}ms`);
+            }
         }
     },
     {
@@ -74,16 +88,27 @@ export const allUpgrades = [
     },
     {
         name: "Ability Power",
-        description: "Increases ability damage by 25% (stronger aura).",
+        description: "Increases ability damage by 25%.",
         apply: () => {
-            // Increase aura damage and knockback
-            const newDamage = currentAuraDamage * 1.25;
-            const newKnockback = currentAuraKnockback * 1.15;
-            
-            setAuraDamage(newDamage);
-            setAuraKnockback(newKnockback);
-            
-            console.log(`Ability Power increased! Damage: ${newDamage.toFixed(2)}, Knockback: ${newKnockback.toFixed(1)}`);
+            if (selectedCharacter.id === 'stab') {
+                // Increase aura damage and knockback
+                const newDamage = currentAuraDamage * 1.25;
+                const newKnockback = currentAuraKnockback * 1.15;
+                
+                setAuraDamage(newDamage);
+                setAuraKnockback(newKnockback);
+                
+                console.log(`Aura Power increased! Damage: ${newDamage.toFixed(2)}, Knockback: ${newKnockback.toFixed(1)}`);
+            } else if (selectedCharacter.id === 'wizard') {
+                // Increase starfall damage and star count
+                const newDamage = currentStarfallDamage * 1.25;
+                const newCount = Math.min(8, currentStarfallCount + 1); // Max 8 stars
+                
+                setStarfallDamage(newDamage);
+                setStarfallCount(newCount);
+                
+                console.log(`Starfall Power increased! Damage: ${newDamage.toFixed(2)}, Star Count: ${newCount}`);
+            }
         }
     },
     {
@@ -99,7 +124,8 @@ export const allUpgrades = [
         name: "Health Pack",
         description: "Restores 25 health.",
         apply: () => {
-            const newHealth = Math.min(DEFAULT_GAME_SETTINGS.playerHealth, playerHealth + 25);
+            const maxHealth = selectedCharacter ? selectedCharacter.health : DEFAULT_GAME_SETTINGS.playerHealth;
+            const newHealth = Math.min(maxHealth, playerHealth + 25);
             updatePlayerHealth(newHealth);
             console.log(`Upgrade: Health Pack! Current health: ${newHealth}`);
         }

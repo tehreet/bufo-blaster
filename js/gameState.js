@@ -17,6 +17,7 @@ export let playerImageElement = null;
 export const enemies = [];
 export const projectiles = [];
 export const xpOrbs = [];
+export const starfallProjectiles = [];
 
 // Asset loading state
 export let imagesToLoadCount = 0;

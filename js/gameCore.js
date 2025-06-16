@@ -2,7 +2,7 @@
 import { GAME_CONFIG, COLLISION_CATEGORIES, ASSET_URLS, DEFAULT_GAME_SETTINGS } from './constants.js';
 import { initializeAudio, scaleGameContainer } from './assetLoader.js';
 import { setupKeyboardControls, selectPrimaryGamepad, setupGamepadEventListeners, getMovementInput, pollGamepadForUpgradeMenu, handleGameOverInput, handleCharacterSelectionInput } from './input.js';
-import { createPlayerBody, spawnEnemy, shootProjectile, updateEnemyMovement, cleanupOffScreenEntities, updateXPOrbMagnetism, applyPlayerMovement, createXPOrb, applyStabBufoAura } from './entities.js';
+import { createPlayerBody, spawnEnemy, shootProjectile, updateEnemyMovement, cleanupOffScreenEntities, updateXPOrbMagnetism, applyPlayerMovement, createXPOrb, applyStabBufoAura, castStarfall, updateStarfallProjectiles, updateConfusedEnemyMovement } from './entities.js';
 import { presentUpgradeOptions } from './upgrades.js';
 import { renderUI } from './ui.js';
 import { 
@@ -24,6 +24,7 @@ import {
     enemies,
     projectiles,
     xpOrbs,
+    starfallProjectiles,
     playerHealth,
     playerXP,
     playerLevel,
@@ -56,8 +57,13 @@ import {
     setAuraCooldown,
     setAuraDamage,
     setAuraKnockback,
+    setStarfallCooldown,
+    setStarfallDamage,
+    setStarfallCount,
     setCharacterSelectionActive,
     setGameStarted,
+    selectedCharacter,
+    playerImageElement,
     setGameOver,
     setGamePausedForUpgrade,
     setPlayerInvincible,
@@ -206,9 +212,17 @@ function setupEventListeners() {
 
         updateRunTimer();
         updateEnemyMovement();
+        updateConfusedEnemyMovement(); // Handle confused enemies separately
         cleanupOffScreenEntities();
         updateXPOrbMagnetism();
-        applyStabBufoAura();
+        
+        // Character-specific abilities
+        if (selectedCharacter.id === 'stab') {
+            applyStabBufoAura();
+        } else if (selectedCharacter.id === 'wizard') {
+            castStarfall(); // Auto-cast when enemies are in range
+            updateStarfallProjectiles();
+        }
     });
 
     // Collision handling
@@ -477,8 +491,9 @@ export function regeneratePlayerHealth() {
         return;
     }
 
-    if (playerHealth < DEFAULT_GAME_SETTINGS.playerHealth) {
-        const newHealth = Math.min(DEFAULT_GAME_SETTINGS.playerHealth, playerHealth + currentPlayerHealthRegenAmount);
+    const maxHealth = selectedCharacter ? selectedCharacter.health : DEFAULT_GAME_SETTINGS.playerHealth;
+    if (playerHealth < maxHealth) {
+        const newHealth = Math.min(maxHealth, playerHealth + currentPlayerHealthRegenAmount);
         updatePlayerHealth(newHealth);
     }
 }
@@ -523,9 +538,14 @@ export function resetGame() {
     setAuraCooldown(GAME_CONFIG.STAB_BUFO_AURA_TICK_INTERVAL_MS);
     setAuraDamage(GAME_CONFIG.STAB_BUFO_AURA_DAMAGE_PER_TICK);
     setAuraKnockback(GAME_CONFIG.STAB_BUFO_AURA_KNOCKBACK_FORCE);
+    
+    // Reset starfall abilities to base values
+    setStarfallCooldown(GAME_CONFIG.WIZARD_STARFALL_COOLDOWN);
+    setStarfallDamage(GAME_CONFIG.WIZARD_STARFALL_DAMAGE);
+    setStarfallCount(GAME_CONFIG.WIZARD_STARFALL_COUNT);
 
     // Clear dynamic objects
-    [...enemies, ...projectiles, ...xpOrbs].forEach(obj => {
+    [...enemies, ...projectiles, ...xpOrbs, ...starfallProjectiles].forEach(obj => {
         if (obj && world && Composite.get(world, obj.id, obj.type)) {
             World.remove(world, obj);
         }
@@ -533,6 +553,7 @@ export function resetGame() {
     enemies.length = 0;
     projectiles.length = 0;
     xpOrbs.length = 0;
+    starfallProjectiles.length = 0;
 
     // Reset player position
     if (player) {
@@ -569,7 +590,16 @@ export function resetGame() {
 
 // Start the actual game after character selection
 export function startGameAfterCharacterSelection() {
-    console.log("Starting game with selected character...");
+    console.log(`Starting game with ${selectedCharacter.name}...`);
+    
+    // Update player stats based on selected character
+    updatePlayerHealth(selectedCharacter.health);
+    updatePlayerSpeed(selectedCharacter.speed);
+    
+    // Update player sprite
+    if (playerImageElement) {
+        playerImageElement.src = selectedCharacter.sprite;
+    }
     
     // Mark character selection as complete
     setCharacterSelectionActive(false);
@@ -581,5 +611,5 @@ export function startGameAfterCharacterSelection() {
     // Reset run timer to start fresh
     resetRunTimer();
     
-    console.log("Game started successfully!");
+    console.log(`Game started successfully with ${selectedCharacter.name}!`);
 } 

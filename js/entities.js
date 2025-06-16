@@ -6,6 +6,7 @@ import {
     enemies, 
     projectiles, 
     xpOrbs,
+    starfallProjectiles,
     world,
     player,
     imageAssets,
@@ -17,6 +18,12 @@ import {
     currentAuraCooldown,
     currentAuraDamage,
     currentAuraKnockback,
+    currentStarfallCooldown,
+    currentStarfallDamage,
+    currentStarfallCount,
+    lastStarfallTime,
+    setLastStarfallTime,
+    selectedCharacter,
     gamePausedForUpgrade,
     gameOver,
     characterSelectionActive
@@ -328,4 +335,175 @@ export function applyStabBufoAura() {
             }
         }
     }
+}
+
+// Find enemies within starfall range
+export function findEnemiesInRange(centerX, centerY, range) {
+    return enemies.filter(enemy => {
+        const dx = enemy.position.x - centerX;
+        const dy = enemy.position.y - centerY;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+        return distance <= range;
+    });
+}
+
+// Cast starfall ability
+export function castStarfall() {
+    if (!player || selectedCharacter.id !== 'wizard') return;
+
+    const currentTime = Date.now();
+    
+    // Check cooldown
+    if (currentTime - lastStarfallTime < currentStarfallCooldown) {
+        return;
+    }
+
+    // Find enemies within range
+    const enemiesInRange = findEnemiesInRange(
+        player.position.x, 
+        player.position.y, 
+        GAME_CONFIG.WIZARD_STARFALL_RANGE
+    );
+
+    if (enemiesInRange.length === 0) return;
+
+    // Update last cast time
+    setLastStarfallTime(currentTime);
+
+    // Create starfall projectiles targeting random enemies
+    for (let i = 0; i < Math.min(currentStarfallCount, enemiesInRange.length); i++) {
+        const targetEnemy = enemiesInRange[Math.floor(Math.random() * enemiesInRange.length)];
+        createStarfallProjectile(targetEnemy);
+    }
+
+    // Play shoot sound (reuse existing sound)
+    import('./gameState.js').then(({ audioShoot }) => {
+        if (audioShoot) {
+            audioShoot.currentTime = 0;
+            audioShoot.play().catch(e => console.warn("Starfall sound play failed:", e));
+        }
+    });
+}
+
+// Create a starfall projectile
+export function createStarfallProjectile(targetEnemy) {
+    if (!targetEnemy) return;
+
+    // Start position above the target
+    const startX = targetEnemy.position.x + (Math.random() - 0.5) * 100; // Some randomness
+    const startY = targetEnemy.position.y - 300; // Start high above
+
+    const starfall = Bodies.circle(startX, startY, GAME_CONFIG.PROJECTILE_RADIUS * 1.5, {
+        collisionFilter: { 
+            category: COLLISION_CATEGORIES.PROJECTILE, 
+            mask: COLLISION_CATEGORIES.DEFAULT | COLLISION_CATEGORIES.ENEMY 
+        },
+        label: 'starfall',
+        isSensor: true,
+        render: { 
+            fillStyle: '#FFD700', // Gold color for stars
+            strokeStyle: '#FFA500',
+            lineWidth: 2
+        }
+    });
+
+    // Calculate velocity to hit the target
+    const dx = targetEnemy.position.x - startX;
+    const dy = targetEnemy.position.y - startY;
+    const magnitude = Math.sqrt(dx * dx + dy * dy);
+    
+    if (magnitude > 0) {
+        const speed = GAME_CONFIG.PROJECTILE_SPEED * 0.8; // Slightly slower than regular projectiles
+        const velocityX = (dx / magnitude) * speed;
+        const velocityY = (dy / magnitude) * speed;
+        
+        Matter.Body.setVelocity(starfall, { x: velocityX, y: velocityY });
+    }
+
+    // Add custom properties
+    starfall.damage = currentStarfallDamage;
+    starfall.confusionDuration = GAME_CONFIG.WIZARD_STARFALL_CONFUSION_DURATION;
+    starfall.creationTime = Date.now();
+
+    starfallProjectiles.push(starfall);
+    World.add(world, starfall);
+}
+
+// Update starfall projectiles
+export function updateStarfallProjectiles() {
+    const currentTime = Date.now();
+    
+    for (let i = starfallProjectiles.length - 1; i >= 0; i--) {
+        const starfall = starfallProjectiles[i];
+        
+        // Remove old starfall projectiles (5 second lifetime)
+        if (currentTime - starfall.creationTime > 5000) {
+            Composite.remove(world, starfall);
+            starfallProjectiles.splice(i, 1);
+            continue;
+        }
+
+        // Check collision with enemies
+        for (let j = enemies.length - 1; j >= 0; j--) {
+            const enemy = enemies[j];
+            const dx = starfall.position.x - enemy.position.x;
+            const dy = starfall.position.y - enemy.position.y;
+            const distance = Math.sqrt(dx * dx + dy * dy);
+            
+            if (distance < GAME_CONFIG.PROJECTILE_RADIUS * 1.5 + GAME_CONFIG.ENEMY_RADIUS) {
+                // Deal damage
+                enemy.health -= starfall.damage;
+                
+                // Apply confusion effect (reverse movement for a duration)
+                enemy.confused = true;
+                enemy.confusionEndTime = currentTime + starfall.confusionDuration;
+                
+                // Check if enemy dies
+                if (enemy.health <= 0) {
+                    // Play death sound
+                    if (audioEnemyDie) {
+                        audioEnemyDie.currentTime = 0;
+                        audioEnemyDie.play().catch(e => console.error("Error playing enemy die sound:", e));
+                    }
+
+                    // Create XP orb
+                    createXPOrb(enemy.position.x, enemy.position.y);
+                    incrementEnemyKillCount();
+
+                    // Remove enemy
+                    enemies.splice(j, 1);
+                    Matter.Composite.remove(world, enemy);
+                }
+                
+                // Remove starfall projectile after hit
+                Composite.remove(world, starfall);
+                starfallProjectiles.splice(i, 1);
+                break;
+            }
+        }
+    }
+}
+
+// Update confused enemy movement
+export function updateConfusedEnemyMovement() {
+    const currentTime = Date.now();
+    
+    enemies.forEach(enemy => {
+        if (enemy.confused && currentTime < enemy.confusionEndTime && player) {
+            // Move away from player instead of towards
+            const directionX = enemy.position.x - player.position.x; // Reversed
+            const directionY = enemy.position.y - player.position.y; // Reversed
+            const magnitude = Math.sqrt(directionX * directionX + directionY * directionY);
+            
+            if (magnitude > 0) {
+                const velocityX = (directionX / magnitude) * GAME_CONFIG.ENEMY_SPEED * 0.5; // Slower when confused
+                const velocityY = (directionY / magnitude) * GAME_CONFIG.ENEMY_SPEED * 0.5;
+                Matter.Body.setVelocity(enemy, { x: velocityX, y: velocityY });
+            }
+        } else if (enemy.confused && currentTime >= enemy.confusionEndTime) {
+            // Remove confusion
+            enemy.confused = false;
+            delete enemy.confusionEndTime;
+        }
+    });
 } 
