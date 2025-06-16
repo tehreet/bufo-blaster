@@ -1,5 +1,5 @@
 // Asset Loading System
-import { ASSET_URLS, AUDIO_PATHS } from './constants.js';
+import { ASSET_URLS, AUDIO_PATHS, CHARACTERS } from './constants.js';
 import { 
     imagesToLoadCount, 
     imagesLoadedCount, 
@@ -50,6 +50,14 @@ export function loadEnemyAssets() {
     });
 }
 
+export function loadCharacterAssets() {
+    console.log("Loading character assets...");
+    const characters = Object.values(CHARACTERS);
+    characters.forEach(character => {
+        preloadImage(character.sprite, `character_${character.id}`);
+    });
+}
+
 export function setupGameAssets() {
     console.log("Setting up game assets...");
     const canvas = document.getElementById('gameCanvas');
@@ -58,6 +66,7 @@ export function setupGameAssets() {
         return;
     }
     loadEnemyAssets();
+    loadCharacterAssets();
 }
 
 export function initializeAudio() {

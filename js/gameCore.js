@@ -1,5 +1,5 @@
 // Game Core System
-import { GAME_CONFIG, COLLISION_CATEGORIES, ASSET_URLS, DEFAULT_GAME_SETTINGS } from './constants.js';
+import { GAME_CONFIG, COLLISION_CATEGORIES, ASSET_URLS, DEFAULT_GAME_SETTINGS, CHARACTERS } from './constants.js';
 import { initializeAudio, scaleGameContainer } from './assetLoader.js';
 import { setupKeyboardControls, selectPrimaryGamepad, setupGamepadEventListeners, getMovementInput, pollGamepadForUpgradeMenu, handleGameOverInput, handleCharacterSelectionInput } from './input.js';
 import { createPlayerBody, spawnEnemy, shootProjectile, updateEnemyMovement, cleanupOffScreenEntities, updateXPOrbMagnetism, applyPlayerMovement, createXPOrb, applyStabBufoAura, castStarfall, updateStarfallProjectiles, updateConfusedEnemyMovement } from './entities.js';
@@ -250,6 +250,11 @@ function setupMouseEventListeners() {
         const mouseX = (event.clientX - rect.left) * scaleX;
         const mouseY = (event.clientY - rect.top) * scaleY;
 
+        // Handle character selection clicks
+        if (characterSelectionActive) {
+            handleCharacterSelectionClick(mouseX, mouseY);
+        }
+        
         // Handle upgrade menu clicks
         if (gamePausedForUpgrade && availableUpgrades.length > 0) {
             handleUpgradeMenuClick(mouseX, mouseY);
@@ -293,6 +298,32 @@ function handleUpgradeMenuClick(mouseX, mouseY) {
                     audioMusic.play().catch(e => console.error("Error resuming music:", e));
                 }
             }
+        }
+    });
+}
+
+// Handle character selection mouse clicks
+function handleCharacterSelectionClick(mouseX, mouseY) {
+    const cardWidth = 300;
+    const cardHeight = 400;
+    const spacing = 50;
+    const charactersArray = Object.values(CHARACTERS);
+    const totalWidth = (cardWidth * charactersArray.length) + (spacing * (charactersArray.length - 1));
+    const startX = (gameWidth - totalWidth) / 2;
+    const cardY = 150;
+
+    charactersArray.forEach((character, index) => {
+        const cardX = startX + index * (cardWidth + spacing);
+        
+        // Check if click is within this character card
+        if (mouseX >= cardX && mouseX <= cardX + cardWidth &&
+            mouseY >= cardY && mouseY <= cardY + cardHeight) {
+            
+            // Select this character and start the game
+            import('./gameState.js').then(({ setSelectedCharacter }) => {
+                setSelectedCharacter(character);
+                startGameAfterCharacterSelection();
+            });
         }
     });
 }

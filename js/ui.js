@@ -17,7 +17,8 @@ import {
     gamePausedForUpgrade,
     gameOver,
     characterSelectionActive,
-    selectedCharacter
+    selectedCharacter,
+    imageAssets
 } from './gameState.js';
 
 // Helper function for text wrapping
@@ -275,12 +276,23 @@ export function renderCharacterSelection(context) {
         context.textAlign = 'center';
         context.fillText(character.name, cardX + cardWidth / 2, cardY + 40);
 
-        // Character sprite placeholder (we'll add actual images later)
-        context.fillStyle = 'rgba(100, 100, 100, 0.5)';
-        context.fillRect(cardX + 50, cardY + 60, 200, 150);
-        context.fillStyle = 'white';
-        context.font = '16px Arial';
-        context.fillText('Character Sprite', cardX + cardWidth / 2, cardY + 140);
+        // Character sprite - use preloaded image
+        const spriteKey = `character_${character.id}`;
+        const spriteImg = imageAssets[spriteKey];
+        
+        if (spriteImg && spriteImg.complete && spriteImg.naturalHeight > 0) {
+            // Image is loaded, draw it
+            const spriteWidth = 200;
+            const spriteHeight = 150;
+            context.drawImage(spriteImg, cardX + 50, cardY + 60, spriteWidth, spriteHeight);
+        } else {
+            // Image not loaded yet, show placeholder
+            context.fillStyle = 'rgba(100, 100, 100, 0.5)';
+            context.fillRect(cardX + 50, cardY + 60, 200, 150);
+            context.fillStyle = 'white';
+            context.font = '16px Arial';
+            context.fillText('Loading...', cardX + cardWidth / 2, cardY + 140);
+        }
 
         // Character stats
         context.font = '16px Arial';
@@ -310,6 +322,12 @@ export function renderCharacterSelection(context) {
     context.font = '20px Arial';
     context.textAlign = 'center';
     context.fillText('Use A/D or Arrow Keys to select, Enter or Space to confirm', gameWidth / 2, gameHeight - 50);
+    context.fillText('Or click on a character card to select and start!', gameWidth / 2, gameHeight - 20);
+    
+    // Show current selection more prominently
+    context.fillStyle = 'yellow';
+    context.font = '24px Arial';
+    context.fillText(`Selected: ${selectedCharacter.name}`, gameWidth / 2, gameHeight - 80);
 }
 
 // Render game over screen

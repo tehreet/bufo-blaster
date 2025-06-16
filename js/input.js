@@ -233,6 +233,8 @@ export function handleCharacterSelectionInput() {
 
     const characters = Object.values(CHARACTERS);
     const currentIndex = characters.findIndex(char => char.id === selectedCharacter.id);
+    
+    console.log(`Character selection active. Current: ${selectedCharacter.name} (${currentIndex}/${characters.length})`);
 
     // Keyboard input
     if (keys.a || keys.ArrowLeft) {
