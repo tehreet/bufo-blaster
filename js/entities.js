@@ -85,7 +85,7 @@ function getEnemyProperties(enemyType) {
                 health: GAME_CONFIG.BUFF_BUFO_HEALTH,
                 contactDamage: GAME_CONFIG.BUFF_BUFO_CONTACT_DAMAGE,
                 sprite: ASSET_URLS.SPECIAL_ENEMIES.BUFF_BUFO,
-                scale: 0.3
+                scale: 0.35 // Larger sprite
             };
         case ENEMY_TYPES.GAVEL_BUFO:
             return {
@@ -93,7 +93,7 @@ function getEnemyProperties(enemyType) {
                 health: GAME_CONFIG.GAVEL_BUFO_HEALTH,
                 contactDamage: GAME_CONFIG.GAVEL_BUFO_CONTACT_DAMAGE,
                 sprite: ASSET_URLS.SPECIAL_ENEMIES.GAVEL_BUFO,
-                scale: 0.25
+                scale: 0.32 // Larger sprite
             };
         case ENEMY_TYPES.ICE_BUFO:
             return {
@@ -101,7 +101,7 @@ function getEnemyProperties(enemyType) {
                 health: GAME_CONFIG.ICE_BUFO_HEALTH,
                 contactDamage: GAME_CONFIG.ICE_BUFO_CONTACT_DAMAGE,
                 sprite: ASSET_URLS.SPECIAL_ENEMIES.ICE_BUFO,
-                scale: 0.22
+                scale: 0.28 // Larger sprite
             };
         case ENEMY_TYPES.BOSS_BUFO:
             return {
@@ -307,7 +307,7 @@ export function updateSpecialEnemyEffects() {
         // Reset speed multiplier
         let newSpeedMultiplier = 1.0;
         
-        // Check for ice bufo slow effects
+        // Check for ice bufo slow effects (gradual based on distance)
         enemies.forEach(enemy => {
             if (enemy.enemyType === ENEMY_TYPES.ICE_BUFO && player) {
                 const dx = player.position.x - enemy.position.x;
@@ -315,7 +315,11 @@ export function updateSpecialEnemyEffects() {
                 const distance = Math.sqrt(dx * dx + dy * dy);
                 
                 if (distance <= GAME_CONFIG.ICE_BUFO_SLOW_RADIUS) {
-                    newSpeedMultiplier = Math.min(newSpeedMultiplier, GAME_CONFIG.ICE_BUFO_SLOW_FACTOR);
+                    // Calculate gradual slow effect based on distance
+                    // At distance 0: full slow (50%), at max distance: no slow (100%)
+                    const distanceRatio = distance / GAME_CONFIG.ICE_BUFO_SLOW_RADIUS;
+                    const slowEffect = GAME_CONFIG.ICE_BUFO_SLOW_FACTOR + (distanceRatio * (1 - GAME_CONFIG.ICE_BUFO_SLOW_FACTOR));
+                    newSpeedMultiplier = Math.min(newSpeedMultiplier, slowEffect);
                 }
             }
         });

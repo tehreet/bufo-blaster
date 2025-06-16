@@ -28,23 +28,23 @@ export const GAME_CONFIG = {
     SPECIAL_ENEMY_SPAWN_CHANCE: 0.15, // 15% chance to spawn special enemies on eligible levels
     
     // Buff Bufo (stuns player on hit)
-    BUFF_BUFO_RADIUS: 15, // Larger than normal
+    BUFF_BUFO_RADIUS: 18, // Much larger than normal (was 15)
     BUFF_BUFO_HEALTH: 8, // Increased HP
     BUFF_BUFO_CONTACT_DAMAGE: 15,
     BUFF_BUFO_STUN_DURATION: 1000, // 1 second stun
     
     // Gavel Bufo (knockback and damage)
-    GAVEL_BUFO_RADIUS: 12,
+    GAVEL_BUFO_RADIUS: 15, // Larger than normal (was 12)
     GAVEL_BUFO_HEALTH: 6,
     GAVEL_BUFO_CONTACT_DAMAGE: 12,
     GAVEL_BUFO_KNOCKBACK_FORCE: 8,
     
     // Ice Bufo (slows player when close)
-    ICE_BUFO_RADIUS: 10,
+    ICE_BUFO_RADIUS: 13, // Larger than normal (was 10)
     ICE_BUFO_HEALTH: 5,
     ICE_BUFO_CONTACT_DAMAGE: 8,
-    ICE_BUFO_SLOW_RADIUS: 80, // Range to apply slow effect
-    ICE_BUFO_SLOW_FACTOR: 0.5, // Reduces player speed to 50%
+    ICE_BUFO_SLOW_RADIUS: 120, // Increased range to apply slow effect (was 80)
+    ICE_BUFO_SLOW_FACTOR: 0.5, // Reduces player speed to 50% at close range
     
     // Boss Bufo (every 7 levels)
     BOSS_BUFO_RADIUS: 20,
@@ -167,7 +167,7 @@ export const ASSET_URLS = {
     // Special Enemy Sprites
     SPECIAL_ENEMIES: {
         BUFF_BUFO: 'https://all-the.bufo.zone/buff-bufo.png',
-        GAVEL_BUFO: 'https://all-the.bufo.zone/bufo-brings-a-new-meaning-to-gaveled-by-slamming-the-hammer-very-loud.gif',
+        GAVEL_BUFO: 'https://all-the.bufo.zone/bufo-brings-a-new-meaning-to-gaveled-by-slamming-the-hammer-very-loud.png',
         ICE_BUFO: 'https://all-the.bufo.zone/bufo-code-freeze.png',
         BOSS_BUFO: 'https://all-the.bufo.zone/buff-bufo.png' // Using buff bufo but even larger for boss
     }
