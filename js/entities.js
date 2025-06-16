@@ -202,6 +202,8 @@ export function spawnEnemy() {
         const minDistance = 150; // Reduced minimum distance from player
         
         let attempts = 0;
+        let distanceFromPlayer = 0; // Declare variable in proper scope
+        
         do {
             x = Math.random() * (gameWidth - 2 * margin) + margin;
             y = Math.random() * (gameHeight - 2 * margin) + margin;
@@ -209,7 +211,7 @@ export function spawnEnemy() {
             // Calculate distance from player
             const dx = x - player.position.x;
             const dy = y - player.position.y;
-            const distanceFromPlayer = Math.sqrt(dx * dx + dy * dy);
+            distanceFromPlayer = Math.sqrt(dx * dx + dy * dy);
             
             attempts++;
             if (attempts > 10) {
