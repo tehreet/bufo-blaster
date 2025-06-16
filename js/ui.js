@@ -95,8 +95,8 @@ export function renderStarfallProjectiles(context) {
         context.save();
         
         // Outer glow
-        const glowSize = 15 - (ageRatio * 5); // Shrink over time
-        context.globalAlpha = 0.3 - (ageRatio * 0.2);
+        const glowSize = 20 - (ageRatio * 8); // Larger, more visible glow
+        context.globalAlpha = 0.4 - (ageRatio * 0.2);
         context.fillStyle = '#FFD700';
         context.beginPath();
         context.arc(starfall.position.x, starfall.position.y, glowSize, 0, 2 * Math.PI);
@@ -106,11 +106,24 @@ export function renderStarfallProjectiles(context) {
         context.globalAlpha = 1 - (ageRatio * 0.3);
         context.fillStyle = '#FFA500';
         context.strokeStyle = '#FFD700';
-        context.lineWidth = 2;
+        context.lineWidth = 3; // Thicker outline
         
         // Draw a 5-pointed star
-        const starSize = 8 - (ageRatio * 2);
+        const starSize = 12 - (ageRatio * 4); // Larger stars
         drawStar(context, starfall.position.x, starfall.position.y, starSize, 5);
+        
+        // Add a trailing comet effect
+        context.globalAlpha = 0.3;
+        context.fillStyle = '#FFD700';
+        const trailLength = 30;
+        for (let i = 1; i <= 5; i++) {
+            const trailX = starfall.position.x - (starfall.velocity?.x || 0) * i * 2;
+            const trailY = starfall.position.y - (starfall.velocity?.y || 0) * i * 2;
+            const trailSize = starSize * (1 - i * 0.15);
+            context.beginPath();
+            context.arc(trailX, trailY, trailSize * 0.3, 0, 2 * Math.PI);
+            context.fill();
+        }
         
         context.restore();
     });

@@ -371,11 +371,16 @@ export function castStarfall() {
     // Update last cast time
     setLastStarfallTime(currentTime);
 
-    // Create starfall projectiles targeting random enemies
-    for (let i = 0; i < Math.min(currentStarfallCount, enemiesInRange.length); i++) {
-        const targetEnemy = enemiesInRange[Math.floor(Math.random() * enemiesInRange.length)];
-        createStarfallProjectile(targetEnemy);
-    }
+    // Smart targeting: prioritize different areas to maximize coverage
+    const targetedEnemies = selectOptimalTargets(enemiesInRange, currentStarfallCount);
+    
+    // Create starfall projectiles for each target
+    targetedEnemies.forEach((targetEnemy, index) => {
+        // Stagger the star creation slightly for visual effect
+        setTimeout(() => {
+            createStarfallProjectile(targetEnemy);
+        }, index * 100); // 100ms delay between each star
+    });
 
     // Play shoot sound (reuse existing sound)
     import('./gameState.js').then(({ audioShoot }) => {
@@ -384,6 +389,68 @@ export function castStarfall() {
             audioShoot.play().catch(e => console.warn("Starfall sound play failed:", e));
         }
     });
+}
+
+// Select optimal targets to maximize damage coverage
+function selectOptimalTargets(enemies, maxTargets) {
+    if (enemies.length <= maxTargets) {
+        return enemies; // Target all enemies if we have enough stars
+    }
+
+    const targets = [];
+    const remainingEnemies = [...enemies];
+    
+    // First, select the closest enemy to player
+    let closestEnemy = remainingEnemies[0];
+    let closestDistance = getDistance(player.position, closestEnemy.position);
+    
+    remainingEnemies.forEach(enemy => {
+        const distance = getDistance(player.position, enemy.position);
+        if (distance < closestDistance) {
+            closestDistance = distance;
+            closestEnemy = enemy;
+        }
+    });
+    
+    targets.push(closestEnemy);
+    remainingEnemies.splice(remainingEnemies.indexOf(closestEnemy), 1);
+    
+    // Then select enemies that are furthest from already selected targets
+    while (targets.length < maxTargets && remainingEnemies.length > 0) {
+        let bestEnemy = null;
+        let bestScore = -1;
+        
+        remainingEnemies.forEach(enemy => {
+            // Calculate minimum distance to any already selected target
+            let minDistanceToTarget = Infinity;
+            targets.forEach(target => {
+                const distance = getDistance(enemy.position, target.position);
+                minDistanceToTarget = Math.min(minDistanceToTarget, distance);
+            });
+            
+            // Prefer enemies that are far from existing targets (better spread)
+            if (minDistanceToTarget > bestScore) {
+                bestScore = minDistanceToTarget;
+                bestEnemy = enemy;
+            }
+        });
+        
+        if (bestEnemy) {
+            targets.push(bestEnemy);
+            remainingEnemies.splice(remainingEnemies.indexOf(bestEnemy), 1);
+        } else {
+            break;
+        }
+    }
+    
+    return targets;
+}
+
+// Helper function to calculate distance between two points
+function getDistance(pos1, pos2) {
+    const dx = pos1.x - pos2.x;
+    const dy = pos1.y - pos2.y;
+    return Math.sqrt(dx * dx + dy * dy);
 }
 
 // Create a starfall projectile
@@ -425,6 +492,7 @@ export function createStarfallProjectile(targetEnemy) {
     starfall.damage = currentStarfallDamage;
     starfall.confusionDuration = GAME_CONFIG.WIZARD_STARFALL_CONFUSION_DURATION;
     starfall.creationTime = Date.now();
+    starfall.targetEnemy = targetEnemy; // Store reference to target for impact detection
 
     starfallProjectiles.push(starfall);
     World.add(world, starfall);
@@ -444,43 +512,17 @@ export function updateStarfallProjectiles() {
             continue;
         }
 
-        // Check collision with enemies
-        for (let j = enemies.length - 1; j >= 0; j--) {
-            const enemy = enemies[j];
-            const dx = starfall.position.x - enemy.position.x;
-            const dy = starfall.position.y - enemy.position.y;
-            const distance = Math.sqrt(dx * dx + dy * dy);
+        // Check for impact with ground or target area (when starfall gets close to target)
+        const targetReached = starfall.targetEnemy && 
+            getDistance(starfall.position, starfall.targetEnemy.position) < 30;
+        
+        if (targetReached || starfall.position.y > gameHeight - 50) {
+            // Star has reached its target or hit the ground - trigger AOE explosion
+            applyStarfallAOE(starfall.position.x, starfall.position.y, starfall.damage, starfall.confusionDuration, currentTime);
             
-            if (distance < GAME_CONFIG.PROJECTILE_RADIUS * 1.5 + GAME_CONFIG.ENEMY_RADIUS) {
-                // Deal damage
-                enemy.health -= starfall.damage;
-                
-                // Apply confusion effect (reverse movement for a duration)
-                enemy.confused = true;
-                enemy.confusionEndTime = currentTime + starfall.confusionDuration;
-                
-                // Check if enemy dies
-                if (enemy.health <= 0) {
-                    // Play death sound
-                    if (audioEnemyDie) {
-                        audioEnemyDie.currentTime = 0;
-                        audioEnemyDie.play().catch(e => console.error("Error playing enemy die sound:", e));
-                    }
-
-                    // Create XP orb
-                    createXPOrb(enemy.position.x, enemy.position.y);
-                    incrementEnemyKillCount();
-
-                    // Remove enemy
-                    enemies.splice(j, 1);
-                    Matter.Composite.remove(world, enemy);
-                }
-                
-                // Remove starfall projectile after hit
-                Composite.remove(world, starfall);
-                starfallProjectiles.splice(i, 1);
-                break;
-            }
+            // Remove starfall projectile after impact
+            Composite.remove(world, starfall);
+            starfallProjectiles.splice(i, 1);
         }
     }
 }
@@ -507,4 +549,51 @@ export function updateConfusedEnemyMovement() {
             delete enemy.confusionEndTime;
         }
     });
+}
+
+// Apply AOE damage from starfall impact
+function applyStarfallAOE(impactX, impactY, damage, confusionDuration, currentTime) {
+    const affectedEnemies = [];
+    
+    // Find all enemies within AOE radius
+    for (let i = enemies.length - 1; i >= 0; i--) {
+        const enemy = enemies[i];
+        const distance = getDistance({ x: impactX, y: impactY }, enemy.position);
+        
+        if (distance <= GAME_CONFIG.WIZARD_STARFALL_AOE_RADIUS) {
+            affectedEnemies.push({ enemy, index: i, distance });
+        }
+    }
+    
+    // Sort by distance (closest first) for better visual feedback
+    affectedEnemies.sort((a, b) => a.distance - b.distance);
+    
+    // Apply damage and effects to all enemies in AOE
+    affectedEnemies.forEach(({ enemy, index }) => {
+        // Deal damage
+        enemy.health -= damage;
+        
+        // Apply confusion effect
+        enemy.confused = true;
+        enemy.confusionEndTime = currentTime + confusionDuration;
+        
+        // Check if enemy dies
+        if (enemy.health <= 0) {
+            // Play death sound
+            if (audioEnemyDie) {
+                audioEnemyDie.currentTime = 0;
+                audioEnemyDie.play().catch(e => console.error("Error playing enemy die sound:", e));
+            }
+
+            // Create XP orb
+            createXPOrb(enemy.position.x, enemy.position.y);
+            incrementEnemyKillCount();
+
+            // Remove enemy
+            enemies.splice(index, 1);
+            Matter.Composite.remove(world, enemy);
+        }
+    });
+    
+    console.log(`Starfall AOE hit ${affectedEnemies.length} enemies at (${impactX.toFixed(0)}, ${impactY.toFixed(0)})`);
 } 

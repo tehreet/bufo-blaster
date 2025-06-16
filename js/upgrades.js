@@ -101,8 +101,8 @@ export const allUpgrades = [
                 console.log(`Aura Power increased! Damage: ${newDamage.toFixed(2)}, Knockback: ${newKnockback.toFixed(1)}`);
             } else if (selectedCharacter.id === 'wizard') {
                 // Increase starfall damage and star count
-                const newDamage = currentStarfallDamage * 1.25;
-                const newCount = Math.min(8, currentStarfallCount + 1); // Max 8 stars
+                const newDamage = currentStarfallDamage * 1.3; // Increased multiplier
+                const newCount = Math.min(10, currentStarfallCount + 2); // More stars per upgrade, higher cap
                 
                 setStarfallDamage(newDamage);
                 setStarfallCount(newCount);

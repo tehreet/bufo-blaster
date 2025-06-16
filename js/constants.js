@@ -42,11 +42,12 @@ export const GAME_CONFIG = {
     STAB_BUFO_AURA_KNOCKBACK_FORCE: 4, // New: knockback force (increased for visibility)
     
     // Wizard Bufo Starfall Constants
-    WIZARD_STARFALL_COOLDOWN: 3000, // 3 seconds between casts
-    WIZARD_STARFALL_DAMAGE: 2, // Damage per star
-    WIZARD_STARFALL_COUNT: 3, // Number of stars per cast
-    WIZARD_STARFALL_CONFUSION_DURATION: 2000, // 2 seconds of confusion
-    WIZARD_STARFALL_RANGE: 200, // Max range to target enemies
+    WIZARD_STARFALL_COOLDOWN: 2500, // 2.5 seconds between casts (faster)
+    WIZARD_STARFALL_DAMAGE: 3, // Damage per star (increased)
+    WIZARD_STARFALL_COUNT: 5, // Number of stars per cast (more stars)
+    WIZARD_STARFALL_CONFUSION_DURATION: 3000, // 3 seconds of confusion (longer)
+    WIZARD_STARFALL_RANGE: 300, // Max range to target enemies (larger range)
+    WIZARD_STARFALL_AOE_RADIUS: 60, // AOE damage radius around each star impact
 };
 
 // Collision Categories
