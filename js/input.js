@@ -1,5 +1,5 @@
 // Input Handling System
-import { GAME_CONFIG } from './constants.js';
+import { GAME_CONFIG, CHARACTERS } from './constants.js';
 import { 
     keys, 
     gamepad, 
@@ -10,13 +10,18 @@ import {
     prevUpPressed,
     prevDownPressed,
     prevSelectPressed,
+    prevLeftPressed,
+    prevRightPressed,
     setCurrentUpgradeSelectionIndex,
     setUpgradeButtonStates,
     setGamePausedForUpgrade,
     setAvailableUpgrades,
     runnerInstance,
     engine,
-    playerHealth
+    playerHealth,
+    characterSelectionActive,
+    selectedCharacter,
+    setSelectedCharacter
 } from './gameState.js';
 
 // Function to select the primary gamepad
@@ -219,5 +224,77 @@ export function handleGameOverInput() {
     } else {
         setUpgradeButtonStates(false, false, false);
     }
+    return false;
+}
+
+// Handle character selection input
+export function handleCharacterSelectionInput() {
+    if (!characterSelectionActive) return false;
+
+    const characters = Object.values(CHARACTERS);
+    const currentIndex = characters.findIndex(char => char.id === selectedCharacter.id);
+
+    // Keyboard input
+    if (keys.a || keys.ArrowLeft) {
+        if (!keys.leftPressed) {
+            const newIndex = (currentIndex - 1 + characters.length) % characters.length;
+            setSelectedCharacter(characters[newIndex]);
+            keys.leftPressed = true;
+        }
+    } else {
+        keys.leftPressed = false;
+    }
+
+    if (keys.d || keys.ArrowRight) {
+        if (!keys.rightPressed) {
+            const newIndex = (currentIndex + 1) % characters.length;
+            setSelectedCharacter(characters[newIndex]);
+            keys.rightPressed = true;
+        }
+    } else {
+        keys.rightPressed = false;
+    }
+
+    if (keys.Enter || keys[' ']) {
+        if (!keys.confirmPressed) {
+            keys.confirmPressed = true;
+            return true; // Signal to start game
+        }
+    } else {
+        keys.confirmPressed = false;
+    }
+
+    // Gamepad input
+    if (gamepad) {
+        const pads = navigator.getGamepads();
+        const live = pads[gamepad.index];
+        if (!live) return false;
+
+        // D-Pad or left stick for navigation
+        const leftPressed = (live.buttons[14] && live.buttons[14].pressed) || 
+                           (live.axes && live.axes.length > 0 && live.axes[0] < -0.5);
+        const rightPressed = (live.buttons[15] && live.buttons[15].pressed) || 
+                            (live.axes && live.axes.length > 0 && live.axes[0] > 0.5);
+        const confirmPressed = live.buttons[0] && live.buttons[0].pressed; // A button
+
+        if (leftPressed && !prevLeftPressed) {
+            const newIndex = (currentIndex - 1 + characters.length) % characters.length;
+            setSelectedCharacter(characters[newIndex]);
+        }
+        if (rightPressed && !prevRightPressed) {
+            const newIndex = (currentIndex + 1) % characters.length;
+            setSelectedCharacter(characters[newIndex]);
+        }
+        if (confirmPressed && !prevSelectPressed) {
+            setUpgradeButtonStates(false, false, true);
+            return true; // Signal to start game
+        }
+
+        // Update previous states
+        setUpgradeButtonStates(false, false, confirmPressed);
+        prevLeftPressed = leftPressed;
+        prevRightPressed = rightPressed;
+    }
+
     return false;
 } 

@@ -18,7 +18,8 @@ import {
     currentAuraDamage,
     currentAuraKnockback,
     gamePausedForUpgrade,
-    gameOver
+    gameOver,
+    characterSelectionActive
 } from './gameState.js';
 
 const { Bodies, World, Composite } = Matter;
@@ -46,8 +47,8 @@ export function createPlayerBody() {
 
 // Spawn enemy at random edge position
 export function spawnEnemy() {
-    // Don't spawn enemies if game is paused or over
-    if (gamePausedForUpgrade || gameOver) {
+    // Don't spawn enemies if game is paused, over, or during character selection
+    if (gamePausedForUpgrade || gameOver || characterSelectionActive) {
         return;
     }
     

@@ -1,7 +1,7 @@
 // Game Core System
 import { GAME_CONFIG, COLLISION_CATEGORIES, ASSET_URLS, DEFAULT_GAME_SETTINGS } from './constants.js';
 import { initializeAudio, scaleGameContainer } from './assetLoader.js';
-import { setupKeyboardControls, selectPrimaryGamepad, setupGamepadEventListeners, getMovementInput, pollGamepadForUpgradeMenu, handleGameOverInput } from './input.js';
+import { setupKeyboardControls, selectPrimaryGamepad, setupGamepadEventListeners, getMovementInput, pollGamepadForUpgradeMenu, handleGameOverInput, handleCharacterSelectionInput } from './input.js';
 import { createPlayerBody, spawnEnemy, shootProjectile, updateEnemyMovement, cleanupOffScreenEntities, updateXPOrbMagnetism, applyPlayerMovement, createXPOrb, applyStabBufoAura } from './entities.js';
 import { presentUpgradeOptions } from './upgrades.js';
 import { renderUI } from './ui.js';
@@ -37,6 +37,8 @@ import {
     playerIsInvincible,
     invincibilityTimerId,
     availableUpgrades,
+    characterSelectionActive,
+    gameStarted,
     audioMusic,
     audioPlayerHit,
     audioEnemyDie,
@@ -54,6 +56,8 @@ import {
     setAuraCooldown,
     setAuraDamage,
     setAuraKnockback,
+    setCharacterSelectionActive,
+    setGameStarted,
     setGameOver,
     setGamePausedForUpgrade,
     setPlayerInvincible,
@@ -154,10 +158,10 @@ export function initializeGame() {
     // Setup event listeners
     setupEventListeners();
 
-    // Start game intervals
-    startGameIntervals();
-
-    // Start the main game tick loop
+    // Don't start game intervals or game loop until character is selected
+    // startGameIntervals(); // Will be called after character selection
+    
+    // Start the main game tick loop (handles character selection too)
     requestAnimationFrame(gameTick);
 
     setGameInitialized(true);
@@ -185,7 +189,7 @@ function setupEventListeners() {
 
     // Player movement
     Events.on(engine, 'beforeUpdate', () => {
-        if (!player || gamePausedForUpgrade || gameOver) return;
+        if (!player || gamePausedForUpgrade || gameOver || characterSelectionActive) return;
 
         const { velocityX, velocityY } = getMovementInput();
         applyPlayerMovement(velocityX, velocityY);
@@ -193,8 +197,10 @@ function setupEventListeners() {
 
     // Game logic updates
     Events.on(engine, 'beforeUpdate', () => {
-        if (gameOver || gamePausedForUpgrade) {
-            updateRunTimer(); // Still update timer during pause
+        if (gameOver || gamePausedForUpgrade || characterSelectionActive) {
+            if (!characterSelectionActive) {
+                updateRunTimer(); // Still update timer during pause, but not during character selection
+            }
             return;
         }
 
@@ -479,7 +485,12 @@ export function regeneratePlayerHealth() {
 
 // Main game tick function
 export function gameTick() {
-    if (gamePausedForUpgrade && availableUpgrades.length > 0) {
+    if (characterSelectionActive) {
+        // Handle character selection input
+        if (handleCharacterSelectionInput()) {
+            startGameAfterCharacterSelection();
+        }
+    } else if (gamePausedForUpgrade && availableUpgrades.length > 0) {
         pollGamepadForUpgradeMenu();
     } else if (gameOver) {
         if (handleGameOverInput()) {
@@ -534,9 +545,13 @@ export function resetGame() {
     setGameOver(false);
     setGamePausedForUpgrade(false);
     setAvailableUpgrades([]);
+    
+    // Go back to character selection
+    setCharacterSelectionActive(true);
+    setGameStarted(false);
 
-    // Restart intervals
-    startGameIntervals();
+    // Don't restart intervals - they'll start after character selection
+    // startGameIntervals();
 
     // Ensure game runner is active
     if (runnerInstance && engine) {
@@ -550,4 +565,21 @@ export function resetGame() {
     }
 
     console.log("Game reset complete.");
+}
+
+// Start the actual game after character selection
+export function startGameAfterCharacterSelection() {
+    console.log("Starting game with selected character...");
+    
+    // Mark character selection as complete
+    setCharacterSelectionActive(false);
+    setGameStarted(true);
+    
+    // Start game intervals
+    startGameIntervals();
+    
+    // Reset run timer to start fresh
+    resetRunTimer();
+    
+    console.log("Game started successfully!");
 } 

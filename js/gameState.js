@@ -75,6 +75,8 @@ export let currentUpgradeSelectionIndex = 0;
 export let prevUpPressed = false;
 export let prevDownPressed = false;
 export let prevSelectPressed = false;
+export let prevLeftPressed = false;
+export let prevRightPressed = false;
 
 // Gamepad state
 export let gamepad = null;
@@ -89,7 +91,9 @@ export let audioEnemyDie = null;
 // Input state
 export const keys = {
     w: false, a: false, s: false, d: false,
-    ArrowUp: false, ArrowLeft: false, ArrowDown: false, ArrowRight: false
+    ArrowUp: false, ArrowLeft: false, ArrowDown: false, ArrowRight: false,
+    Enter: false, ' ': false,
+    leftPressed: false, rightPressed: false, confirmPressed: false
 };
 
 // Setters for external modules to update state
