@@ -277,6 +277,20 @@ function setupMouseEventListeners() {
             togglePause();
         }
     });
+
+    // Add mouse move event listener for upgrade menu hover
+    canvas.addEventListener('mousemove', (event) => {
+        const rect = canvas.getBoundingClientRect();
+        const scaleX = canvas.width / rect.width;
+        const scaleY = canvas.height / rect.height;
+        const mouseX = (event.clientX - rect.left) * scaleX;
+        const mouseY = (event.clientY - rect.top) * scaleY;
+
+        // Handle upgrade menu hover
+        if (gamePausedForUpgrade && availableUpgrades.length > 0) {
+            handleUpgradeMenuHover(mouseX, mouseY);
+        }
+    });
 }
 
 // Handle upgrade menu mouse clicks
@@ -317,6 +331,31 @@ function handleUpgradeMenuClick(mouseX, mouseY) {
     }
     
     return false; // No upgrade was clicked
+}
+
+// Handle upgrade menu mouse hover
+function handleUpgradeMenuHover(mouseX, mouseY) {
+    const boxWidth = 200;
+    const boxHeight = 100;
+    const spacing = 20;
+    const totalHeight = (boxHeight + spacing) * availableUpgrades.length - spacing;
+    let startY = (gameHeight - totalHeight) / 2;
+
+    for (let index = 0; index < availableUpgrades.length; index++) {
+        const boxY = startY + index * (boxHeight + spacing);
+        const boxX = (gameWidth - boxWidth) / 2;
+        
+        // Check if mouse is within this upgrade box
+        if (mouseX >= boxX && mouseX <= boxX + boxWidth &&
+            mouseY >= boxY && mouseY <= boxY + boxHeight) {
+            
+            // Update selection index to highlight this upgrade
+            import('./gameState.js').then(({ setCurrentUpgradeSelectionIndex }) => {
+                setCurrentUpgradeSelectionIndex(index);
+            });
+            return; // Found the hovered upgrade, no need to check others
+        }
+    }
 }
 
 // Handle character selection mouse clicks
