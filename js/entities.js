@@ -282,8 +282,6 @@ export function applyStabBufoAura() {
         setLastAuraTickTime(currentTime);
     });
     
-    console.log(`Aura tick! Cooldown: ${currentAuraCooldown}ms, Damage: ${currentAuraDamage}`);
-
     // Apply damage to enemies within aura range
     for (let i = enemies.length - 1; i >= 0; i--) {
         const enemy = enemies[i];
@@ -294,9 +292,7 @@ export function applyStabBufoAura() {
         const distance = Math.sqrt(dx * dx + dy * dy);
 
         if (distance <= GAME_CONFIG.STAB_BUFO_AURA_RADIUS) {
-            const oldHealth = enemy.health;
             enemy.health -= currentAuraDamage;
-            console.log(`Aura damage: ${oldHealth.toFixed(2)} -> ${enemy.health.toFixed(2)} (damage: ${currentAuraDamage})`);
 
             // Apply knockback force - push enemy away from player
             if (distance > 0) { // Avoid division by zero

@@ -40,6 +40,13 @@ export const GAME_CONFIG = {
     STAB_BUFO_AURA_DAMAGE_PER_TICK: 0.8, // More damage for melee focus
     STAB_BUFO_AURA_TICK_INTERVAL_MS: 400, // Faster ticks
     STAB_BUFO_AURA_KNOCKBACK_FORCE: 4, // New: knockback force (increased for visibility)
+    
+    // Wizard Bufo Starfall Constants
+    WIZARD_STARFALL_COOLDOWN: 3000, // 3 seconds between casts
+    WIZARD_STARFALL_DAMAGE: 2, // Damage per star
+    WIZARD_STARFALL_COUNT: 3, // Number of stars per cast
+    WIZARD_STARFALL_CONFUSION_DURATION: 2000, // 2 seconds of confusion
+    WIZARD_STARFALL_RANGE: 200, // Max range to target enemies
 };
 
 // Collision Categories
@@ -63,9 +70,33 @@ export const DEFAULT_GAME_SETTINGS = {
     enemySpawnInterval: 2000,
 };
 
+// Character Definitions
+export const CHARACTERS = {
+    STAB_BUFO: {
+        id: 'stab',
+        name: 'Stab Bufo',
+        description: 'Melee bruiser with damaging aura and knockback',
+        sprite: 'https://raw.githubusercontent.com/knobiknows/all-the-bufo/main/all-the-bufo/bufo-stab.gif',
+        health: 150,
+        speed: 4,
+        abilityName: 'Toxic Aura',
+        abilityDescription: 'Damages and knocks back nearby enemies'
+    },
+    WIZARD_BUFO: {
+        id: 'wizard',
+        name: 'Wizard Bufo',
+        description: 'Ranged caster with area confusion spells',
+        sprite: 'https://all-the.bufo.zone/bufo-wizard.gif',
+        health: 100,
+        speed: 5,
+        abilityName: 'Starfall',
+        abilityDescription: 'Casts stars that damage and confuse enemies'
+    }
+};
+
 // Asset URLs
 export const ASSET_URLS = {
-    PLAYER_SPRITE: 'https://raw.githubusercontent.com/knobiknows/all-the-bufo/main/all-the-bufo/bufo-stab.gif',
+    PLAYER_SPRITE: 'https://raw.githubusercontent.com/knobiknows/all-the-bufo/main/all-the-bufo/bufo-stab.gif', // Default, will be overridden by character selection
     ENEMY_SPRITE_BASE: 'https://raw.githubusercontent.com/knobiknows/all-the-bufo/main/all-the-bufo/',
     ENEMY_IMAGE_FILES: [
         'bufo-angry.png',

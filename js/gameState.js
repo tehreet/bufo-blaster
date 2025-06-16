@@ -1,5 +1,5 @@
 // Game State Management
-import { DEFAULT_GAME_SETTINGS, GAME_CONFIG } from './constants.js';
+import { DEFAULT_GAME_SETTINGS, GAME_CONFIG, CHARACTERS } from './constants.js';
 
 // Matter.js instances
 export let engine = null;
@@ -53,10 +53,21 @@ export let playerIsInvincible = false;
 export let invincibilityTimerId = null;
 export let lastAuraTickTime = 0;
 
-// Dynamic aura properties (can be upgraded)
+// Character selection
+export let selectedCharacter = CHARACTERS.STAB_BUFO; // Default to Stab Bufo
+export let characterSelectionActive = true;
+export let gameStarted = false;
+
+// Dynamic aura properties (can be upgraded) - Stab Bufo
 export let currentAuraCooldown = GAME_CONFIG.STAB_BUFO_AURA_TICK_INTERVAL_MS;
 export let currentAuraDamage = GAME_CONFIG.STAB_BUFO_AURA_DAMAGE_PER_TICK;
 export let currentAuraKnockback = GAME_CONFIG.STAB_BUFO_AURA_KNOCKBACK_FORCE;
+
+// Dynamic starfall properties (can be upgraded) - Wizard Bufo
+export let currentStarfallCooldown = GAME_CONFIG.WIZARD_STARFALL_COOLDOWN;
+export let currentStarfallDamage = GAME_CONFIG.WIZARD_STARFALL_DAMAGE;
+export let currentStarfallCount = GAME_CONFIG.WIZARD_STARFALL_COUNT;
+export let lastStarfallTime = 0;
 
 // Upgrade system state
 export let availableUpgrades = [];
@@ -144,6 +155,17 @@ export const setLastAuraTickTime = (time) => { lastAuraTickTime = time; };
 export const setAuraCooldown = (cooldown) => { currentAuraCooldown = cooldown; };
 export const setAuraDamage = (damage) => { currentAuraDamage = damage; };
 export const setAuraKnockback = (knockback) => { currentAuraKnockback = knockback; };
+
+// Starfall upgrade setters
+export const setStarfallCooldown = (cooldown) => { currentStarfallCooldown = cooldown; };
+export const setStarfallDamage = (damage) => { currentStarfallDamage = damage; };
+export const setStarfallCount = (count) => { currentStarfallCount = count; };
+export const setLastStarfallTime = (time) => { lastStarfallTime = time; };
+
+// Character selection setters
+export const setSelectedCharacter = (character) => { selectedCharacter = character; };
+export const setCharacterSelectionActive = (active) => { characterSelectionActive = active; };
+export const setGameStarted = (started) => { gameStarted = started; };
 
 export const updateRunTimer = () => {
     if (runStartTime > 0) {

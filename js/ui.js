@@ -1,5 +1,5 @@
 // UI Rendering System
-import { GAME_CONFIG, DEFAULT_GAME_SETTINGS } from './constants.js';
+import { GAME_CONFIG, DEFAULT_GAME_SETTINGS, CHARACTERS } from './constants.js';
 import { 
     gameWidth, 
     gameHeight, 
@@ -14,7 +14,9 @@ import {
     availableUpgrades,
     currentUpgradeSelectionIndex,
     gamePausedForUpgrade,
-    gameOver
+    gameOver,
+    characterSelectionActive,
+    selectedCharacter
 } from './gameState.js';
 
 // Helper function for text wrapping
@@ -149,6 +151,85 @@ export function renderUpgradeMenu(context) {
     });
 }
 
+// Render character selection screen
+export function renderCharacterSelection(context) {
+    if (!characterSelectionActive) return;
+
+    // Dark background
+    context.fillStyle = 'rgba(0, 0, 0, 0.8)';
+    context.fillRect(0, 0, gameWidth, gameHeight);
+
+    // Title
+    context.fillStyle = 'white';
+    context.font = '48px Arial';
+    context.textAlign = 'center';
+    context.fillText('Choose Your Bufo', gameWidth / 2, 100);
+
+    // Character cards
+    const cardWidth = 300;
+    const cardHeight = 400;
+    const spacing = 50;
+    const characters = Object.values(CHARACTERS);
+    const totalWidth = (cardWidth * characters.length) + (spacing * (characters.length - 1));
+    const startX = (gameWidth - totalWidth) / 2;
+    const cardY = 150;
+
+    characters.forEach((character, index) => {
+        const cardX = startX + index * (cardWidth + spacing);
+        const isSelected = selectedCharacter.id === character.id;
+
+        // Card background
+        context.fillStyle = isSelected ? 'rgba(255, 255, 0, 0.3)' : 'rgba(50, 50, 50, 0.8)';
+        context.fillRect(cardX, cardY, cardWidth, cardHeight);
+
+        // Card border
+        context.strokeStyle = isSelected ? 'yellow' : 'white';
+        context.lineWidth = isSelected ? 4 : 2;
+        context.strokeRect(cardX, cardY, cardWidth, cardHeight);
+
+        // Character name
+        context.fillStyle = 'white';
+        context.font = '24px Arial';
+        context.textAlign = 'center';
+        context.fillText(character.name, cardX + cardWidth / 2, cardY + 40);
+
+        // Character sprite placeholder (we'll add actual images later)
+        context.fillStyle = 'rgba(100, 100, 100, 0.5)';
+        context.fillRect(cardX + 50, cardY + 60, 200, 150);
+        context.fillStyle = 'white';
+        context.font = '16px Arial';
+        context.fillText('Character Sprite', cardX + cardWidth / 2, cardY + 140);
+
+        // Character stats
+        context.font = '16px Arial';
+        context.textAlign = 'left';
+        context.fillStyle = 'white';
+        context.fillText(`Health: ${character.health}`, cardX + 20, cardY + 240);
+        context.fillText(`Speed: ${character.speed}`, cardX + 20, cardY + 260);
+
+        // Ability info
+        context.font = '18px Arial';
+        context.fillStyle = 'cyan';
+        context.textAlign = 'center';
+        context.fillText(character.abilityName, cardX + cardWidth / 2, cardY + 300);
+        
+        context.font = '14px Arial';
+        context.fillStyle = 'lightgray';
+        wrapText(context, character.abilityDescription, cardX + cardWidth / 2, cardY + 325, cardWidth - 20, 18);
+
+        // Description
+        context.font = '14px Arial';
+        context.fillStyle = 'lightgray';
+        wrapText(context, character.description, cardX + cardWidth / 2, cardY + 370, cardWidth - 20, 16);
+    });
+
+    // Instructions
+    context.fillStyle = 'white';
+    context.font = '20px Arial';
+    context.textAlign = 'center';
+    context.fillText('Use A/D or Arrow Keys to select, Enter or Space to confirm', gameWidth / 2, gameHeight - 50);
+}
+
 // Render game over screen
 export function renderGameOverScreen(context) {
     if (!gameOver) return;
@@ -167,23 +248,31 @@ export function renderUI(context) {
     // Clear any previous UI elements if needed
     context.save();
     
-    // Render Stab Bufo aura (behind everything else)
-    renderStabBufoAura(context);
-    
-    // Render player health bar
-    renderPlayerHealthBar(context);
-    
-    // Render enemy health bars
-    renderEnemyHealthBars(context);
-    
-    // Render HUD
-    renderHUD(context);
-    
-    // Render upgrade menu if active
-    renderUpgradeMenu(context);
-    
-    // Render game over screen if needed
-    renderGameOverScreen(context);
+    // Show character selection if active
+    if (characterSelectionActive) {
+        renderCharacterSelection(context);
+    } else {
+        // Render character-specific abilities
+        if (selectedCharacter.id === 'stab') {
+            renderStabBufoAura(context);
+        }
+        // TODO: Add Wizard Bufo starfall visual effects here
+        
+        // Render player health bar
+        renderPlayerHealthBar(context);
+        
+        // Render enemy health bars
+        renderEnemyHealthBars(context);
+        
+        // Render HUD
+        renderHUD(context);
+        
+        // Render upgrade menu if active
+        renderUpgradeMenu(context);
+        
+        // Render game over screen if needed
+        renderGameOverScreen(context);
+    }
     
     context.restore();
 } 
