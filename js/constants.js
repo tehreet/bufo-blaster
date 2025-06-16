@@ -11,8 +11,8 @@ export const GAME_CONFIG = {
     
     // Player Constants
     PLAYER_RADIUS: 18,
-    PLAYER_HEALTH_REGEN_AMOUNT: 2, // Increased regen for bruiser
-    PLAYER_HEALTH_REGEN_INTERVAL: 8000, // 8 seconds (faster regen)
+    PLAYER_HEALTH_REGEN_AMOUNT: 1, // Standard regen amount
+    PLAYER_HEALTH_REGEN_INTERVAL: 9000, // 9 seconds (slightly faster than default)
     PLAYER_HEALTHBAR_WIDTH: 50,
     PLAYER_HEALTHBAR_HEIGHT: 5,
     PLAYER_HEALTHBAR_OFFSET_Y: 30,
@@ -36,9 +36,9 @@ export const GAME_CONFIG = {
     GAMEPAD_DEAD_ZONE: 0.2,
     
     // Stab Bufo Aura Constants
-    STAB_BUFO_AURA_RADIUS: 85, // Slightly larger for melee range
-    STAB_BUFO_AURA_DAMAGE_PER_TICK: 0.8, // More damage for melee focus
-    STAB_BUFO_AURA_TICK_INTERVAL_MS: 400, // Faster ticks
+    STAB_BUFO_AURA_RADIUS: 80, // Slightly reduced range
+    STAB_BUFO_AURA_DAMAGE_PER_TICK: 0.6, // Reduced damage for balance
+    STAB_BUFO_AURA_TICK_INTERVAL_MS: 450, // Slightly slower ticks
     STAB_BUFO_AURA_KNOCKBACK_FORCE: 4, // New: knockback force (increased for visibility)
     
     // Wizard Bufo Starfall Constants
@@ -60,7 +60,7 @@ export const COLLISION_CATEGORIES = {
 
 // Default Game Settings
 export const DEFAULT_GAME_SETTINGS = {
-    playerHealth: 150, // Increased health for tankiness
+    playerHealth: 120, // Reduced from 150 for better balance
     playerXP: 0,
     playerLevel: 1,
     xpToNextLevel: 30,
@@ -78,7 +78,7 @@ export const CHARACTERS = {
         name: 'Stab Bufo',
         description: 'Melee bruiser with damaging aura and knockback',
         sprite: 'https://raw.githubusercontent.com/knobiknows/all-the-bufo/main/all-the-bufo/bufo-stab.gif',
-        health: 150,
+        health: 120,
         speed: 4,
         abilityName: 'Toxic Aura',
         abilityDescription: 'Damages and knocks back nearby enemies'
