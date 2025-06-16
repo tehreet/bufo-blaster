@@ -1,7 +1,7 @@
 // Game Core System
 import { GAME_CONFIG, COLLISION_CATEGORIES, ASSET_URLS, DEFAULT_GAME_SETTINGS, CHARACTERS } from './constants.js';
 import { initializeAudio, scaleGameContainer } from './assetLoader.js';
-import { setupKeyboardControls, selectPrimaryGamepad, setupGamepadEventListeners, getMovementInput, pollGamepadForUpgradeMenu, handleGameOverInput, handleCharacterSelectionInput } from './input.js';
+import { setupKeyboardControls, selectPrimaryGamepad, setupGamepadEventListeners, getMovementInput, pollGamepadForUpgradeMenu, handleGameOverInput, handleCharacterSelectionInput, handlePauseInput } from './input.js';
 import { createPlayerBody, spawnEnemy, shootProjectile, updateEnemyMovement, cleanupOffScreenEntities, updateXPOrbMagnetism, applyPlayerMovement, createXPOrb, applyStabBufoAura, castStarfall, updateStarfallProjectiles, updateConfusedEnemyMovement } from './entities.js';
 import { presentUpgradeOptions } from './upgrades.js';
 import { renderUI } from './ui.js';
@@ -35,6 +35,7 @@ import {
     xpOrbPickupRadius,
     gameOver,
     gamePausedForUpgrade,
+    gamePaused,
     playerIsInvincible,
     invincibilityTimerId,
     availableUpgrades,
@@ -66,6 +67,7 @@ import {
     playerImageElement,
     setGameOver,
     setGamePausedForUpgrade,
+    setGamePaused,
     setPlayerInvincible,
     setInvincibilityTimer,
     setAvailableUpgrades,
@@ -195,7 +197,7 @@ function setupEventListeners() {
 
     // Player movement
     Events.on(engine, 'beforeUpdate', () => {
-        if (!player || gamePausedForUpgrade || gameOver || characterSelectionActive) return;
+        if (!player || gamePausedForUpgrade || gamePaused || gameOver || characterSelectionActive) return;
 
         const { velocityX, velocityY } = getMovementInput();
         applyPlayerMovement(velocityX, velocityY);
@@ -203,9 +205,9 @@ function setupEventListeners() {
 
     // Game logic updates
     Events.on(engine, 'beforeUpdate', () => {
-        if (gameOver || gamePausedForUpgrade || characterSelectionActive) {
-            if (!characterSelectionActive) {
-                updateRunTimer(); // Still update timer during pause, but not during character selection
+        if (gameOver || gamePausedForUpgrade || gamePaused || characterSelectionActive) {
+            if (!characterSelectionActive && !gamePaused) {
+                updateRunTimer(); // Still update timer during upgrade pause, but not during global pause or character selection
             }
             return;
         }
@@ -263,6 +265,11 @@ function setupMouseEventListeners() {
         // Handle game over restart click
         if (gameOver) {
             handleGameOverClick(mouseX, mouseY);
+        }
+        
+        // Handle pause toggle click during normal gameplay
+        if (!characterSelectionActive && !gameOver && !gamePausedForUpgrade) {
+            togglePause();
         }
     });
 }
@@ -516,9 +523,41 @@ export function triggerGameOver() {
     setIntervals(null, null, null);
 }
 
+// Toggle global pause
+export function togglePause() {
+    if (gameOver || characterSelectionActive || gamePausedForUpgrade) {
+        return; // Don't allow pause during these states
+    }
+
+    const newPauseState = !gamePaused;
+    setGamePaused(newPauseState);
+
+    if (newPauseState) {
+        // Pausing the game
+        if (runnerInstance) {
+            const { Runner } = Matter;
+            Runner.stop(runnerInstance);
+        }
+        if (audioMusic && !audioMusic.paused) {
+            audioMusic.pause();
+        }
+        console.log("Game paused");
+    } else {
+        // Resuming the game
+        if (runnerInstance && engine) {
+            const { Runner } = Matter;
+            Runner.run(runnerInstance, engine);
+        }
+        if (audioMusic && audioMusic.paused) {
+            audioMusic.play().catch(e => console.error("Error resuming music:", e));
+        }
+        console.log("Game resumed");
+    }
+}
+
 // Regenerate player health
 export function regeneratePlayerHealth() {
-    if (gameOver || gamePausedForUpgrade || !player || playerHealth <= 0) {
+    if (gameOver || gamePausedForUpgrade || gamePaused || !player || playerHealth <= 0) {
         return;
     }
 
@@ -541,6 +580,11 @@ export function gameTick() {
     } else if (gameOver) {
         if (handleGameOverInput()) {
             resetGame();
+        }
+    } else if (!characterSelectionActive && !gameOver && !gamePausedForUpgrade) {
+        // Handle pause input during normal gameplay
+        if (handlePauseInput()) {
+            togglePause();
         }
     }
     
@@ -596,6 +640,7 @@ export function resetGame() {
     // Reset game state flags
     setGameOver(false);
     setGamePausedForUpgrade(false);
+    setGamePaused(false);
     setAvailableUpgrades([]);
     
     // Go back to character selection

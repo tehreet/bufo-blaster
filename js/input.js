@@ -12,9 +12,11 @@ import {
     prevSelectPressed,
     prevLeftPressed,
     prevRightPressed,
+    gamePaused,
     setCurrentUpgradeSelectionIndex,
     setUpgradeButtonStates,
     setGamePausedForUpgrade,
+    setGamePaused,
     setAvailableUpgrades,
     runnerInstance,
     engine,
@@ -224,6 +226,31 @@ export function handleGameOverInput() {
     } else {
         setUpgradeButtonStates(false, false, false);
     }
+    return false;
+}
+
+// Handle pause input (gamepad start button)
+export function handlePauseInput() {
+    if (!gamepad) return false;
+
+    const pads = navigator.getGamepads();
+    const live = pads[gamepad.index];
+    if (!live) return false;
+
+    // Start button (button 9 in standard mapping)
+    const startPressed = live.buttons[9] && live.buttons[9].pressed;
+    
+    // Use a static variable to track previous state for edge detection
+    if (!handlePauseInput.prevStartPressed) {
+        handlePauseInput.prevStartPressed = false;
+    }
+    
+    if (startPressed && !handlePauseInput.prevStartPressed) {
+        handlePauseInput.prevStartPressed = true;
+        return true; // Signal to toggle pause
+    }
+    
+    handlePauseInput.prevStartPressed = startPressed;
     return false;
 }
 

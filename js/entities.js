@@ -25,6 +25,7 @@ import {
     setLastStarfallTime,
     selectedCharacter,
     gamePausedForUpgrade,
+    gamePaused,
     gameOver,
     characterSelectionActive
 } from './gameState.js';
@@ -55,7 +56,7 @@ export function createPlayerBody() {
 // Spawn enemy at random edge position
 export function spawnEnemy() {
     // Don't spawn enemies if game is paused, over, or during character selection
-    if (gamePausedForUpgrade || gameOver || characterSelectionActive) {
+    if (gamePausedForUpgrade || gamePaused || gameOver || characterSelectionActive) {
         return;
     }
     

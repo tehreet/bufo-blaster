@@ -50,6 +50,7 @@ export let xpOrbPickupRadius = DEFAULT_GAME_SETTINGS.xpOrbPickupRadius;
 // Game state flags
 export let gameOver = false;
 export let gamePausedForUpgrade = false;
+export let gamePaused = false; // Global pause state
 export let playerIsInvincible = false;
 export let invincibilityTimerId = null;
 export let lastAuraTickTime = 0;
@@ -126,6 +127,7 @@ export const updateXpOrbPickupRadius = (radius) => { xpOrbPickupRadius = radius;
 
 export const setGameOver = (isGameOver) => { gameOver = isGameOver; };
 export const setGamePausedForUpgrade = (isPaused) => { gamePausedForUpgrade = isPaused; };
+export const setGamePaused = (isPaused) => { gamePaused = isPaused; };
 export const setPlayerInvincible = (isInvincible) => { playerIsInvincible = isInvincible; };
 export const setInvincibilityTimer = (timerId) => { invincibilityTimerId = timerId; };
 

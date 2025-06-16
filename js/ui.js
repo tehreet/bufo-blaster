@@ -15,6 +15,7 @@ import {
     availableUpgrades,
     currentUpgradeSelectionIndex,
     gamePausedForUpgrade,
+    gamePaused,
     gameOver,
     characterSelectionActive,
     selectedCharacter,
@@ -330,6 +331,30 @@ export function renderCharacterSelection(context) {
     context.fillText(`Selected: ${selectedCharacter.name}`, gameWidth / 2, gameHeight - 80);
 }
 
+// Render pause screen
+export function renderPauseScreen(context) {
+    if (!gamePaused) return;
+
+    // Semi-transparent overlay
+    context.fillStyle = 'rgba(0, 0, 0, 0.7)';
+    context.fillRect(0, 0, gameWidth, gameHeight);
+
+    // Pause text
+    context.fillStyle = 'white';
+    context.font = '48px Arial';
+    context.textAlign = 'center';
+    context.fillText('PAUSED', gameWidth / 2, gameHeight / 2 - 50);
+    
+    context.font = '24px Arial';
+    context.fillText("Press Start (Gamepad) or Click to Resume", gameWidth / 2, gameHeight / 2 + 20);
+    
+    // Show current character and stats
+    context.font = '20px Arial';
+    context.fillStyle = 'lightgray';
+    context.fillText(`Playing as: ${selectedCharacter.name}`, gameWidth / 2, gameHeight / 2 + 60);
+    context.fillText(`Time: ${elapsedRunTimeFormatted} | Kills: ${enemyKillCount} | Level: ${playerLevel}`, gameWidth / 2, gameHeight / 2 + 90);
+}
+
 // Render game over screen
 export function renderGameOverScreen(context) {
     if (!gameOver) return;
@@ -373,6 +398,9 @@ export function renderUI(context) {
         
         // Render upgrade menu if active
         renderUpgradeMenu(context);
+        
+        // Render pause screen if paused
+        renderPauseScreen(context);
         
         // Render game over screen if needed
         renderGameOverScreen(context);
