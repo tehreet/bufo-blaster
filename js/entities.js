@@ -96,35 +96,47 @@ function determineEnemyType() {
 function getEnemyProperties(enemyType) {
     switch (enemyType) {
         case ENEMY_TYPES.BUFF_BUFO:
+            const buffAsset = imageAssets['special_enemy_buff_bufo'];
             return {
                 radius: GAME_CONFIG.BUFF_BUFO_RADIUS,
                 health: GAME_CONFIG.BUFF_BUFO_HEALTH,
                 contactDamage: GAME_CONFIG.BUFF_BUFO_CONTACT_DAMAGE,
-                sprite: ASSET_URLS.SPECIAL_ENEMIES.BUFF_BUFO,
+                sprite: buffAsset && buffAsset.complete && buffAsset.naturalHeight > 0 
+                    ? buffAsset.src 
+                    : null,
                 scale: 0.35 // Larger sprite
             };
         case ENEMY_TYPES.GAVEL_BUFO:
+            const gavelAsset = imageAssets['special_enemy_gavel_bufo'];
             return {
                 radius: GAME_CONFIG.GAVEL_BUFO_RADIUS,
                 health: GAME_CONFIG.GAVEL_BUFO_HEALTH,
                 contactDamage: GAME_CONFIG.GAVEL_BUFO_CONTACT_DAMAGE,
-                sprite: ASSET_URLS.SPECIAL_ENEMIES.GAVEL_BUFO,
+                sprite: gavelAsset && gavelAsset.complete && gavelAsset.naturalHeight > 0 
+                    ? gavelAsset.src 
+                    : null,
                 scale: 0.32 // Larger sprite
             };
         case ENEMY_TYPES.ICE_BUFO:
+            const iceAsset = imageAssets['special_enemy_ice_bufo'];
             return {
                 radius: GAME_CONFIG.ICE_BUFO_RADIUS,
                 health: GAME_CONFIG.ICE_BUFO_HEALTH,
                 contactDamage: GAME_CONFIG.ICE_BUFO_CONTACT_DAMAGE,
-                sprite: ASSET_URLS.SPECIAL_ENEMIES.ICE_BUFO,
+                sprite: iceAsset && iceAsset.complete && iceAsset.naturalHeight > 0 
+                    ? iceAsset.src 
+                    : null,
                 scale: 0.28 // Larger sprite
             };
         case ENEMY_TYPES.BOSS_BUFO:
+            const bossAsset = imageAssets['special_enemy_boss_bufo'];
             return {
                 radius: GAME_CONFIG.BOSS_BUFO_RADIUS,
                 health: GAME_CONFIG.BOSS_BUFO_HEALTH,
                 contactDamage: GAME_CONFIG.BOSS_BUFO_CONTACT_DAMAGE,
-                sprite: ASSET_URLS.SPECIAL_ENEMIES.BOSS_BUFO,
+                sprite: bossAsset && bossAsset.complete && bossAsset.naturalHeight > 0 
+                    ? bossAsset.src 
+                    : null,
                 scale: 0.4
             };
         default: // NORMAL
