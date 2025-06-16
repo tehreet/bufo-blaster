@@ -740,6 +740,10 @@ export function applyStabBufoAura() {
         }
         
         // Damage mega boss pillars with aura
+        if (megaBossPillars.length > 0) {
+            console.log(`🔍 Checking ${megaBossPillars.length} pillars for aura damage. Player at (${player.position.x.toFixed(0)}, ${player.position.y.toFixed(0)}), Aura radius: ${GAME_CONFIG.STAB_BUFO_AURA_RADIUS}`);
+        }
+        
         for (let i = megaBossPillars.length - 1; i >= 0; i--) {
             const pillar = megaBossPillars[i];
             if (!pillar) continue;
@@ -747,10 +751,12 @@ export function applyStabBufoAura() {
             const dx = pillar.position.x - player.position.x;
             const dy = pillar.position.y - player.position.y;
             const distance = Math.sqrt(dx * dx + dy * dy);
+            
+            console.log(`🏛️ Pillar ${pillar.pillarIndex} at (${pillar.position.x.toFixed(0)}, ${pillar.position.y.toFixed(0)}), distance: ${distance.toFixed(0)}, health: ${pillar.health}/${pillar.maxHealth}`);
 
             if (distance <= GAME_CONFIG.STAB_BUFO_AURA_RADIUS) {
                 pillar.health -= currentAuraDamage;
-                console.log(`Pillar ${pillar.pillarIndex} damaged! Health: ${pillar.health}/${pillar.maxHealth}`);
+                console.log(`💥 Pillar ${pillar.pillarIndex} damaged! Health: ${pillar.health}/${pillar.maxHealth}, damage: ${currentAuraDamage}`);
 
                 // Check if pillar is destroyed
                 if (pillar.health <= 0) {
@@ -1062,6 +1068,39 @@ export function applyStarfallAOE(impactX, impactY, damage, confusionDuration, cu
         }
     });
     
+    // Also damage mega boss pillars with starfall AOE
+    for (let i = megaBossPillars.length - 1; i >= 0; i--) {
+        const pillar = megaBossPillars[i];
+        if (!pillar) continue;
+
+        const distance = getDistance({ x: impactX, y: impactY }, pillar.position);
+        if (distance <= GAME_CONFIG.WIZARD_STARFALL_AOE_RADIUS) {
+            pillar.health -= damage;
+            console.log(`Pillar ${pillar.pillarIndex} damaged by starfall! Health: ${pillar.health}/${pillar.maxHealth}`);
+
+            // Check if pillar is destroyed
+            if (pillar.health <= 0) {
+                console.log(`🏛️ Pillar ${pillar.pillarIndex} destroyed by starfall!`);
+                
+                // Play death sound
+                if (audioEnemyDie) {
+                    audioEnemyDie.currentTime = 0;
+                    audioEnemyDie.play().catch(e => console.error("Error playing pillar destruction sound:", e));
+                }
+
+                // Remove pillar
+                megaBossPillars.splice(i, 1);
+                Matter.Composite.remove(world, pillar);
+                
+                // Check if all pillars are destroyed
+                if (megaBossPillars.length === 0) {
+                    setMegaBossDisabled(true);
+                    console.log('🔥 ALL PILLARS DESTROYED by starfall! Mega Boss is now disabled!');
+                }
+            }
+        }
+    }
+    
     console.log(`Starfall AOE hit ${affectedEnemies.length} enemies, killed ${enemiesToRemove.length} at (${impactX.toFixed(0)}, ${impactY.toFixed(0)})`);
 }
 
@@ -1137,6 +1176,40 @@ export function updateGooseOrbit() {
                         // Remove enemy
                         enemies.splice(enemyIndex, 1);
                         Composite.remove(world, enemy);
+                    }
+                }
+            });
+            
+            // Check for pillar collisions
+            megaBossPillars.forEach((pillar, pillarIndex) => {
+                const dx = gooseX - pillar.position.x;
+                const dy = gooseY - pillar.position.y;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+                
+                // If goose is close to pillar, deal damage
+                if (distance < 30) { // Slightly larger radius for pillars
+                    pillar.health -= GAME_CONFIG.GOOSE_BUFO_GOOSE_DAMAGE;
+                    console.log(`Pillar ${pillar.pillarIndex} damaged by goose! Health: ${pillar.health}/${pillar.maxHealth}`);
+                    
+                    // Check if pillar is destroyed
+                    if (pillar.health <= 0) {
+                        console.log(`🏛️ Pillar ${pillar.pillarIndex} destroyed by goose!`);
+                        
+                        // Play death sound
+                        if (audioEnemyDie) {
+                            audioEnemyDie.currentTime = 0;
+                            audioEnemyDie.play().catch(e => console.error("Error playing pillar destruction sound:", e));
+                        }
+
+                        // Remove pillar
+                        megaBossPillars.splice(pillarIndex, 1);
+                        Matter.Composite.remove(world, pillar);
+                        
+                        // Check if all pillars are destroyed
+                        if (megaBossPillars.length === 0) {
+                            setMegaBossDisabled(true);
+                            console.log('🔥 ALL PILLARS DESTROYED by goose! Mega Boss is now disabled!');
+                        }
                     }
                 }
             });

@@ -650,8 +650,8 @@ export function renderMegaBossPillars(context) {
         context.fill();
         context.stroke();
         
-        // Health bar above pillar
-        if (pillar.health > 0 && healthPercentage < 1) {
+        // Health bar above pillar (show when damaged or always for debugging)
+        if (pillar.health > 0) {
             const barWidth = 40;
             const barHeight = 6;
             const barX = pillar.position.x - barWidth / 2;
