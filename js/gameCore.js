@@ -259,7 +259,12 @@ function setupMouseEventListeners() {
         
         // Handle upgrade menu clicks
         if (gamePausedForUpgrade && availableUpgrades.length > 0) {
-            handleUpgradeMenuClick(mouseX, mouseY);
+            const upgradeClicked = handleUpgradeMenuClick(mouseX, mouseY);
+            if (upgradeClicked) {
+                event.preventDefault();
+                event.stopPropagation();
+                return; // Don't process any other click handlers
+            }
         }
         
         // Handle game over restart click
@@ -282,7 +287,8 @@ function handleUpgradeMenuClick(mouseX, mouseY) {
     const totalHeight = (boxHeight + spacing) * availableUpgrades.length - spacing;
     let startY = (gameHeight - totalHeight) / 2;
 
-    availableUpgrades.forEach((upgrade, index) => {
+    for (let index = 0; index < availableUpgrades.length; index++) {
+        const upgrade = availableUpgrades[index];
         const boxY = startY + index * (boxHeight + spacing);
         const boxX = (gameWidth - boxWidth) / 2;
         
@@ -305,8 +311,12 @@ function handleUpgradeMenuClick(mouseX, mouseY) {
                     audioMusic.play().catch(e => console.error("Error resuming music:", e));
                 }
             }
+            
+            return true; // Indicate that an upgrade was clicked
         }
-    });
+    }
+    
+    return false; // No upgrade was clicked
 }
 
 // Handle character selection mouse clicks
