@@ -1,0 +1,28 @@
+{
+  "name": "bufo-blaster",
+  "version": "1.0.0",
+  "description": "Browser-based survival game where you play as different Bufo characters, fight enemies, and face epic boss battles.",
+  "main": "index.js",
+  "scripts": {
+    "start": "vite",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/tehreet/bufo-blaster.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/tehreet/bufo-blaster/issues"
+  },
+  "homepage": "https://github.com/tehreet/bufo-blaster#readme",
+  "dependencies": {
+    "matter-js": "^0.20.0",
+    "phaser": "^3.90.0"
+  },
+  "devDependencies": {
+    "vite": "^6.3.5"
+  }
+}
