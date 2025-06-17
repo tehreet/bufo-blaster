@@ -12,11 +12,17 @@ class GameScene extends Phaser.Scene {
         this.load.image('tileset', 'assets/map/tilemap.png');
         this.load.tilemapTiledJSON('level1', 'assets/map/level1.json');
         
+        // Load character sprites
+        this.load.image('stab-bufo', 'assets/characters/stab-bufo.gif');
+        this.load.image('wizard-bufo', 'assets/characters/wizard-bufo.gif');
+        this.load.image('goose-bufo', 'assets/characters/goose-bufo.gif');
+        
         // Load enemy sprites
         this.load.image('bufo-dancing', 'assets/enemies/bufo-dancing.gif');
         this.load.image('bufo-clown', 'assets/enemies/bufo-clown.png');
         this.load.image('bufo-pog', 'assets/enemies/bufo-pog.png');
         this.load.image('bufo-eyes', 'assets/enemies/bufo-eyes.gif');
+        this.load.image('bufo-mob', 'assets/enemies/bufo-mob.png');
         
         // Load sound effects (from original game)
         this.load.audio('shoot', 'assets/sfx/shoot.mp3');
@@ -57,7 +63,8 @@ class GameScene extends Phaser.Scene {
                 speed: 4,
                 abilityName: 'Toxic Aura',
                 abilityDescription: 'Damages and knocks back nearby enemies',
-                color: 0x00ff00
+                color: 0x00ff00,
+                sprite: 'stab-bufo'
             },
             WIZARD_BUFO: {
                 id: 'wizard',
@@ -67,7 +74,8 @@ class GameScene extends Phaser.Scene {
                 speed: 5,
                 abilityName: 'Starfall',
                 abilityDescription: 'Casts stars that damage and confuse enemies',
-                color: 0x0066ff
+                color: 0x0066ff,
+                sprite: 'wizard-bufo'
             },
             GOOSE_BUFO: {
                 id: 'goose',
@@ -77,7 +85,8 @@ class GameScene extends Phaser.Scene {
                 speed: 4.5,
                 abilityName: 'Goose Guard',
                 abilityDescription: 'Orbiting geese damage enemies and convert them to allies',
-                color: 0xffaa00
+                color: 0xffaa00,
+                sprite: 'goose-bufo'
             }
         };
         
@@ -126,6 +135,17 @@ class GameScene extends Phaser.Scene {
                 hitboxRadius: 18,
                 xpValue: 20,
                 weight: 10 // Rare but tough
+            },
+            {
+                id: 'mob',
+                name: 'Mob Bufo',
+                sprite: 'bufo-mob',
+                health: 6,
+                speed: 50,
+                displaySize: 52,
+                hitboxRadius: 20,
+                xpValue: 30,
+                weight: 5 // Very rare but very tough
             }
         ];
         
@@ -342,9 +362,9 @@ class GameScene extends Phaser.Scene {
             card.setInteractive();
             card.characterData = character;
             
-            // Character representation (colored circle)
-            const charSprite = this.add.circle(cardX + cardWidth/2, cardY + 80, 30, character.color);
-            charSprite.setStrokeStyle(3, 0xffffff);
+            // Character sprite
+            const charSprite = this.add.image(cardX + cardWidth/2, cardY + 80, character.sprite);
+            charSprite.setDisplaySize(60, 60); // Set to appropriate size for character selection
             
             // Character name
             this.add.text(cardX + cardWidth/2, cardY + 140, character.name, {
@@ -454,8 +474,8 @@ class GameScene extends Phaser.Scene {
         // Create player at center of large map
         const centerX = (mapWidth * tileSize) / 2;
         const centerY = (mapHeight * tileSize) / 2;
-        this.player = this.add.circle(centerX, centerY, this.gameConfig.PLAYER_RADIUS, this.selectedCharacter.color);
-        this.player.setStrokeStyle(3, 0xffffff);
+        this.player = this.add.image(centerX, centerY, this.selectedCharacter.sprite);
+        this.player.setDisplaySize(this.gameConfig.PLAYER_RADIUS * 2, this.gameConfig.PLAYER_RADIUS * 2);
         
         // Add Matter.js physics to player
         this.matter.add.gameObject(this.player, {
