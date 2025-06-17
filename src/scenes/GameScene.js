@@ -22,6 +22,7 @@ class GameScene extends Phaser.Scene {
         this.load.image('bufo-clown', 'assets/enemies/bufo-clown.png');
         this.load.image('bufo-pog', 'assets/enemies/bufo-pog.png');
         this.load.image('bufo-eyes', 'assets/enemies/bufo-eyes.gif');
+        this.load.image('bufo-mob', 'assets/enemies/bufo-mob.png');
         
         // Load sound effects (from original game)
         this.load.audio('shoot', 'assets/sfx/shoot.mp3');
@@ -134,6 +135,17 @@ class GameScene extends Phaser.Scene {
                 hitboxRadius: 18,
                 xpValue: 20,
                 weight: 10 // Rare but tough
+            },
+            {
+                id: 'mob',
+                name: 'Mob Bufo',
+                sprite: 'bufo-mob',
+                health: 6,
+                speed: 50,
+                displaySize: 52,
+                hitboxRadius: 20,
+                xpValue: 30,
+                weight: 5 // Very rare but very tough
             }
         ];
         
