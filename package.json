@@ -4,6 +4,9 @@
   "description": "Browser-based survival game where you play as different Bufo characters, fight enemies, and face epic boss battles.",
   "main": "index.js",
   "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
     "start": "vite",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
