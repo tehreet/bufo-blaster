@@ -12,12 +12,12 @@ class GameScene extends Phaser.Scene {
         this.load.image('tileset', 'assets/map/tilemap.png');
         this.load.tilemapTiledJSON('level1', 'assets/map/level1.json');
         
-        // Load character sprites
+        // Load character sprites (static for collision, we'll overlay GIFs for animation)
         this.load.image('stab-bufo', 'assets/characters/stab-bufo.gif');
         this.load.image('wizard-bufo', 'assets/characters/wizard-bufo.gif');
         this.load.image('goose-bufo', 'assets/characters/goose-bufo.gif');
         
-        // Load enemy sprites
+        // Load enemy sprites (static for collision, we'll overlay GIFs for animation)
         this.load.image('bufo-dancing', 'assets/enemies/bufo-dancing.gif');
         this.load.image('bufo-clown', 'assets/enemies/bufo-clown.png');
         this.load.image('bufo-pog', 'assets/enemies/bufo-pog.png');
@@ -365,6 +365,10 @@ class GameScene extends Phaser.Scene {
             // Character sprite
             const charSprite = this.add.image(cardX + cardWidth/2, cardY + 80, character.sprite);
             charSprite.setDisplaySize(60, 60); // Set to appropriate size for character selection
+            charSprite.setAlpha(0); // Hide static sprite, use animated overlay
+            
+            // Create animated GIF overlay for character selection
+            this.createAnimatedOverlay(charSprite, `assets/characters/${character.sprite}.gif`, 60, 60);
             
             // Character name
             this.add.text(cardX + cardWidth/2, cardY + 140, character.name, {
@@ -449,6 +453,21 @@ class GameScene extends Phaser.Scene {
     }
     
     startGame() {
+        // Clean up character selection animated overlays
+        if (this.characterCards) {
+            this.characterCards.forEach(card => {
+                // Find the character sprite and clean up its overlay
+                if (card.characterData) {
+                    const charSprite = this.children.list.find(child => 
+                        child.texture && child.texture.key === card.characterData.sprite
+                    );
+                    if (charSprite) {
+                        this.destroyAnimatedOverlay(charSprite);
+                    }
+                }
+            });
+        }
+        
         // Clear character selection
         this.children.removeAll();
         
@@ -476,6 +495,11 @@ class GameScene extends Phaser.Scene {
         const centerY = (mapHeight * tileSize) / 2;
         this.player = this.add.image(centerX, centerY, this.selectedCharacter.sprite);
         this.player.setDisplaySize(this.gameConfig.PLAYER_RADIUS * 2, this.gameConfig.PLAYER_RADIUS * 2);
+        this.player.setAlpha(0); // Hide static sprite, we'll use animated overlay
+        
+        // Create animated GIF overlay for player
+        this.createAnimatedOverlay(this.player, `assets/characters/${this.selectedCharacter.sprite}.gif`, 
+                                  this.gameConfig.PLAYER_RADIUS * 2, this.gameConfig.PLAYER_RADIUS * 2);
         
         // Add Matter.js physics to player with explicit radius
         this.matter.add.gameObject(this.player, {
@@ -875,6 +899,14 @@ class GameScene extends Phaser.Scene {
         const enemy = this.add.image(clampedX, clampedY, enemyType.sprite);
         enemy.setDisplaySize(enemyType.displaySize, enemyType.displaySize); // Visual size
         
+        // Check if this enemy type uses a GIF and create animated overlay
+        const gifEnemies = ['bufo-dancing', 'bufo-eyes'];
+        if (gifEnemies.includes(enemyType.sprite)) {
+            enemy.setAlpha(0); // Hide static sprite for GIF enemies
+            this.createAnimatedOverlay(enemy, `assets/enemies/${enemyType.sprite}.gif`, 
+                                     enemyType.displaySize, enemyType.displaySize);
+        }
+        
         // Add Matter.js physics with explicit configuration
         this.matter.add.gameObject(enemy, {
             shape: {
@@ -1007,6 +1039,9 @@ class GameScene extends Phaser.Scene {
         if (enemy.hitboxDebug) {
             enemy.hitboxDebug.destroy();
         }
+        
+        // Clean up animated overlay
+        this.destroyAnimatedOverlay(enemy);
         
         // Remove enemy
         enemy.destroy();
@@ -1732,6 +1767,14 @@ class GameScene extends Phaser.Scene {
     gameOver() {
         this.gameStarted = false;
         
+        // Clean up all animated overlays
+        if (this.player) {
+            this.destroyAnimatedOverlay(this.player);
+        }
+        this.enemies.children.entries.forEach(enemy => {
+            this.destroyAnimatedOverlay(enemy);
+        });
+        
         // Stop timers
         if (this.enemySpawnTimer) this.enemySpawnTimer.remove();
         if (this.auraTimer) this.auraTimer.remove();
@@ -1854,6 +1897,9 @@ class GameScene extends Phaser.Scene {
             this.player.hitboxDebug.y = this.player.y;
         }
         
+        // Update player animated overlay position
+        this.updateAnimatedOverlay(this.player);
+        
         // Health regeneration
         if (this.playerStats.healthRegenPerSecond > 0) {
             const currentTime = this.time.now;
@@ -1912,6 +1958,9 @@ class GameScene extends Phaser.Scene {
                 enemy.hitboxDebug.x = enemy.x;
                 enemy.hitboxDebug.y = enemy.y;
             }
+            
+            // Update animated overlay position
+            this.updateAnimatedOverlay(enemy);
         });
         
         // XP Orb magnetism using Matter.js
@@ -2111,6 +2160,47 @@ class GameScene extends Phaser.Scene {
         });
     }
     
+    createAnimatedOverlay(gameObject, assetPath, width, height) {
+        // Create HTML img element for GIF animation
+        const img = document.createElement('img');
+        img.src = assetPath;
+        img.style.position = 'absolute';
+        img.style.width = width + 'px';
+        img.style.height = height + 'px';
+        img.style.pointerEvents = 'none'; // Don't interfere with game input
+        img.style.zIndex = '10'; // Above the game canvas
+        img.style.imageRendering = 'pixelated'; // Keep pixel art crisp
+        img.style.transform = 'translate(-50%, -50%)'; // Center the image
+        
+        // Add to DOM
+        document.body.appendChild(img);
+        
+        // Store reference for cleanup
+        gameObject.animatedOverlay = img;
+        
+        return img;
+    }
+    
+    updateAnimatedOverlay(gameObject) {
+        if (gameObject.animatedOverlay && gameObject.active) {
+            // Convert game world coordinates to screen coordinates
+            const camera = this.cameras.main;
+            const screenX = (gameObject.x - camera.scrollX) * camera.zoom + camera.x;
+            const screenY = (gameObject.y - camera.scrollY) * camera.zoom + camera.y;
+            
+            // Update overlay position
+            gameObject.animatedOverlay.style.left = screenX + 'px';
+            gameObject.animatedOverlay.style.top = screenY + 'px';
+            gameObject.animatedOverlay.style.display = 'block';
+        }
+    }
+    
+    destroyAnimatedOverlay(gameObject) {
+        if (gameObject.animatedOverlay) {
+            document.body.removeChild(gameObject.animatedOverlay);
+            gameObject.animatedOverlay = null;
+        }
+    }
 
 }
 
