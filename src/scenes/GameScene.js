@@ -38,13 +38,13 @@ class GameScene extends Phaser.Scene {
         this.characterSelected = false;
         this.selectedCharacter = null;
         
-        // Game constants (from original)
+        // Game constants (adjusted for sprite-based collision)
         this.gameConfig = {
             ENEMY_RADIUS: 10,
             ENEMY_SPEED: 75, // Adjusted for Phaser
             ENEMY_MAX_HEALTH: 3,
             ENEMY_CONTACT_DAMAGE: 10,
-            PLAYER_RADIUS: 18,
+            PLAYER_RADIUS: 16, // Reduced to better match 36px sprite display size
             XP_ORB_RADIUS: 8,
             XP_ORB_MAGNET_SPEED: 200,
             STAB_BUFO_AURA_RADIUS: 80,
@@ -90,7 +90,7 @@ class GameScene extends Phaser.Scene {
             }
         };
         
-        // Enemy type definitions
+        // Enemy type definitions (hitbox radii adjusted to match sprite proportions)
         this.enemyTypes = [
             {
                 id: 'dancing',
@@ -99,7 +99,7 @@ class GameScene extends Phaser.Scene {
                 health: 2,
                 speed: 60,
                 displaySize: 40, // Visual size
-                hitboxRadius: 15, // Smaller physics hitbox
+                hitboxRadius: 16, // ~40% of display size for better sprite matching
                 xpValue: 10,
                 weight: 30 // Higher weight = more common
             },
@@ -110,7 +110,7 @@ class GameScene extends Phaser.Scene {
                 health: 3,
                 speed: 45,
                 displaySize: 44,
-                hitboxRadius: 16,
+                hitboxRadius: 18, // ~40% of display size for better sprite matching
                 xpValue: 15,
                 weight: 25
             },
@@ -121,7 +121,7 @@ class GameScene extends Phaser.Scene {
                 health: 1,
                 speed: 80,
                 displaySize: 36,
-                hitboxRadius: 14,
+                hitboxRadius: 14, // ~40% of display size for better sprite matching
                 xpValue: 8,
                 weight: 35 // Fast but weak
             },
@@ -132,7 +132,7 @@ class GameScene extends Phaser.Scene {
                 health: 4,
                 speed: 40,
                 displaySize: 48,
-                hitboxRadius: 18,
+                hitboxRadius: 20, // ~40% of display size for better sprite matching
                 xpValue: 20,
                 weight: 10 // Rare but tough
             },
@@ -142,8 +142,8 @@ class GameScene extends Phaser.Scene {
                 sprite: 'bufo-mob',
                 health: 6,
                 speed: 50,
-                displaySize: 52,
-                hitboxRadius: 20,
+                displaySize: 48,
+                hitboxRadius: 20, // ~40% of display size for better sprite matching
                 xpValue: 30,
                 weight: 5 // Very rare but very tough
             }
@@ -477,13 +477,24 @@ class GameScene extends Phaser.Scene {
         this.player = this.add.image(centerX, centerY, this.selectedCharacter.sprite);
         this.player.setDisplaySize(this.gameConfig.PLAYER_RADIUS * 2, this.gameConfig.PLAYER_RADIUS * 2);
         
-        // Add Matter.js physics to player
+        // Add Matter.js physics to player with explicit radius
         this.matter.add.gameObject(this.player, {
-            shape: 'circle',
+            shape: {
+                type: 'circle',
+                radius: this.gameConfig.PLAYER_RADIUS
+            },
             frictionAir: 0.085,
             density: 0.002,
             label: 'player'
         });
+        
+        // Add debug hitbox visualization for player (initially hidden)
+        this.player.hitboxDebug = this.add.circle(centerX, centerY, this.gameConfig.PLAYER_RADIUS, 0x00ff00, 0.3);
+        this.player.hitboxDebug.setStrokeStyle(3, 0x00ff00);
+        this.player.hitboxDebug.setVisible(this.showHitboxes);
+        
+        console.log(`Player created with explicit collision radius: ${this.gameConfig.PLAYER_RADIUS}px, display size: ${this.gameConfig.PLAYER_RADIUS * 2}px`);
+        console.log(`Collision setup: Player (${this.gameConfig.PLAYER_RADIUS}px) vs Enemies (14-20px) - much better sprite matching!`);
         
         // Player stats from character
         this.playerStats = {
@@ -1837,6 +1848,12 @@ class GameScene extends Phaser.Scene {
         // Apply velocity using Matter.js
         this.matter.body.setVelocity(this.player.body, { x: velocityX, y: velocityY });
         
+        // Update player debug hitbox position
+        if (this.player.hitboxDebug) {
+            this.player.hitboxDebug.x = this.player.x;
+            this.player.hitboxDebug.y = this.player.y;
+        }
+        
         // Health regeneration
         if (this.playerStats.healthRegenPerSecond > 0) {
             const currentTime = this.time.now;
@@ -1853,7 +1870,12 @@ class GameScene extends Phaser.Scene {
         if (Phaser.Input.Keyboard.JustDown(this.debugKey)) {
             this.showHitboxes = !this.showHitboxes;
             
-            // Toggle visibility of all hitbox debug circles
+            // Toggle visibility of player hitbox debug circle
+            if (this.player.hitboxDebug) {
+                this.player.hitboxDebug.setVisible(this.showHitboxes);
+            }
+            
+            // Toggle visibility of all enemy hitbox debug circles
             this.enemies.children.entries.forEach(enemy => {
                 if (enemy.hitboxDebug) {
                     enemy.hitboxDebug.setVisible(this.showHitboxes);
@@ -2045,6 +2067,12 @@ class GameScene extends Phaser.Scene {
         if (justPressed(3)) { // Y button
             this.showHitboxes = !this.showHitboxes;
             
+            // Toggle player hitbox visibility
+            if (this.player && this.player.hitboxDebug) {
+                this.player.hitboxDebug.setVisible(this.showHitboxes);
+            }
+            
+            // Toggle enemy hitbox visibility
             this.enemies.children.entries.forEach(enemy => {
                 if (enemy.hitboxDebug) {
                     enemy.hitboxDebug.setVisible(this.showHitboxes);
