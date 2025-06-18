@@ -1768,12 +1768,7 @@ class GameScene extends Phaser.Scene {
         this.gameStarted = false;
         
         // Clean up all animated overlays
-        if (this.player) {
-            this.destroyAnimatedOverlay(this.player);
-        }
-        this.enemies.children.entries.forEach(enemy => {
-            this.destroyAnimatedOverlay(enemy);
-        });
+        this.cleanupAllOverlays();
         
         // Stop timers
         if (this.enemySpawnTimer) this.enemySpawnTimer.remove();
@@ -1796,6 +1791,7 @@ class GameScene extends Phaser.Scene {
         
         // Allow restart
         this.input.once('pointerdown', () => {
+            this.cleanupAllOverlays();
             this.scene.restart();
         });
     }
@@ -2175,6 +2171,18 @@ class GameScene extends Phaser.Scene {
     }
     
     createAnimatedOverlay(gameObject, assetPath, width, height) {
+        // Create or get the overlay container
+        let container = document.getElementById('bufo-overlay-container');
+        if (!container) {
+            container = document.createElement('div');
+            container.id = 'bufo-overlay-container';
+            container.style.position = 'absolute';
+            container.style.overflow = 'hidden';
+            container.style.pointerEvents = 'none';
+            container.style.zIndex = '5'; // Above canvas but below UI
+            document.body.appendChild(container);
+        }
+        
         // Create HTML img element for GIF animation
         const img = document.createElement('img');
         img.src = assetPath;
@@ -2182,12 +2190,14 @@ class GameScene extends Phaser.Scene {
         img.style.width = width + 'px';
         img.style.height = height + 'px';
         img.style.pointerEvents = 'none'; // Don't interfere with game input
-        img.style.zIndex = '10'; // Above the game canvas
         img.style.imageRendering = 'pixelated'; // Keep pixel art crisp
+        img.style.imageRendering = 'crisp-edges'; // Alternative for some browsers
         img.style.transform = 'translate(-50%, -50%)'; // Center the image
+        img.style.filter = 'none'; // Disable any filtering
+        img.style.backfaceVisibility = 'hidden'; // Improve performance
         
-        // Add to DOM
-        document.body.appendChild(img);
+        // Add to container instead of body
+        container.appendChild(img);
         
         // Store reference for cleanup
         gameObject.animatedOverlay = img;
@@ -2197,28 +2207,43 @@ class GameScene extends Phaser.Scene {
     
     updateAnimatedOverlay(gameObject) {
         if (gameObject.animatedOverlay && gameObject.active) {
-            // Get the canvas element and its position
-            const canvas = this.sys.game.canvas;
-            const canvasRect = canvas.getBoundingClientRect();
+            // Hide overlays during upgrade screen
+            if (this.upgradeSystem && this.upgradeSystem.isPaused) {
+                gameObject.animatedOverlay.style.display = 'none';
+                return;
+            }
+            
+            // Update container position to match canvas
+            const container = document.getElementById('bufo-overlay-container');
+            if (container) {
+                const canvas = this.sys.game.canvas;
+                const canvasRect = canvas.getBoundingClientRect();
+                
+                container.style.left = (canvasRect.left + window.scrollX) + 'px';
+                container.style.top = (canvasRect.top + window.scrollY) + 'px';
+                container.style.width = canvasRect.width + 'px';
+                container.style.height = canvasRect.height + 'px';
+            }
             
             let finalX, finalY;
             
             // Check if this is during character selection (no camera scrolling)
             if (!this.gameStarted) {
                 // Character selection screen - use direct coordinates
-                finalX = canvasRect.left + window.scrollX + gameObject.x;
-                finalY = canvasRect.top + window.scrollY + gameObject.y;
+                finalX = gameObject.x;
+                finalY = gameObject.y;
             } else {
                 // In-game - use camera coordinates
                 const camera = this.cameras.main;
-                const screenX = (gameObject.x - camera.scrollX) * camera.zoom;
-                const screenY = (gameObject.y - camera.scrollY) * camera.zoom;
-                
-                finalX = canvasRect.left + window.scrollX + screenX;
-                finalY = canvasRect.top + window.scrollY + screenY;
+                finalX = (gameObject.x - camera.scrollX) * camera.zoom;
+                finalY = (gameObject.y - camera.scrollY) * camera.zoom;
             }
             
-            // Update overlay position
+            // Snap to pixel boundaries to reduce blurriness
+            finalX = Math.round(finalX);
+            finalY = Math.round(finalY);
+            
+            // Update overlay position (relative to container)
             gameObject.animatedOverlay.style.left = finalX + 'px';
             gameObject.animatedOverlay.style.top = finalY + 'px';
             gameObject.animatedOverlay.style.display = 'block';
@@ -2227,8 +2252,20 @@ class GameScene extends Phaser.Scene {
     
     destroyAnimatedOverlay(gameObject) {
         if (gameObject.animatedOverlay) {
-            document.body.removeChild(gameObject.animatedOverlay);
+            // Remove from container if it exists
+            const container = document.getElementById('bufo-overlay-container');
+            if (container && gameObject.animatedOverlay.parentNode === container) {
+                container.removeChild(gameObject.animatedOverlay);
+            }
             gameObject.animatedOverlay = null;
+        }
+    }
+    
+    cleanupAllOverlays() {
+        // Clean up the entire overlay container
+        const container = document.getElementById('bufo-overlay-container');
+        if (container) {
+            document.body.removeChild(container);
         }
     }
 
