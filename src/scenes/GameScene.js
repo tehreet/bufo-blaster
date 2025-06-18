@@ -165,6 +165,9 @@ class GameScene extends Phaser.Scene {
         // Debug settings
         this.showHitboxes = false;
         
+        // Overlay management
+        this.overlaysHidden = false;
+        
         // Mouse input
         this.input.on('pointerdown', this.handleClick, this);
         
@@ -2213,9 +2216,19 @@ class GameScene extends Phaser.Scene {
     
     updateAnimatedOverlay(gameObject) {
         if (gameObject.animatedOverlay && gameObject.active) {
+            // Don't update overlays during upgrade screen or when explicitly hidden
+            if ((this.upgradeSystem && this.upgradeSystem.isPaused) || this.overlaysHidden) {
+                return;
+            }
+            
             // Update container position to match canvas
             const container = document.getElementById('bufo-overlay-container');
             if (container) {
+                // Ensure container is visible (in case something else hid it)
+                if (container.style.display === 'none') {
+                    container.style.display = 'block';
+                }
+                
                 const canvas = this.sys.game.canvas;
                 const canvasRect = canvas.getBoundingClientRect();
                 
@@ -2271,6 +2284,7 @@ class GameScene extends Phaser.Scene {
     
     hideAllOverlays() {
         // Hide all animated overlays
+        this.overlaysHidden = true;
         const container = document.getElementById('bufo-overlay-container');
         if (container) {
             container.style.display = 'none';
@@ -2279,6 +2293,7 @@ class GameScene extends Phaser.Scene {
     
     showAllOverlays() {
         // Show all animated overlays
+        this.overlaysHidden = false;
         const container = document.getElementById('bufo-overlay-container');
         if (container) {
             container.style.display = 'block';
