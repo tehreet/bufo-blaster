@@ -1848,6 +1848,20 @@ class GameScene extends Phaser.Scene {
         // Handle gamepad input for character selection
         if (!this.gameStarted) {
             this.handleGamepadInput();
+            
+            // Update character selection animated overlays
+            if (this.characterCards) {
+                this.characterCards.forEach(card => {
+                    if (card.characterData) {
+                        const charSprite = this.children.list.find(child => 
+                            child.texture && child.texture.key === card.characterData.sprite
+                        );
+                        if (charSprite) {
+                            this.updateAnimatedOverlay(charSprite);
+                        }
+                    }
+                });
+            }
             return;
         }
         
@@ -2183,14 +2197,30 @@ class GameScene extends Phaser.Scene {
     
     updateAnimatedOverlay(gameObject) {
         if (gameObject.animatedOverlay && gameObject.active) {
-            // Convert game world coordinates to screen coordinates
-            const camera = this.cameras.main;
-            const screenX = (gameObject.x - camera.scrollX) * camera.zoom + camera.x;
-            const screenY = (gameObject.y - camera.scrollY) * camera.zoom + camera.y;
+            // Get the canvas element and its position
+            const canvas = this.sys.game.canvas;
+            const canvasRect = canvas.getBoundingClientRect();
+            
+            let finalX, finalY;
+            
+            // Check if this is during character selection (no camera scrolling)
+            if (!this.gameStarted) {
+                // Character selection screen - use direct coordinates
+                finalX = canvasRect.left + window.scrollX + gameObject.x;
+                finalY = canvasRect.top + window.scrollY + gameObject.y;
+            } else {
+                // In-game - use camera coordinates
+                const camera = this.cameras.main;
+                const screenX = (gameObject.x - camera.scrollX) * camera.zoom;
+                const screenY = (gameObject.y - camera.scrollY) * camera.zoom;
+                
+                finalX = canvasRect.left + window.scrollX + screenX;
+                finalY = canvasRect.top + window.scrollY + screenY;
+            }
             
             // Update overlay position
-            gameObject.animatedOverlay.style.left = screenX + 'px';
-            gameObject.animatedOverlay.style.top = screenY + 'px';
+            gameObject.animatedOverlay.style.left = finalX + 'px';
+            gameObject.animatedOverlay.style.top = finalY + 'px';
             gameObject.animatedOverlay.style.display = 'block';
         }
     }
