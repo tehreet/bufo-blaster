@@ -1152,6 +1152,9 @@ class GameScene extends Phaser.Scene {
         this.upgradeSystem.isPaused = true;
         this.matter.world.enabled = false; // Pause Matter.js physics
         
+        // Hide animated overlays during upgrade screen
+        this.hideAllOverlays();
+        
         // Pause all timers
         if (this.enemySpawnTimer) {
             this.enemySpawnTimer.paused = true;
@@ -1559,6 +1562,9 @@ class GameScene extends Phaser.Scene {
         // Resume the game
         this.upgradeSystem.isPaused = false;
         this.matter.world.enabled = true; // Resume Matter.js physics
+        
+        // Show animated overlays again
+        this.showAllOverlays();
         
         // Resume all timers
         if (this.enemySpawnTimer) {
@@ -2207,12 +2213,6 @@ class GameScene extends Phaser.Scene {
     
     updateAnimatedOverlay(gameObject) {
         if (gameObject.animatedOverlay && gameObject.active) {
-            // Hide overlays during upgrade screen
-            if (this.upgradeSystem && this.upgradeSystem.isPaused) {
-                gameObject.animatedOverlay.style.display = 'none';
-                return;
-            }
-            
             // Update container position to match canvas
             const container = document.getElementById('bufo-overlay-container');
             if (container) {
@@ -2266,6 +2266,22 @@ class GameScene extends Phaser.Scene {
         const container = document.getElementById('bufo-overlay-container');
         if (container) {
             document.body.removeChild(container);
+        }
+    }
+    
+    hideAllOverlays() {
+        // Hide all animated overlays
+        const container = document.getElementById('bufo-overlay-container');
+        if (container) {
+            container.style.display = 'none';
+        }
+    }
+    
+    showAllOverlays() {
+        // Show all animated overlays
+        const container = document.getElementById('bufo-overlay-container');
+        if (container) {
+            container.style.display = 'block';
         }
     }
 
