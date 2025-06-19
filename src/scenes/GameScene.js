@@ -221,6 +221,9 @@ class GameScene extends Phaser.Scene {
         this.isPaused = false;
         this.pauseUIElements = [];
         
+        // Character selection click prevention
+        this.characterCardClicked = false;
+        
         // Mouse input
         this.input.on('pointerdown', this.handleClick, this);
         
@@ -460,9 +463,9 @@ class GameScene extends Phaser.Scene {
             }).setOrigin(0.5, 0.5);
             
             // Click handler
-            card.on('pointerdown', (event) => {
-                // Prevent the click from bubbling to the global click handler
-                event.stopPropagation();
+            card.on('pointerdown', () => {
+                // Set a flag to prevent the global click handler from triggering
+                this.characterCardClicked = true;
                 this.selectCharacter(character);
             });
             
@@ -2312,6 +2315,12 @@ class GameScene extends Phaser.Scene {
         // Handle clicks during character selection
         if (!this.characterSelected) {
             // Character selection is handled by card click events
+            return;
+        }
+        
+        // Don't toggle pause if a character card was just clicked
+        if (this.characterCardClicked) {
+            this.characterCardClicked = false; // Reset the flag
             return;
         }
         
