@@ -455,25 +455,14 @@ class EnemySystem {
             
             let angle, speed = enemy.speed / 50; // Scale down for Matter.js
             
-            // Check if enemy is stunned (takes priority over confusion)
+            // Check if enemy is stunned
             if (this.scene.stunnedEnemies && this.scene.stunnedEnemies.has(enemy)) {
                 // Stunned enemies don't move
                 return;
             }
             
-            // Check if enemy is confused
-            if (this.scene.confusedEnemies && this.scene.confusedEnemies.has(enemy)) {
-                // Confused enemies move randomly
-                if (!enemy.confusedDirection || this.scene.time.now > enemy.nextDirectionChange) {
-                    enemy.confusedDirection = Phaser.Math.FloatBetween(0, Math.PI * 2);
-                    enemy.nextDirectionChange = this.scene.time.now + 500; // Change direction every 0.5s
-                }
-                angle = enemy.confusedDirection;
-                speed = (enemy.speed / 50) * 0.6; // Move slower when confused
-            } else {
-                // Normal chase AI - move towards player
-                angle = Phaser.Math.Angle.Between(enemy.x, enemy.y, this.scene.player.x, this.scene.player.y);
-            }
+            // Normal chase AI - move towards player
+            angle = Phaser.Math.Angle.Between(enemy.x, enemy.y, this.scene.player.x, this.scene.player.y);
             
             this.scene.matter.body.setVelocity(enemy.body, {
                 x: Math.cos(angle) * speed,

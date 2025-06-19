@@ -39,9 +39,9 @@ class CharacterSystem {
             WIZARD_BUFO: {
                 id: 'wizard',
                 name: 'Magician Bufo',
-                description: 'Ranged caster with area confusion spells',
+                description: 'Ranged caster with area damage spells',
                 abilityName: 'Starfall',
-                abilityDescription: 'Casts stars that damage and confuse enemies',
+                abilityDescription: 'Casts stars that damage enemies in an area',
                 color: 0x0066ff,
                 sprite: 'bufo-magician',
                 baseStats: {
@@ -144,10 +144,8 @@ class CharacterSystem {
         // Initialize wizard starfall system
         const statsSystem = this.scene.statsSystem;
         this.scene.starfallProjectiles = this.scene.add.group();
-        this.scene.confusedEnemies = new Set();
         this.scene.lastStarfallTime = 0;
         this.scene.starfallCooldown = statsSystem.getPlayerStats().abilityCooldown;
-        this.scene.confusionDurationBonus = 0;
         
         console.log('Wizard Bufo starfall ability setup complete');
     }
@@ -385,7 +383,6 @@ class CharacterSystem {
         if (this.selectedCharacter.id === 'wizard') {
             this.updateWizardStarfall();
             this.updateStarfallProjectiles();
-            this.updateConfusedEnemies();
         } else if (this.selectedCharacter.id === 'bat' && this.scene.boomerangs) {
             this.updateBatBoomerang();
             this.updateBoomerangs();
@@ -501,7 +498,6 @@ class CharacterSystem {
     applyStarfallAOE(impactX, impactY, damage) {
         const statsSystem = this.scene.statsSystem;
         const aoeRadius = statsSystem.getPlayerStats().abilityRadius;
-        const currentTime = this.scene.time.now;
         
         // Create visual AOE effect
         const aoeEffect = this.scene.add.circle(impactX, impactY, aoeRadius, 0xFFD700, 0.3);
@@ -525,33 +521,11 @@ class CharacterSystem {
             if (distance <= aoeRadius) {
                 // Deal damage
                 this.scene.enemySystem.damageEnemy(enemy, damage);
-                
-                // Apply confusion effect
-                this.scene.confusedEnemies.add(enemy);
-                const confusionDuration = 3000 + (this.scene.confusionDurationBonus || 0);
-                enemy.confusedUntil = currentTime + confusionDuration;
-                
-                // Visual confusion effect
-                if (enemy.setTint) {
-                    enemy.setTint(0x9966ff);
-                }
             }
         });
     }
 
-    updateConfusedEnemies() {
-        if (!this.scene.confusedEnemies) return;
-        
-        const currentTime = this.scene.time.now;
-        this.scene.confusedEnemies.forEach(enemy => {
-            if (!enemy.active || !enemy.scene || currentTime > enemy.confusedUntil) {
-                if (enemy.clearTint) {
-                    enemy.clearTint();
-                }
-                this.scene.confusedEnemies.delete(enemy);
-            }
-        });
-    }
+
 
     updateBoomerangs() {
         if (!this.scene.boomerangs) return;
