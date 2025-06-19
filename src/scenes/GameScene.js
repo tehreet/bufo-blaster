@@ -404,7 +404,7 @@ class GameScene extends Phaser.Scene {
         // Character cards
         const charactersArray = Object.values(this.characters);
         const cardWidth = 200;
-        const cardHeight = 300;
+        const cardHeight = 360; // Increased height to accommodate larger character previews
         const spacing = 50;
         const totalWidth = (cardWidth * charactersArray.length) + (spacing * (charactersArray.length - 1));
         const startX = (1400 - totalWidth) / 2;
@@ -423,41 +423,43 @@ class GameScene extends Phaser.Scene {
             
             // Character sprite
             const charSprite = this.add.image(cardX + cardWidth/2, cardY + 80, character.sprite);
-            charSprite.setDisplaySize(60, 60); // Set to appropriate size for character selection
+            // Make character previews 2x larger too (120px instead of 60px) for consistency
+            const previewSize = 120;
+            charSprite.setDisplaySize(previewSize, previewSize);
             charSprite.setAlpha(0); // Hide static sprite, use animated overlay
             
-            // Create animated GIF overlay for character selection
-            this.createAnimatedOverlay(charSprite, `assets/characters/${character.sprite}.gif`, 60, 60);
+            // Create animated GIF overlay for character selection (also 2x larger)
+            this.createAnimatedOverlay(charSprite, `assets/characters/${character.sprite}.gif`, previewSize, previewSize);
             
-            // Character name
-            this.add.text(cardX + cardWidth/2, cardY + 140, character.name, {
+            // Character name (moved down to accommodate larger sprite)
+            this.add.text(cardX + cardWidth/2, cardY + 170, character.name, {
                 fontSize: '16px',
                 color: '#ffffff',
                 fontWeight: 'bold'
             }).setOrigin(0.5, 0.5);
             
-            // Character description
-            this.add.text(cardX + cardWidth/2, cardY + 170, character.description, {
+            // Character description (moved down)
+            this.add.text(cardX + cardWidth/2, cardY + 200, character.description, {
                 fontSize: '10px',
                 color: '#cccccc',
                 wordWrap: { width: cardWidth - 20 }
             }).setOrigin(0.5, 0);
             
-            // Ability info
-            this.add.text(cardX + cardWidth/2, cardY + 220, character.abilityName, {
+            // Ability info (moved down)
+            this.add.text(cardX + cardWidth/2, cardY + 250, character.abilityName, {
                 fontSize: '12px',
                 color: character.color,
                 fontWeight: 'bold'
             }).setOrigin(0.5, 0.5);
             
-            this.add.text(cardX + cardWidth/2, cardY + 240, character.abilityDescription, {
+            this.add.text(cardX + cardWidth/2, cardY + 270, character.abilityDescription, {
                 fontSize: '9px',
                 color: '#aaaaaa',
                 wordWrap: { width: cardWidth - 20 }
             }).setOrigin(0.5, 0);
             
-            // Stats
-            this.add.text(cardX + cardWidth/2, cardY + 280, `Health: ${character.baseStats.health} | Speed: ${character.baseStats.moveSpeed} | Armor: ${character.baseStats.armor}`, {
+            // Stats (moved down)
+            this.add.text(cardX + cardWidth/2, cardY + 310, `Health: ${character.baseStats.health} | Speed: ${character.baseStats.moveSpeed} | Armor: ${character.baseStats.armor}`, {
                 fontSize: '10px',
                 color: '#888888'
             }).setOrigin(0.5, 0.5);
@@ -555,12 +557,14 @@ class GameScene extends Phaser.Scene {
         const centerX = (mapWidth * tileSize) / 2;
         const centerY = (mapHeight * tileSize) / 2;
         this.player = this.add.image(centerX, centerY, this.selectedCharacter.sprite);
-        this.player.setDisplaySize(this.gameConfig.PLAYER_RADIUS * 2, this.gameConfig.PLAYER_RADIUS * 2);
+        // Make player character 2x larger visually (64px instead of 32px)
+        const playerDisplaySize = this.gameConfig.PLAYER_RADIUS * 4; // 2x larger than before (was * 2)
+        this.player.setDisplaySize(playerDisplaySize, playerDisplaySize);
         this.player.setAlpha(0); // Hide static sprite, we'll use animated overlay
         
-        // Create animated GIF overlay for player
+        // Create animated GIF overlay for player (also 2x larger)
         this.createAnimatedOverlay(this.player, `assets/characters/${this.selectedCharacter.sprite}.gif`, 
-                                  this.gameConfig.PLAYER_RADIUS * 2, this.gameConfig.PLAYER_RADIUS * 2);
+                                  playerDisplaySize, playerDisplaySize);
         
         // Add Matter.js physics to player with explicit radius
         this.matter.add.gameObject(this.player, {
@@ -578,7 +582,7 @@ class GameScene extends Phaser.Scene {
         this.player.hitboxDebug.setStrokeStyle(3, 0x00ff00);
         this.player.hitboxDebug.setVisible(this.showHitboxes);
         
-        console.log(`Player created with explicit collision radius: ${this.gameConfig.PLAYER_RADIUS}px, display size: ${this.gameConfig.PLAYER_RADIUS * 2}px`);
+        console.log(`Player created with explicit collision radius: ${this.gameConfig.PLAYER_RADIUS}px, display size: ${playerDisplaySize}px (2x larger for better visibility)`);
         console.log(`Collision setup: Player (${this.gameConfig.PLAYER_RADIUS}px) vs Enemies (14-20px) - much better sprite matching!`);
         
         // Initialize comprehensive stats system
