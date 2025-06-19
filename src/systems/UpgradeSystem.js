@@ -124,11 +124,7 @@ class UpgradeSystem {
                       effect: () => this.scene.statsSystem.multiplyStats('abilityDamageMultiplier', 1.75) },
                     { id: 'wizard_star_size', name: 'Greater Impact', description: 'Star explosion radius increased by 50%', type: 'character', 
                       effect: () => this.scene.statsSystem.multiplyStats('abilityRadiusMultiplier', 1.5) },
-                    { id: 'wizard_confusion', name: 'Mind Chaos', description: 'Confusion effect lasts 100% longer', type: 'character', 
-                      effect: () => { 
-                          this.scene.confusionDurationBonus = (this.scene.confusionDurationBonus || 0) + 3000;
-                          console.log('Extended confusion duration');
-                      }},
+
                     { id: 'wizard_rapid_cast', name: 'Arcane Haste', description: 'Starfall cooldown reduced by 40%', type: 'character', 
                       effect: () => this.scene.statsSystem.multiplyStats('abilityCooldownMultiplier', 0.6) }
                 ];
