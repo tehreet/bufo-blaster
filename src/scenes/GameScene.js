@@ -674,6 +674,9 @@ class GameScene extends Phaser.Scene {
             usedUpgradeIds: new Set() // Track which upgrades are currently shown
         };
         
+        // Initialize upgrade selection timing to prevent accidental pause
+        this.lastUpgradeSelectionTime = 0;
+        
         console.log(`Game started with ${this.selectedCharacter.name}!`);
     }
     
@@ -1814,6 +1817,9 @@ class GameScene extends Phaser.Scene {
         // Apply the upgrade
         upgrade.apply();
         
+        // Set a brief cooldown to prevent accidental pause triggering right after upgrade selection
+        this.lastUpgradeSelectionTime = this.time.now;
+        
         // Close upgrade UI
         this.closeUpgradeUI();
     }
@@ -1984,9 +1990,13 @@ class GameScene extends Phaser.Scene {
     }
     
     closeUpgradeUI() {
-        // Resume the game
+        // Resume the game - clear BOTH pause states to prevent conflicts
         this.upgradeSystem.isPaused = false;
+        this.isPaused = false; // Ensure general pause state is also cleared
         this.matter.world.enabled = true; // Resume Matter.js physics
+        
+        // Hide any pause UI that might be showing
+        this.hidePauseUI();
         
         // Show animated overlays again
         this.showAllOverlays();
@@ -2013,6 +2023,8 @@ class GameScene extends Phaser.Scene {
         if (this.upgradeCardElements) {
             this.upgradeCardElements = [];
         }
+        
+        console.log('Upgrade UI closed - game fully resumed');
     }
     
     updateWizardStarfall() {
@@ -2306,6 +2318,11 @@ class GameScene extends Phaser.Scene {
             return;
         }
         
+        // Don't toggle pause immediately after upgrade selection (500ms cooldown)
+        if (this.lastUpgradeSelectionTime && this.time.now - this.lastUpgradeSelectionTime < 500) {
+            return;
+        }
+        
         // Toggle pause during gameplay
         if (this.gameStarted) {
             this.togglePause();
@@ -2529,8 +2546,10 @@ class GameScene extends Phaser.Scene {
             });
         }
         
-        // Pause toggle with Escape key (only during gameplay, not upgrade screen)
-        if (Phaser.Input.Keyboard.JustDown(this.pauseKey) && (!this.upgradeSystem || !this.upgradeSystem.isPaused)) {
+        // Pause toggle with Escape key (only during gameplay, not upgrade screen, with cooldown after upgrade)
+        if (Phaser.Input.Keyboard.JustDown(this.pauseKey) && 
+            (!this.upgradeSystem || !this.upgradeSystem.isPaused) &&
+            (!this.lastUpgradeSelectionTime || this.time.now - this.lastUpgradeSelectionTime >= 500)) {
             this.togglePause();
         }
         
@@ -2765,8 +2784,10 @@ class GameScene extends Phaser.Scene {
             });
         }
         
-        // Start button for pause toggle (only during gameplay, not character selection or upgrade screen)
-        if (justPressed(9) && this.gameStarted && (!this.upgradeSystem || !this.upgradeSystem.isPaused)) { // Start button
+        // Start button for pause toggle (only during gameplay, not character selection or upgrade screen, with cooldown after upgrade)
+        if (justPressed(9) && this.gameStarted && 
+            (!this.upgradeSystem || !this.upgradeSystem.isPaused) &&
+            (!this.lastUpgradeSelectionTime || this.time.now - this.lastUpgradeSelectionTime >= 500)) { // Start button
             this.togglePause();
         }
     }
