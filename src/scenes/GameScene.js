@@ -206,6 +206,7 @@ class GameScene extends Phaser.Scene {
         this.spaceKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
         this.enterKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.ENTER);
         this.debugKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.F1);
+        this.statsDebugKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.F2);
         this.pauseKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.ESC);
         
         // Gamepad support
@@ -213,6 +214,8 @@ class GameScene extends Phaser.Scene {
         
         // Debug settings
         this.showHitboxes = false;
+        this.showStatsDebug = false;
+        this.statsDebugUI = null;
         
         // Overlay management
         this.overlaysHidden = false;
@@ -366,7 +369,7 @@ class GameScene extends Phaser.Scene {
     
     showGamepadHint() {
         // Show a temporary hint about gamepad controls
-        const hint = this.add.text(700, 50, 'Xbox Controller Connected!\nLeft Stick: Move/Navigate | A: Select | X: Reroll | Y: Debug', {
+        const hint = this.add.text(700, 50, 'Xbox Controller Connected!\nLeft Stick: Move/Navigate | A: Select | X: Reroll\nY: Hitboxes | Select: Stats Debug', {
             fontSize: '14px',
             color: '#00ff00',
             backgroundColor: '#000000',
@@ -1592,6 +1595,11 @@ class GameScene extends Phaser.Scene {
         // Hide animated overlays during upgrade screen
         this.hideAllOverlays();
         
+        // Hide stats debug UI during upgrade screen
+        if (this.showStatsDebug) {
+            this.hideStatsDebugUI();
+        }
+        
         // Pause all timers
         if (this.enemySpawnTimer) {
             this.enemySpawnTimer.paused = true;
@@ -2010,6 +2018,11 @@ class GameScene extends Phaser.Scene {
         // Show animated overlays again
         this.showAllOverlays();
         
+        // Restore stats debug UI if it was active
+        if (this.showStatsDebug) {
+            this.createStatsDebugUI();
+        }
+        
         // Resume all timers
         if (this.enemySpawnTimer) {
             this.enemySpawnTimer.paused = false;
@@ -2250,6 +2263,10 @@ class GameScene extends Phaser.Scene {
         this.isPaused = false;
         this.hidePauseUI();
         
+        // Clean up debug UI
+        this.hideStatsDebugUI();
+        this.showStatsDebug = false;
+        
         // Clean up all animated overlays
         this.cleanupAllOverlays();
         
@@ -2461,6 +2478,128 @@ class GameScene extends Phaser.Scene {
             this.pauseUIElements = [];
         }
     }
+    
+    toggleStatsDebug() {
+        this.showStatsDebug = !this.showStatsDebug;
+        
+        if (this.showStatsDebug) {
+            this.createStatsDebugUI();
+        } else {
+            this.hideStatsDebugUI();
+        }
+        
+        console.log(`Stats debug mode: ${this.showStatsDebug ? 'ON' : 'OFF'}`);
+    }
+    
+    createStatsDebugUI() {
+        // Remove existing stats debug UI if it exists
+        this.hideStatsDebugUI();
+        
+        if (!this.gameStarted || !this.playerStats) return;
+        
+        // Create container for all stats debug elements
+        this.statsDebugUI = [];
+        
+        // Background panel
+        const panel = this.add.rectangle(150, 300, 280, 550, 0x000000, 0.8);
+        panel.setScrollFactor(0);
+        panel.setDepth(1500);
+        panel.setStrokeStyle(2, 0x00ff00);
+        this.statsDebugUI.push(panel);
+        
+        // Title
+        const title = this.add.text(20, 50, 'DEBUG STATS', {
+            fontSize: '16px',
+            color: '#00ff00',
+            fontWeight: 'bold'
+        });
+        title.setScrollFactor(0);
+        title.setDepth(1501);
+        this.statsDebugUI.push(title);
+        
+        // Create stats text - this will be updated each frame
+        this.statsDebugText = this.add.text(20, 80, '', {
+            fontSize: '11px',
+            color: '#ffffff',
+            lineSpacing: 2
+        });
+        this.statsDebugText.setScrollFactor(0);
+        this.statsDebugText.setDepth(1501);
+        this.statsDebugUI.push(this.statsDebugText);
+        
+        // Instructions
+        const instructions = this.add.text(20, 570, 'F2 / Select: Toggle\nF1 / Y: Hitboxes', {
+            fontSize: '10px',
+            color: '#888888'
+        });
+        instructions.setScrollFactor(0);
+        instructions.setDepth(1501);
+        this.statsDebugUI.push(instructions);
+        
+        // Update the stats text immediately
+        this.updateStatsDebugUI();
+    }
+    
+    updateStatsDebugUI() {
+        if (!this.showStatsDebug || !this.statsDebugText || !this.playerStats) return;
+        
+        const stats = this.playerStats;
+        const progression = this.playerProgression;
+        const mods = this.statModifiers;
+        
+        const statsText = [
+            `CHARACTER: ${this.selectedCharacter.name}`,
+            ``,
+            `=== PROGRESSION ===`,
+            `Level: ${progression.level}`,
+            `XP: ${progression.xp} / ${progression.xpToNextLevel}`,
+            ``,
+            `=== CORE STATS ===`,
+            `Health: ${Math.ceil(stats.health)} / ${stats.maxHealth}`,
+            `Armor: ${stats.armor}`,
+            `Health Regen: ${stats.healthRegen.toFixed(1)}/sec`,
+            `Move Speed: ${stats.moveSpeed.toFixed(1)}`,
+            ``,
+            `=== ABILITY STATS ===`,
+            `Ability Damage: ${stats.abilityDamage.toFixed(2)}`,
+            `Ability Cooldown: ${Math.round(stats.abilityCooldown)}ms`,
+            `Ability Radius: ${Math.round(stats.abilityRadius)}px`,
+            `Projectile Count: ${stats.projectileCount}`,
+            ``,
+            `=== UTILITY ===`,
+            `Pickup Range: ${Math.round(stats.pickupRange)}px`,
+            ``,
+            `=== MULTIPLIERS ===`,
+            `Ability Damage: ${(mods.abilityDamageMultiplier * 100).toFixed(0)}%`,
+            `Cooldown: ${(mods.abilityCooldownMultiplier * 100).toFixed(0)}%`,
+            `Move Speed: ${(mods.moveSpeedMultiplier * 100).toFixed(0)}%`,
+            `Ability Radius: ${(mods.abilityRadiusMultiplier * 100).toFixed(0)}%`,
+            `Pickup Range: ${(mods.pickupRangeMultiplier * 100).toFixed(0)}%`,
+            ``,
+            `=== BONUSES ===`,
+            `Health Bonus: +${mods.healthBonus}`,
+            `Armor Bonus: +${mods.armorBonus}`,
+            `Regen Bonus: +${mods.healthRegenBonus}`,
+            `Damage Bonus: +${mods.abilityDamageBonus}`,
+            `Pickup Bonus: +${mods.pickupRangeBonus}`,
+            `Radius Bonus: +${mods.abilityRadiusBonus}`,
+            `Projectile Bonus: +${mods.projectileCountBonus}`
+        ].join('\n');
+        
+        this.statsDebugText.setText(statsText);
+    }
+    
+    hideStatsDebugUI() {
+        if (this.statsDebugUI) {
+            this.statsDebugUI.forEach(element => {
+                if (element && element.destroy) {
+                    element.destroy();
+                }
+            });
+            this.statsDebugUI = [];
+        }
+        this.statsDebugText = null;
+    }
 
     update() {
         // Handle gamepad input for character selection
@@ -2544,7 +2683,7 @@ class GameScene extends Phaser.Scene {
             }
         }
         
-        // Debug toggle
+        // Debug toggle (F1 - hitboxes)
         if (Phaser.Input.Keyboard.JustDown(this.debugKey)) {
             this.showHitboxes = !this.showHitboxes;
             
@@ -2559,6 +2698,11 @@ class GameScene extends Phaser.Scene {
                     enemy.hitboxDebug.setVisible(this.showHitboxes);
                 }
             });
+        }
+        
+        // Stats debug toggle (F2 - stats display)
+        if (Phaser.Input.Keyboard.JustDown(this.statsDebugKey)) {
+            this.toggleStatsDebug();
         }
         
         // Pause toggle with Escape key (only during gameplay, not upgrade screen, with cooldown after upgrade)
@@ -2666,6 +2810,11 @@ class GameScene extends Phaser.Scene {
         
         // Update UI
         this.updateUI();
+        
+        // Update stats debug UI if active
+        if (this.showStatsDebug) {
+            this.updateStatsDebugUI();
+        }
     }
     
     handleGamepadInput() {
@@ -2782,7 +2931,7 @@ class GameScene extends Phaser.Scene {
             }
         }
         
-        // Y button for debug toggle
+        // Y button for hitbox debug toggle
         if (justPressed(3)) { // Y button
             this.showHitboxes = !this.showHitboxes;
             
@@ -2797,6 +2946,11 @@ class GameScene extends Phaser.Scene {
                     enemy.hitboxDebug.setVisible(this.showHitboxes);
                 }
             });
+        }
+        
+        // Select button for stats debug toggle
+        if (justPressed(8)) { // Select/Back button
+            this.toggleStatsDebug();
         }
         
         // Start button for pause toggle (only during gameplay, not character selection or upgrade screen, with cooldown after upgrade)
