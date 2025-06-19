@@ -460,7 +460,9 @@ class GameScene extends Phaser.Scene {
             }).setOrigin(0.5, 0.5);
             
             // Click handler
-            card.on('pointerdown', () => {
+            card.on('pointerdown', (event) => {
+                // Prevent the click from bubbling to the global click handler
+                event.stopPropagation();
                 this.selectCharacter(character);
             });
             
