@@ -50,7 +50,7 @@ class GameScene extends Phaser.Scene {
             STAB_BUFO_AURA_RADIUS: 80,
             STAB_BUFO_AURA_DAMAGE: 0.6,
             STAB_BUFO_AURA_TICK_INTERVAL: 450,
-            ENEMY_SPAWN_INTERVAL: 2000
+            ENEMY_SPAWN_INTERVAL: 800 // Reduced from 2000ms to 800ms for much faster spawning
         };
         
         // Character definitions (from original game)
@@ -915,12 +915,42 @@ class GameScene extends Phaser.Scene {
     spawnEnemy() {
         if (!this.gameStarted || this.upgradeSystem.isPaused) return;
         
-        // Get random enemy type
+        // Calculate number of enemies to spawn based on level (2-8+ enemies per wave)
+        const baseEnemyCount = 2; // Start with 2 enemies at level 1
+        const levelBonus = Math.floor((this.playerStats.level - 1) / 2); // +1 enemy every 2 levels
+        const randomBonus = Math.random() < 0.3 ? Phaser.Math.Between(1, 3) : 0; // 30% chance for 1-3 extra enemies
+        const enemyCount = Math.min(12, baseEnemyCount + levelBonus + randomBonus); // Cap at 12 enemies per wave
+        
+        console.log(`Level ${this.playerStats.level}: Spawning ${enemyCount} enemies (base: ${baseEnemyCount}, level bonus: ${levelBonus}, random bonus: ${randomBonus})`);
+        
+        // Spawn multiple enemies in this wave
+        for (let i = 0; i < enemyCount; i++) {
+            this.spawnSingleEnemy();
+        }
+        
+        // 15% chance for an additional "mini-wave" at higher levels
+        if (this.playerStats.level >= 5 && Math.random() < 0.15) {
+            const miniWaveSize = Phaser.Math.Between(2, 4);
+            console.log(`Bonus mini-wave: +${miniWaveSize} enemies!`);
+            
+            // Delay the mini-wave slightly
+            this.time.delayedCall(300, () => {
+                for (let i = 0; i < miniWaveSize; i++) {
+                    this.spawnSingleEnemy();
+                }
+            });
+        }
+    }
+    
+    spawnSingleEnemy() {
+        if (!this.gameStarted || this.upgradeSystem.isPaused) return;
+        
+        // Get random enemy type (weighted towards tougher enemies at higher levels)
         const enemyType = this.getRandomEnemyType();
         
-        // Spawn enemy outside camera view
+        // Spawn enemy outside camera view with some variation
         const camera = this.cameras.main;
-        const spawnDistance = 150;
+        const spawnDistance = Phaser.Math.Between(120, 200); // Add some variation to spawn distance
         const angle = Phaser.Math.FloatBetween(0, Math.PI * 2);
         const spawnX = this.player.x + Math.cos(angle) * (camera.width / 2 + spawnDistance);
         const spawnY = this.player.y + Math.sin(angle) * (camera.height / 2 + spawnDistance);
@@ -969,11 +999,6 @@ class GameScene extends Phaser.Scene {
         enemy.hitboxDebug.setVisible(this.showHitboxes);
         
         this.enemies.add(enemy);
-        
-        console.log(`Spawned ${enemyType.name} at (${Math.round(clampedX)}, ${Math.round(clampedY)}) - Display: ${enemyType.displaySize}px, Hitbox: ${enemyType.hitboxRadius}px`);
-        console.log('Physics body radius:', enemy.body.circleRadius, 'bounds:', 
-            Math.round(enemy.body.bounds.max.x - enemy.body.bounds.min.x), 'x', 
-            Math.round(enemy.body.bounds.max.y - enemy.body.bounds.min.y));
     }
     
     applyStabAura() {
@@ -1166,6 +1191,11 @@ class GameScene extends Phaser.Scene {
         
         console.log(`Level up! Now level ${this.playerStats.level}`);
         
+        // Check for boss wave at milestone levels (every 5 levels)
+        if (this.playerStats.level % 5 === 0) {
+            this.triggerBossWave();
+        }
+        
         // Show upgrade selection every level
         this.showUpgradeSelection();
         
@@ -1173,12 +1203,167 @@ class GameScene extends Phaser.Scene {
         this.scaleEnemyDifficulty();
     }
     
+    triggerBossWave() {
+        const level = this.playerStats.level;
+        const bossWaveSize = 8 + Math.floor(level / 5) * 3; // 8 enemies at level 5, 11 at level 10, etc.
+        
+        console.log(`🚨 BOSS WAVE TRIGGERED! Level ${level} - Spawning ${bossWaveSize} tough enemies! 🚨`);
+        
+        // Delay boss wave slightly after level up
+        this.time.delayedCall(1500, () => {
+            // Spawn mostly tough enemies for boss wave
+            for (let i = 0; i < bossWaveSize; i++) {
+                // 70% chance for tough enemies, 30% for random
+                let enemyType;
+                if (Math.random() < 0.7) {
+                    // Force tough enemy types
+                    const toughEnemies = this.enemyTypes.filter(type => 
+                        type.id === 'mob' || type.id === 'eyes' || type.id === 'clown'
+                    );
+                    enemyType = Phaser.Utils.Array.GetRandom(toughEnemies);
+                } else {
+                    enemyType = this.getRandomEnemyType();
+                }
+                
+                // Spawn with slight delay for dramatic effect
+                this.time.delayedCall(i * 100, () => {
+                    this.spawnSingleEnemyOfType(enemyType);
+                });
+            }
+            
+            // Show boss wave notification
+            this.showBossWaveNotification(level);
+        });
+    }
+    
+    spawnSingleEnemyOfType(enemyType) {
+        if (!this.gameStarted) return;
+        
+        // Spawn enemy outside camera view with some variation
+        const camera = this.cameras.main;
+        const spawnDistance = Phaser.Math.Between(120, 200);
+        const angle = Phaser.Math.FloatBetween(0, Math.PI * 2);
+        const spawnX = this.player.x + Math.cos(angle) * (camera.width / 2 + spawnDistance);
+        const spawnY = this.player.y + Math.sin(angle) * (camera.height / 2 + spawnDistance);
+        
+        // Clamp to world bounds
+        const clampedX = Phaser.Math.Clamp(spawnX, 0, this.map.widthInPixels);
+        const clampedY = Phaser.Math.Clamp(spawnY, 0, this.map.heightInPixels);
+        
+        // Create enemy with sprite
+        const enemy = this.add.image(clampedX, clampedY, enemyType.sprite);
+        enemy.setDisplaySize(enemyType.displaySize, enemyType.displaySize);
+        
+        // Check if this enemy type uses a GIF
+        const gifEnemies = ['bufo-dancing', 'bufo-eyes'];
+        if (gifEnemies.includes(enemyType.sprite)) {
+            enemy.setAlpha(0);
+            this.createAnimatedOverlay(enemy, `assets/enemies/${enemyType.sprite}.gif`, 
+                                     enemyType.displaySize, enemyType.displaySize);
+        }
+        
+        // Add Matter.js physics
+        this.matter.add.gameObject(enemy, {
+            shape: {
+                type: 'circle',
+                radius: enemyType.hitboxRadius
+            },
+            frictionAir: 0.01,
+            label: 'enemy',
+            ignoreGravity: true
+        });
+        
+        // Enemy stats (boss wave enemies get +25% health bonus)
+        const levelScaling = 1 + (this.playerStats.level - 1) * 0.2;
+        const bossWaveBonus = 1.25; // 25% more health for boss wave enemies
+        enemy.health = Math.ceil(enemyType.health * levelScaling * bossWaveBonus);
+        enemy.maxHealth = Math.ceil(enemyType.health * levelScaling * bossWaveBonus);
+        enemy.speed = enemyType.speed;
+        enemy.lastAttack = 0;
+        enemy.attackCooldown = 1000;
+        enemy.enemyType = enemyType;
+        enemy.xpValue = Math.floor(enemyType.xpValue * 1.5); // 50% more XP for boss wave enemies
+        enemy.isBossWaveEnemy = true; // Mark as boss wave enemy
+        
+        // Add debug hitbox
+        const actualRadius = enemy.body.circleRadius || enemyType.hitboxRadius;
+        enemy.hitboxDebug = this.add.circle(clampedX, clampedY, actualRadius, 0xff0000, 0.3);
+        enemy.hitboxDebug.setStrokeStyle(2, 0xff0000);
+        enemy.hitboxDebug.setVisible(this.showHitboxes);
+        
+        this.enemies.add(enemy);
+    }
+    
+    showBossWaveNotification(level) {
+        // Create dramatic notification
+        const notification = this.add.text(400, 200, `🚨 BOSS WAVE! 🚨\nLevel ${level} Milestone`, {
+            fontSize: '36px',
+            color: '#ff0000',
+            fontWeight: 'bold',
+            backgroundColor: '#000000',
+            padding: { x: 20, y: 10 },
+            align: 'center'
+        }).setOrigin(0.5, 0.5).setScrollFactor(0).setDepth(2000);
+        
+        // Pulsing effect
+        this.tweens.add({
+            targets: notification,
+            scaleX: 1.2,
+            scaleY: 1.2,
+            duration: 300,
+            yoyo: true,
+            repeat: 2,
+            onComplete: () => {
+                // Fade out after pulsing
+                this.tweens.add({
+                    targets: notification,
+                    alpha: 0,
+                    duration: 1000,
+                    delay: 1000,
+                    onComplete: () => notification.destroy()
+                });
+            }
+        });
+    }
+    
     scaleEnemyDifficulty() {
-        // Increase enemy spawn rate
-        const newSpawnRate = Math.max(800, this.gameConfig.ENEMY_SPAWN_INTERVAL - (this.playerStats.level * 50));
+        // Much more aggressive difficulty scaling
+        const level = this.playerStats.level;
+        
+        // Exponential spawn rate reduction (gets much faster at higher levels)
+        // Level 1: 800ms, Level 5: 400ms, Level 10: 200ms, Level 15: 100ms
+        const baseRate = this.gameConfig.ENEMY_SPAWN_INTERVAL;
+        const levelMultiplier = Math.pow(0.85, level - 1); // 15% faster each level (exponential)
+        const newSpawnRate = Math.max(100, Math.floor(baseRate * levelMultiplier)); // Minimum 100ms (10 waves per second!)
+        
+        // Update spawn timer
         this.enemySpawnTimer.delay = newSpawnRate;
         
-        console.log(`Enemy difficulty scaled for level ${this.playerStats.level} - spawn rate: ${newSpawnRate}ms`);
+        // Also modify enemy type weights to favor tougher enemies at higher levels
+        if (level >= 3) {
+            // Increase weight of tougher enemies as level increases
+            this.enemyTypes.forEach(enemyType => {
+                if (enemyType.id === 'mob' || enemyType.id === 'eyes') {
+                    // Rare enemies become more common at higher levels
+                    enemyType.weight = Math.min(enemyType.weight * 1.1, 30);
+                } else if (enemyType.id === 'pog') {
+                    // Weak enemies become less common
+                    enemyType.weight = Math.max(enemyType.weight * 0.95, 10);
+                }
+            });
+        }
+        
+        // Calculate theoretical enemies per second for logging
+        const enemiesPerWave = 2 + Math.floor((level - 1) / 2); // Average enemies per wave
+        const wavesPerSecond = 1000 / newSpawnRate;
+        const enemiesPerSecond = enemiesPerWave * wavesPerSecond;
+        
+        console.log(`=== DIFFICULTY SCALED FOR LEVEL ${level} ===`);
+        console.log(`Spawn rate: ${newSpawnRate}ms (${wavesPerSecond.toFixed(1)} waves/sec)`);
+        console.log(`Enemies per wave: ~${enemiesPerWave}`);
+        console.log(`Theoretical enemies/sec: ${enemiesPerSecond.toFixed(1)}`);
+        console.log(`Active enemies: ${this.enemies.countActive(true)}`);
+        console.log(`=======================================`);
     }
     
     showUpgradeSelection() {
