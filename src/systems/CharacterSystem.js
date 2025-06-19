@@ -474,27 +474,43 @@ class CharacterSystem {
         
         for (let i = this.scene.starfallProjectiles.children.entries.length - 1; i >= 0; i--) {
             const star = this.scene.starfallProjectiles.children.entries[i];
-            if (!star.active || star.hasImpacted) continue;
+            if (!star || !star.active || star.hasImpacted) {
+                // Clean up invalid stars
+                if (star && star.active) star.destroy();
+                continue;
+            }
             
-            // Remove old starfall projectiles
+            // Remove old starfall projectiles (extended lifespan but added shorter failsafe below)
             if (currentTime - star.birthTime > star.lifespan) {
+                console.log('Star expired due to age');
                 star.destroy();
                 continue;
             }
 
-            // Check for impact with target area
+            // Check for impact with target area - more robust detection
             const distanceToTarget = Phaser.Math.Distance.Between(
                 star.x, star.y, star.targetX, star.targetY
             );
             
-            const targetReached = distanceToTarget < 30;
-            const hitGround = star.y > this.scene.map.heightInPixels - 50;
+            // Check if star has moved past its target (overshooting)
+            const targetReached = distanceToTarget < 40; // Increased radius for better detection
             
-            if (targetReached || hitGround) {
-                // Star has reached its target - trigger AOE explosion
+            // Multiple ground detection methods for reliability
+            const mapHeight = this.scene.map.heightInPixels || 2400; // Fallback height
+            const hitGround = star.y > mapHeight - 100; // More generous ground detection
+            const hitScreenBottom = star.y > this.scene.cameras.main.height + this.scene.cameras.main.scrollY;
+            
+            // Also check if star has been falling for too long (failsafe)
+            const fallTime = currentTime - star.birthTime;
+            const tooOld = fallTime > 3000; // 3 seconds max flight time
+            
+            if (targetReached || hitGround || hitScreenBottom || tooOld) {
+                // Star should explode - trigger AOE explosion
                 this.applyStarfallAOE(star.x, star.y, star.damage);
                 star.hasImpacted = true;
                 star.destroy();
+                
+                console.log(`Star exploded: target=${targetReached}, ground=${hitGround}, screen=${hitScreenBottom}, old=${tooOld}`);
             }
         }
     }
