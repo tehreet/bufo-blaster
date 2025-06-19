@@ -329,7 +329,7 @@ class EnemySystem {
     }
 
     damageEnemy(enemy, damage) {
-        if (!enemy.active || !enemy.scene || enemy.health <= 0) return;
+        if (!enemy || !enemy.active || !enemy.scene || enemy.health <= 0) return;
         
         enemy.health -= damage;
         
@@ -350,7 +350,7 @@ class EnemySystem {
     }
 
     killEnemy(enemy) {
-        if (!enemy.active || !enemy.scene) return;
+        if (!enemy || !enemy.active || !enemy.scene) return;
         
         // Stop all tweens on this enemy before destroying it
         this.scene.tweens.killTweensOf(enemy);
@@ -396,6 +396,9 @@ class EnemySystem {
     }
 
     playerHitEnemy(player, enemy) {
+        // Safety checks
+        if (!player || !enemy || !enemy.active || !enemy.scene) return;
+        
         // Check if player is invincible
         if (this.scene.statsSystem.getPlayerProgression().invincible) return;
         
@@ -419,7 +422,7 @@ class EnemySystem {
     }
 
     playerCollectXP(player, xpOrb) {
-        if (!xpOrb.active || !xpOrb.scene) return;
+        if (!xpOrb || !xpOrb.active || !xpOrb.scene) return;
         
         // Add XP to player
         this.scene.statsSystem.addXP(xpOrb.xpValue);
@@ -443,7 +446,7 @@ class EnemySystem {
         if (!this.scene.enemies) return;
         
         // Update enemy movement and behavior
-        const activeEnemies = this.scene.enemies.children.entries.filter(enemy => enemy.active && enemy.body && enemy.scene);
+        const activeEnemies = this.scene.enemies.children.entries.filter(enemy => enemy && enemy.active && enemy.body && enemy.scene);
         
         activeEnemies.forEach(enemy => {
             // Check if enemy is currently being knocked back
@@ -485,7 +488,7 @@ class EnemySystem {
         if (!this.scene.xpOrbs || !this.scene.statsSystem.getPlayerStats()) return;
         
         // XP Orb magnetism using Matter.js (use pickup range stat)
-        const activeOrbs = this.scene.xpOrbs.children.entries.filter(orb => orb.active && orb.body && orb.scene);
+        const activeOrbs = this.scene.xpOrbs.children.entries.filter(orb => orb && orb.active && orb.body && orb.scene);
         const pickupRange = this.scene.statsSystem.getPlayerStats().pickupRange;
         
         activeOrbs.forEach(orb => {
@@ -507,7 +510,7 @@ class EnemySystem {
         
         const currentTime = this.scene.time.now;
         const activeEnemies = this.scene.enemies.children.entries.filter(enemy => 
-            enemy.active && enemy.scene && enemy.healthRegen);
+            enemy && enemy.active && enemy.scene && enemy.healthRegen);
         
         activeEnemies.forEach(enemy => {
             // Regenerate health every second
@@ -715,7 +718,7 @@ class EnemySystem {
     }
     
     playerCollectMagnetOrb(player, magnetOrb) {
-        if (!magnetOrb.active || !magnetOrb.scene || !magnetOrb.isMagnetOrb) return;
+        if (!player || !magnetOrb || !magnetOrb.active || !magnetOrb.scene || !magnetOrb.isMagnetOrb) return;
         
         console.log('XP Magnet Orb collected! Collecting all XP orbs on map...');
         
@@ -725,7 +728,7 @@ class EnemySystem {
         
         // Get all XP orbs (excluding the magnet orb itself)
         const xpOrbs = this.scene.xpOrbs.children.entries.filter(orb => 
-            orb.active && orb.scene && !orb.isMagnetOrb
+            orb && orb.active && orb.scene && !orb.isMagnetOrb
         );
         
         xpOrbs.forEach(orb => {

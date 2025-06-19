@@ -171,7 +171,7 @@ class CharacterSystem {
         
         // Throw boomerang if there are enemies nearby
         const nearbyEnemies = this.scene.enemies.children.entries.filter(enemy => {
-            if (!enemy.active || !enemy.body || !enemy.scene) return false;
+            if (!enemy || !enemy.active || !enemy.body || !enemy.scene) return false;
             const distance = Phaser.Math.Distance.Between(
                 this.scene.player.x, this.scene.player.y, enemy.x, enemy.y
             );
@@ -193,7 +193,7 @@ class CharacterSystem {
         let closestDistance = Infinity;
         
         this.scene.enemies.children.entries.forEach(enemy => {
-            if (!enemy.active || !enemy.body || !enemy.scene) return;
+            if (!enemy || !enemy.active || !enemy.body || !enemy.scene) return;
             const distance = Phaser.Math.Distance.Between(
                 this.scene.player.x, this.scene.player.y, enemy.x, enemy.y
             );
@@ -399,7 +399,7 @@ class CharacterSystem {
         // Find enemies in range - use camera bounds to target any visible enemies
         const camera = this.scene.cameras.main;
         const nearbyEnemies = this.scene.enemies.children.entries.filter(enemy => {
-            if (!enemy.active || !enemy.body || !enemy.scene) return false;
+            if (!enemy || !enemy.active || !enemy.body || !enemy.scene) return false;
             
             // Check if enemy is within camera bounds (visible on screen)
             const enemyInCameraBounds = (
@@ -515,7 +515,7 @@ class CharacterSystem {
         
         // Find all enemies within AOE radius and damage them
         this.scene.enemies.children.entries.forEach(enemy => {
-            if (!enemy.active || !enemy.body || !enemy.scene) return;
+            if (!enemy || !enemy.active || !enemy.body || !enemy.scene) return;
             
             const distance = Phaser.Math.Distance.Between(impactX, impactY, enemy.x, enemy.y);
             if (distance <= aoeRadius) {
@@ -612,7 +612,7 @@ class CharacterSystem {
         
         const currentTime = this.scene.time.now;
         this.scene.stunnedEnemies.forEach(enemy => {
-            if (!enemy.active || !enemy.scene || currentTime > enemy.stunEndTime) {
+            if (!enemy || !enemy.active || !enemy.scene || currentTime > enemy.stunEndTime) {
                 // Remove stun effect
                 if (enemy.clearTint) {
                     enemy.clearTint();
