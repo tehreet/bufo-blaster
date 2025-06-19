@@ -467,10 +467,14 @@ class EnemySystem {
             // Normal chase AI - move towards player
             angle = Phaser.Math.Angle.Between(enemy.x, enemy.y, this.scene.player.x, this.scene.player.y);
             
-            this.scene.matter.body.setVelocity(enemy.body, {
-                x: Math.cos(angle) * speed,
-                y: Math.sin(angle) * speed
-            });
+            try {
+                this.scene.matter.body.setVelocity(enemy.body, {
+                    x: Math.cos(angle) * speed,
+                    y: Math.sin(angle) * speed
+                });
+            } catch (error) {
+                console.error('Error setting enemy velocity:', error);
+            }
             
             // Update debug hitbox position
             if (enemy.hitboxDebug) {
@@ -492,14 +496,22 @@ class EnemySystem {
         const pickupRange = this.scene.statsSystem.getPlayerStats().pickupRange;
         
         activeOrbs.forEach(orb => {
+            // Additional safety check for body existence
+            if (!orb.body) return;
+            
             const distance = Phaser.Math.Distance.Between(this.scene.player.x, this.scene.player.y, orb.x, orb.y);
             if (distance < pickupRange) {
                 const angle = Phaser.Math.Angle.Between(orb.x, orb.y, this.scene.player.x, this.scene.player.y);
                 const speed = this.scene.gameConfig.XP_ORB_MAGNET_SPEED / 50; // Scale down for Matter.js
-                this.scene.matter.body.setVelocity(orb.body, {
-                    x: Math.cos(angle) * speed,
-                    y: Math.sin(angle) * speed
-                });
+                
+                try {
+                    this.scene.matter.body.setVelocity(orb.body, {
+                        x: Math.cos(angle) * speed,
+                        y: Math.sin(angle) * speed
+                    });
+                } catch (error) {
+                    console.error('Error setting orb velocity:', error);
+                }
             }
         });
     }
@@ -736,7 +748,7 @@ class EnemySystem {
                 collectedXP += orb.xpValue;
                 orbsCollected++;
                 
-                // Visual effect - orb flies to player
+                // Visual effect - orb flies to player with safety checks
                 this.scene.tweens.add({
                     targets: orb,
                     x: player.x,
@@ -744,7 +756,17 @@ class EnemySystem {
                     scaleX: 0.1,
                     scaleY: 0.1,
                     duration: 300,
-                    onComplete: () => orb.destroy()
+                    onUpdate: () => {
+                        // Safety check - if orb is destroyed, stop the tween
+                        if (!orb.active || !orb.scene || !orb.body) {
+                            this.scene.tweens.killTweensOf(orb);
+                        }
+                    },
+                    onComplete: () => {
+                        if (orb.active && orb.scene) {
+                            orb.destroy();
+                        }
+                    }
                 });
             }
         });

@@ -449,7 +449,11 @@ class CharacterSystem {
             const speed = 6.4;
             const velocityX = (dx / magnitude) * speed;
             const velocityY = (dy / magnitude) * speed;
-            this.scene.matter.body.setVelocity(star.body, { x: velocityX, y: velocityY });
+            try {
+                this.scene.matter.body.setVelocity(star.body, { x: velocityX, y: velocityY });
+            } catch (error) {
+                console.error('Error setting star velocity:', error);
+            }
         }
         
         const statsSystem = this.scene.statsSystem;
@@ -556,7 +560,11 @@ class CharacterSystem {
                     
                     // Update physics body position to match visual
                     if (boomerang.body) {
-                        this.scene.matter.body.setPosition(boomerang.body, { x: boomerang.x, y: boomerang.y });
+                        try {
+                            this.scene.matter.body.setPosition(boomerang.body, { x: boomerang.x, y: boomerang.y });
+                        } catch (error) {
+                            console.error('Error setting boomerang outward position:', error);
+                        }
                     }
                     
                     // Check if reached max distance
@@ -580,7 +588,11 @@ class CharacterSystem {
                     
                     // Update physics body position to match visual
                     if (boomerang.body) {
-                        this.scene.matter.body.setPosition(boomerang.body, { x: boomerang.x, y: boomerang.y });
+                        try {
+                            this.scene.matter.body.setPosition(boomerang.body, { x: boomerang.x, y: boomerang.y });
+                        } catch (error) {
+                            console.error('Error setting boomerang return position:', error);
+                        }
                     }
                     
                     // Check if returned to player
