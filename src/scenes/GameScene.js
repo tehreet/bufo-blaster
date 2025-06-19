@@ -605,8 +605,13 @@ class GameScene extends Phaser.Scene {
                     const goose = bodyA.label === 'goose' ? bodyA.gameObject : bodyB.gameObject;
                     const enemy = bodyA.label === 'enemy' ? bodyA.gameObject : bodyB.gameObject;
                     
-                    // Check if both objects still exist and are active
-                    if (goose && enemy && goose.active && enemy.active) {
+                    // Enhanced safety checks for goose-enemy collision
+                    if (goose && enemy && 
+                        goose.active && enemy.active && 
+                        goose.scene && enemy.scene &&
+                        typeof goose.x === 'number' && typeof goose.y === 'number' &&
+                        typeof enemy.x === 'number' && typeof enemy.y === 'number' &&
+                        enemy.body) {
                         this.gooseHitEnemy(goose, enemy);
                     }
                 }
@@ -843,7 +848,10 @@ class GameScene extends Phaser.Scene {
     }
     
     addExtraGoose() {
-        if (this.selectedCharacter.id !== 'goose' || !this.orbitingGeese) return;
+        if (this.selectedCharacter.id !== 'goose' || !this.orbitingGeese) {
+            console.warn('Cannot add extra goose - invalid character or missing orbitingGeese group');
+            return;
+        }
         
         const currentGeeseCount = this.orbitingGeese.children.entries.length;
         const goose = this.add.circle(0, 0, 8, 0xffffff);
@@ -856,15 +864,27 @@ class GameScene extends Phaser.Scene {
             label: 'goose'
         });
         
+        // Initialize orbit properties with proper spacing
         goose.orbitAngle = (currentGeeseCount / (currentGeeseCount + 1)) * Math.PI * 2;
+        goose.gooseIndex = currentGeeseCount; // For debugging
+        
+        // Set initial position around player
+        if (this.player && typeof this.player.x === 'number' && typeof this.player.y === 'number') {
+            const initialRadius = this.playerStats.gooseOrbitRadius || 60;
+            goose.x = this.player.x + Math.cos(goose.orbitAngle) * initialRadius;
+            goose.y = this.player.y + Math.sin(goose.orbitAngle) * initialRadius;
+        }
+        
         this.orbitingGeese.add(goose);
         
-        console.log(`Added extra goose! Now have ${this.orbitingGeese.children.entries.length} geese`);
+        console.log(`Added extra goose ${currentGeeseCount} with orbit angle ${goose.orbitAngle.toFixed(2)}! Now have ${this.orbitingGeese.children.entries.length} geese`);
     }
     
     setupGooseOrbit() {
-        // Create 3 orbiting geese
+        // Create 3 orbiting geese with enhanced initialization
         const geeseCount = 3;
+        console.log(`Setting up ${geeseCount} orbiting geese for Goose Bufo`);
+        
         for (let i = 0; i < geeseCount; i++) {
             const goose = this.add.circle(0, 0, 8, 0xffffff);
             goose.setStrokeStyle(2, 0xffaa00);
@@ -876,8 +896,19 @@ class GameScene extends Phaser.Scene {
                 label: 'goose'
             });
             
+            // Initialize orbit properties
             goose.orbitAngle = (i / geeseCount) * Math.PI * 2;
+            goose.gooseIndex = i; // For debugging
+            
+            // Set initial position around player
+            if (this.player && typeof this.player.x === 'number' && typeof this.player.y === 'number') {
+                const initialRadius = this.playerStats.gooseOrbitRadius || 60;
+                goose.x = this.player.x + Math.cos(goose.orbitAngle) * initialRadius;
+                goose.y = this.player.y + Math.sin(goose.orbitAngle) * initialRadius;
+            }
+            
             this.orbitingGeese.add(goose);
+            console.log(`Created goose ${i} with orbit angle ${goose.orbitAngle.toFixed(2)}`);
         }
     }
     
@@ -1761,16 +1792,43 @@ class GameScene extends Phaser.Scene {
     }
     
     gooseHitEnemy(goose, enemy) {
+        // Safety checks to prevent crashes
         if (this.selectedCharacter.id !== 'goose') return;
+        if (!goose || !enemy) {
+            console.warn('gooseHitEnemy called with null/undefined objects:', { goose, enemy });
+            return;
+        }
+        if (!goose.active || !enemy.active) {
+            console.warn('gooseHitEnemy called with inactive objects');
+            return;
+        }
+        if (typeof goose.x !== 'number' || typeof goose.y !== 'number' ||
+            typeof enemy.x !== 'number' || typeof enemy.y !== 'number') {
+            console.warn('gooseHitEnemy called with objects missing position properties:', {
+                gooseX: goose.x, gooseY: goose.y, enemyX: enemy.x, enemyY: enemy.y
+            });
+            return;
+        }
+        if (!enemy.body) {
+            console.warn('gooseHitEnemy called with enemy missing physics body');
+            return;
+        }
         
+        // Damage the enemy
         this.damageEnemy(enemy, 1);
         
-        // Knockback enemy using Matter.js
-        const angle = Phaser.Math.Angle.Between(goose.x, goose.y, enemy.x, enemy.y);
-        this.matter.body.setVelocity(enemy.body, {
-            x: Math.cos(angle) * 2, // Scale down for Matter.js
-            y: Math.sin(angle) * 2
-        });
+        // Knockback enemy using Matter.js (only if enemy still exists after damage)
+        if (enemy.active && enemy.body && enemy.scene) {
+            try {
+                const angle = Phaser.Math.Angle.Between(goose.x, goose.y, enemy.x, enemy.y);
+                this.matter.body.setVelocity(enemy.body, {
+                    x: Math.cos(angle) * 2, // Scale down for Matter.js
+                    y: Math.sin(angle) * 2
+                });
+            } catch (error) {
+                console.error('Error in gooseHitEnemy knockback:', error);
+            }
+        }
     }
     
     gameOver() {
@@ -2002,14 +2060,43 @@ class GameScene extends Phaser.Scene {
             this.updateStarfallProjectiles();
             this.updateConfusedEnemies();
         } else if (this.selectedCharacter.id === 'goose' && this.orbitingGeese) {
-            // Update goose orbit (use upgraded radius)
+            // Update goose orbit (use upgraded radius) with safety checks
             const orbitRadius = this.playerStats.gooseOrbitRadius;
             const orbitSpeed = 2;
-            const activeGeese = this.orbitingGeese.children.entries.filter(goose => goose.active && goose.body && goose.scene);
+            
+            // Enhanced safety checks for geese
+            const activeGeese = this.orbitingGeese.children.entries.filter(goose => 
+                goose && goose.active && goose.body && goose.scene && 
+                typeof goose.orbitAngle === 'number'
+            );
+            
             activeGeese.forEach(goose => {
-                goose.orbitAngle += orbitSpeed * 0.02; // Adjusted for frame rate
-                goose.x = this.player.x + Math.cos(goose.orbitAngle) * orbitRadius;
-                goose.y = this.player.y + Math.sin(goose.orbitAngle) * orbitRadius;
+                try {
+                    // Ensure player exists and has valid position
+                    if (!this.player || typeof this.player.x !== 'number' || typeof this.player.y !== 'number') {
+                        console.warn('Player position invalid during goose orbit update');
+                        return;
+                    }
+                    
+                    // Update orbit angle
+                    goose.orbitAngle += orbitSpeed * 0.02; // Adjusted for frame rate
+                    
+                    // Calculate new position
+                    const newX = this.player.x + Math.cos(goose.orbitAngle) * orbitRadius;
+                    const newY = this.player.y + Math.sin(goose.orbitAngle) * orbitRadius;
+                    
+                    // Validate calculated position
+                    if (isNaN(newX) || isNaN(newY)) {
+                        console.warn('Invalid goose position calculated:', { newX, newY, orbitAngle: goose.orbitAngle });
+                        return;
+                    }
+                    
+                    // Update goose position
+                    goose.x = newX;
+                    goose.y = newY;
+                } catch (error) {
+                    console.error('Error updating goose orbit:', error, goose);
+                }
             });
         }
         
