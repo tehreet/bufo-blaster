@@ -206,6 +206,7 @@ class GameScene extends Phaser.Scene {
         this.spaceKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
         this.enterKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.ENTER);
         this.debugKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.F1);
+        this.pauseKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.ESC);
         
         // Gamepad support
         this.setupGamepadSupport();
@@ -215,6 +216,10 @@ class GameScene extends Phaser.Scene {
         
         // Overlay management
         this.overlaysHidden = false;
+        
+        // Pause system
+        this.isPaused = false;
+        this.pauseUIElements = [];
         
         // Mouse input
         this.input.on('pointerdown', this.handleClick, this);
@@ -2207,6 +2212,10 @@ class GameScene extends Phaser.Scene {
     gameOver() {
         this.gameStarted = false;
         
+        // Clean up pause state and UI
+        this.isPaused = false;
+        this.hidePauseUI();
+        
         // Clean up all animated overlays
         this.cleanupAllOverlays();
         
@@ -2278,6 +2287,134 @@ class GameScene extends Phaser.Scene {
             // Character selection is handled by card click events
             return;
         }
+        
+        // Don't toggle pause during upgrade screen
+        if (this.upgradeSystem && this.upgradeSystem.isPaused) {
+            return;
+        }
+        
+        // Toggle pause during gameplay
+        if (this.gameStarted) {
+            this.togglePause();
+        }
+    }
+    
+    togglePause() {
+        if (this.isPaused) {
+            this.resumeGame();
+        } else {
+            this.pauseGame();
+        }
+    }
+    
+    pauseGame() {
+        if (this.isPaused) return; // Already paused
+        
+        this.isPaused = true;
+        console.log('Game paused');
+        
+        // Pause Matter.js physics
+        this.matter.world.enabled = false;
+        
+        // Pause all timers
+        if (this.enemySpawnTimer) {
+            this.enemySpawnTimer.paused = true;
+        }
+        if (this.auraTimer) {
+            this.auraTimer.paused = true;
+        }
+        
+        // Hide animated overlays during pause
+        this.hideAllOverlays();
+        
+        // Show pause UI
+        this.showPauseUI();
+    }
+    
+    resumeGame() {
+        if (!this.isPaused) return; // Not paused
+        
+        this.isPaused = false;
+        console.log('Game resumed');
+        
+        // Resume Matter.js physics
+        this.matter.world.enabled = true;
+        
+        // Resume all timers
+        if (this.enemySpawnTimer) {
+            this.enemySpawnTimer.paused = false;
+        }
+        if (this.auraTimer) {
+            this.auraTimer.paused = false;
+        }
+        
+        // Show animated overlays again
+        this.showAllOverlays();
+        
+        // Hide pause UI
+        this.hidePauseUI();
+    }
+    
+    showPauseUI() {
+        // Clear any existing pause UI
+        this.hidePauseUI();
+        
+        // Dark overlay background
+        const bg = this.add.rectangle(700, 450, 2000, 1400, 0x000000, 0.7);
+        bg.setScrollFactor(0);
+        bg.setDepth(2000);
+        bg.setInteractive(); // Block clicks behind it
+        bg.on('pointerdown', () => {}); // Consume click events
+        this.pauseUIElements.push(bg);
+        
+        // Pause panel
+        const panel = this.add.rectangle(700, 450, 400, 300, 0x222222, 1.0);
+        panel.setScrollFactor(0);
+        panel.setDepth(2001);
+        panel.setStrokeStyle(4, 0xffffff);
+        this.pauseUIElements.push(panel);
+        
+        // Pause title
+        const title = this.add.text(700, 350, 'GAME PAUSED', {
+            fontSize: '36px',
+            color: '#ffff00',
+            fontWeight: 'bold'
+        }).setOrigin(0.5, 0.5);
+        title.setScrollFactor(0);
+        title.setDepth(2002);
+        this.pauseUIElements.push(title);
+        
+        // Instructions
+        const instructions = this.add.text(700, 450, 'Click anywhere, press Escape, or press Start to resume', {
+            fontSize: '18px',
+            color: '#ffffff',
+            align: 'center'
+        }).setOrigin(0.5, 0.5);
+        instructions.setScrollFactor(0);
+        instructions.setDepth(2002);
+        this.pauseUIElements.push(instructions);
+        
+        // Controls info
+        const controls = this.add.text(700, 500, 'Mouse/Keyboard: Click or Escape to pause/resume\nController: Start button to pause/resume', {
+            fontSize: '14px',
+            color: '#cccccc',
+            align: 'center'
+        }).setOrigin(0.5, 0.5);
+        controls.setScrollFactor(0);
+        controls.setDepth(2002);
+        this.pauseUIElements.push(controls);
+    }
+    
+    hidePauseUI() {
+        // Remove all pause UI elements
+        if (this.pauseUIElements) {
+            this.pauseUIElements.forEach(element => {
+                if (element && element.destroy) {
+                    element.destroy();
+                }
+            });
+            this.pauseUIElements = [];
+        }
     }
 
     update() {
@@ -2304,8 +2441,8 @@ class GameScene extends Phaser.Scene {
         // Handle gamepad input (needs to work even when upgrade screen is open)
         this.handleGamepadInput();
         
-        // Only allow movement after game has started and when not in upgrade screen
-        if (this.upgradeSystem.isPaused) return;
+        // Only allow movement after game has started and when not in upgrade screen or paused
+        if (this.upgradeSystem.isPaused || this.isPaused) return;
         
         // Player movement using Matter.js (apply speed upgrades)
         const speed = (this.playerStats.speed * this.playerStats.moveSpeedMultiplier) / 50; // Scale down for Matter.js
@@ -2377,6 +2514,11 @@ class GameScene extends Phaser.Scene {
                     enemy.hitboxDebug.setVisible(this.showHitboxes);
                 }
             });
+        }
+        
+        // Pause toggle with Escape key (only during gameplay, not upgrade screen)
+        if (Phaser.Input.Keyboard.JustDown(this.pauseKey) && (!this.upgradeSystem || !this.upgradeSystem.isPaused)) {
+            this.togglePause();
         }
         
         // Enemy AI using Matter.js
@@ -2608,6 +2750,11 @@ class GameScene extends Phaser.Scene {
                     enemy.hitboxDebug.setVisible(this.showHitboxes);
                 }
             });
+        }
+        
+        // Start button for pause toggle (only during gameplay, not character selection or upgrade screen)
+        if (justPressed(9) && this.gameStarted && (!this.upgradeSystem || !this.upgradeSystem.isPaused)) { // Start button
+            this.togglePause();
         }
     }
     
