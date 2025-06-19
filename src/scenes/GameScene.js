@@ -53,40 +53,88 @@ class GameScene extends Phaser.Scene {
             ENEMY_SPAWN_INTERVAL: 1200 // Balanced at 1200ms (50% slower than previous 800ms)
         };
         
-        // Character definitions (from original game)
+        // Character definitions with comprehensive base stats
         this.characters = {
             STAB_BUFO: {
                 id: 'stab',
                 name: 'Stab Bufo',
                 description: 'Melee bruiser with damaging aura and knockback',
-                health: 120,
-                speed: 4,
                 abilityName: 'Toxic Aura',
                 abilityDescription: 'Damages and knocks back nearby enemies',
                 color: 0x00ff00,
-                sprite: 'stab-bufo'
+                sprite: 'stab-bufo',
+                baseStats: {
+                    // Core Stats
+                    health: 120,
+                    armor: 2, // Reduces incoming damage
+                    healthRegen: 0.5, // HP per second
+                    
+                    // Ability Stats
+                    abilityDamage: 0.6, // Base damage for toxic aura
+                    abilityCooldown: 450, // Milliseconds between aura ticks
+                    abilityRadius: 80, // Aura radius
+                    
+                    // Utility Stats
+                    pickupRange: 80, // XP orb magnetism range
+                    projectileCount: 1, // Not used by Stab, but for consistency
+                    
+                    // Movement
+                    moveSpeed: 4
+                }
             },
             WIZARD_BUFO: {
                 id: 'wizard',
                 name: 'Wizard Bufo',
                 description: 'Ranged caster with area confusion spells',
-                health: 100,
-                speed: 5,
                 abilityName: 'Starfall',
                 abilityDescription: 'Casts stars that damage and confuse enemies',
                 color: 0x0066ff,
-                sprite: 'wizard-bufo'
+                sprite: 'wizard-bufo',
+                baseStats: {
+                    // Core Stats
+                    health: 100,
+                    armor: 0, // Glass cannon
+                    healthRegen: 0,
+                    
+                    // Ability Stats
+                    abilityDamage: 3, // Star damage
+                    abilityCooldown: 1500, // Milliseconds between starfall casts
+                    abilityRadius: 100, // AOE radius of star impact
+                    
+                    // Utility Stats
+                    pickupRange: 100, // Higher pickup range for ranged character
+                    projectileCount: 5, // Number of stars per cast
+                    
+                    // Movement
+                    moveSpeed: 5
+                }
             },
             GOOSE_BUFO: {
                 id: 'goose',
                 name: 'Goose Bufo',
                 description: 'Summoner with orbiting geese that convert enemies',
-                health: 110,
-                speed: 4.5,
                 abilityName: 'Goose Guard',
                 abilityDescription: 'Orbiting geese damage enemies and convert them to allies',
                 color: 0xffaa00,
-                sprite: 'goose-bufo'
+                sprite: 'goose-bufo',
+                baseStats: {
+                    // Core Stats
+                    health: 110,
+                    armor: 1, // Moderate armor
+                    healthRegen: 0.2,
+                    
+                    // Ability Stats
+                    abilityDamage: 1, // Damage per goose hit
+                    abilityCooldown: 2000, // Orbit speed base (lower = faster)
+                    abilityRadius: 60, // Orbit radius
+                    
+                    // Utility Stats
+                    pickupRange: 90,
+                    projectileCount: 3, // Number of orbiting geese
+                    
+                    // Movement
+                    moveSpeed: 4.5
+                }
             }
         };
         
@@ -401,7 +449,7 @@ class GameScene extends Phaser.Scene {
             }).setOrigin(0.5, 0);
             
             // Stats
-            this.add.text(cardX + cardWidth/2, cardY + 280, `Health: ${character.health} | Speed: ${character.speed}`, {
+            this.add.text(cardX + cardWidth/2, cardY + 280, `Health: ${character.baseStats.health} | Speed: ${character.baseStats.moveSpeed} | Armor: ${character.baseStats.armor}`, {
                 fontSize: '10px',
                 color: '#888888'
             }).setOrigin(0.5, 0.5);
@@ -523,28 +571,8 @@ class GameScene extends Phaser.Scene {
         console.log(`Player created with explicit collision radius: ${this.gameConfig.PLAYER_RADIUS}px, display size: ${this.gameConfig.PLAYER_RADIUS * 2}px`);
         console.log(`Collision setup: Player (${this.gameConfig.PLAYER_RADIUS}px) vs Enemies (14-20px) - much better sprite matching!`);
         
-        // Player stats from character
-        this.playerStats = {
-            health: this.selectedCharacter.health,
-            maxHealth: this.selectedCharacter.health,
-            speed: this.selectedCharacter.speed * 50, // Scale for Phaser
-            character: this.selectedCharacter,
-            xp: 0,
-            level: 1,
-            xpToNextLevel: 100, // XP needed for level 2
-            invincible: false,
-            invincibilityEnd: 0,
-            // Upgrade stats
-            abilityDamageMultiplier: 1.0,
-            abilityCooldownMultiplier: 1.0,
-            moveSpeedMultiplier: 1.0,
-            healthRegenPerSecond: 0,
-            lastRegenTime: 0,
-            // Character-specific upgrades
-            stabAuraRadius: this.gameConfig.STAB_BUFO_AURA_RADIUS,
-            wizardStarCount: 5,
-            gooseOrbitRadius: 60
-        };
+        // Initialize comprehensive stats system
+        this.initializePlayerStats();
         
         // Create game object groups (using regular Phaser groups, not physics groups)
         this.enemies = this.add.group();
@@ -644,6 +672,123 @@ class GameScene extends Phaser.Scene {
         console.log(`Game started with ${this.selectedCharacter.name}!`);
     }
     
+    initializePlayerStats() {
+        // Base character stats
+        const baseStats = this.selectedCharacter.baseStats;
+        
+        // Core progression stats
+        this.playerProgression = {
+            character: this.selectedCharacter,
+            xp: 0,
+            level: 1,
+            xpToNextLevel: 100,
+            invincible: false,
+            invincibilityEnd: 0,
+            lastRegenTime: 0
+        };
+        
+        // Upgrade modifiers (flat bonuses and multipliers)
+        this.statModifiers = {
+            // Flat bonuses
+            healthBonus: 0,
+            armorBonus: 0,
+            healthRegenBonus: 0,
+            abilityDamageBonus: 0,
+            pickupRangeBonus: 0,
+            abilityRadiusBonus: 0,
+            projectileCountBonus: 0,
+            
+            // Multipliers
+            abilityDamageMultiplier: 1.0,
+            abilityCooldownMultiplier: 1.0,
+            moveSpeedMultiplier: 1.0,
+            abilityRadiusMultiplier: 1.0,
+            pickupRangeMultiplier: 1.0
+        };
+        
+        // Calculate and cache current stats
+        this.refreshPlayerStats();
+        
+        console.log('Player stats initialized:', this.playerStats);
+    }
+    
+    refreshPlayerStats() {
+        // Calculate current stats based on base stats + modifiers
+        const baseStats = this.selectedCharacter.baseStats;
+        const mods = this.statModifiers;
+        
+        // Calculate final stats
+        const maxHealth = Math.floor(baseStats.health + mods.healthBonus);
+        const armor = Math.max(0, baseStats.armor + mods.armorBonus);
+        const healthRegen = Math.max(0, baseStats.healthRegen + mods.healthRegenBonus);
+        const abilityDamage = Math.max(0.1, (baseStats.abilityDamage + mods.abilityDamageBonus) * mods.abilityDamageMultiplier);
+        const abilityCooldown = Math.max(50, baseStats.abilityCooldown * mods.abilityCooldownMultiplier);
+        const abilityRadius = Math.max(10, (baseStats.abilityRadius + mods.abilityRadiusBonus) * mods.abilityRadiusMultiplier);
+        const pickupRange = Math.max(20, (baseStats.pickupRange + mods.pickupRangeBonus) * mods.pickupRangeMultiplier);
+        const projectileCount = Math.max(1, baseStats.projectileCount + mods.projectileCountBonus);
+        const moveSpeed = Math.max(1, baseStats.moveSpeed * mods.moveSpeedMultiplier);
+        
+        // Update cached stats
+        this.playerStats = {
+            // Core stats
+            health: this.playerStats ? this.playerStats.health : maxHealth, // Preserve current health
+            maxHealth: maxHealth,
+            armor: armor,
+            healthRegen: healthRegen,
+            
+            // Ability stats
+            abilityDamage: abilityDamage,
+            abilityCooldown: abilityCooldown,
+            abilityRadius: abilityRadius,
+            
+            // Utility stats
+            pickupRange: pickupRange,
+            projectileCount: projectileCount,
+            
+            // Movement
+            moveSpeed: moveSpeed,
+            speed: moveSpeed * 50, // Scaled for Phaser physics
+            
+            // Legacy compatibility (for existing systems)
+            stabAuraRadius: abilityRadius, // For Stab Bufo aura
+            wizardStarCount: projectileCount, // For Wizard Bufo stars
+            gooseOrbitRadius: abilityRadius, // For Goose Bufo orbit
+            healthRegenPerSecond: healthRegen,
+            
+            // Keep upgrade multipliers for systems that need them
+            abilityDamageMultiplier: mods.abilityDamageMultiplier,
+            abilityCooldownMultiplier: mods.abilityCooldownMultiplier,
+            moveSpeedMultiplier: mods.moveSpeedMultiplier
+        };
+        
+        // Ensure health doesn't exceed max
+        if (this.playerStats.health > this.playerStats.maxHealth) {
+            this.playerStats.health = this.playerStats.maxHealth;
+        }
+    }
+    
+    // Helper method to add stat bonuses from upgrades
+    addStatBonus(statName, amount) {
+        if (this.statModifiers.hasOwnProperty(statName)) {
+            this.statModifiers[statName] += amount;
+            this.refreshPlayerStats();
+            console.log(`Added ${amount} to ${statName}. New value: ${this.statModifiers[statName]}`);
+        } else {
+            console.warn(`Unknown stat: ${statName}`);
+        }
+    }
+    
+    // Helper method to multiply stats
+    multiplyStats(statName, multiplier) {
+        if (this.statModifiers.hasOwnProperty(statName)) {
+            this.statModifiers[statName] *= multiplier;
+            this.refreshPlayerStats();
+            console.log(`Multiplied ${statName} by ${multiplier}. New value: ${this.statModifiers[statName]}`);
+        } else {
+            console.warn(`Unknown stat: ${statName}`);
+        }
+    }
+    
     generateMap(mapWidth, mapHeight) {
         // Create a simple map with grass interior and stone border
         for (let x = 0; x < mapWidth; x++) {
@@ -687,7 +832,7 @@ class GameScene extends Phaser.Scene {
                 description: 'Increases ability damage by 25%',
                 icon: '💥',
                 apply: () => {
-                    this.playerStats.abilityDamageMultiplier += 0.25;
+                    this.multiplyStats('abilityDamageMultiplier', 1.25);
                 }
             },
             {
@@ -696,31 +841,57 @@ class GameScene extends Phaser.Scene {
                 description: 'Reduces ability cooldowns by 15%',
                 icon: '⚡',
                 apply: () => {
-                    this.playerStats.abilityCooldownMultiplier -= 0.15;
-                    // Update existing cooldowns
+                    this.multiplyStats('abilityCooldownMultiplier', 0.85);
+                    // Update existing cooldowns for wizard
                     if (this.selectedCharacter.id === 'wizard') {
-                        this.starfallCooldown = Math.max(500, this.starfallCooldown * this.playerStats.abilityCooldownMultiplier);
+                        this.starfallCooldown = this.playerStats.abilityCooldown;
                     }
                 }
             },
-
             {
                 id: 'health_regen',
                 name: 'Regeneration',
-                description: 'Regenerates 1 health per second',
+                description: 'Increases health regeneration by 1 HP/sec',
                 icon: '💚',
                 apply: () => {
-                    this.playerStats.healthRegenPerSecond += 1;
+                    this.addStatBonus('healthRegenBonus', 1);
                 }
             },
             {
                 id: 'max_health',
                 name: 'Vitality',
-                description: 'Increases maximum health by 20',
+                description: 'Increases maximum health by 25',
                 icon: '❤️',
                 apply: () => {
-                    this.playerStats.maxHealth += 20;
-                    this.playerStats.health += 20; // Also heal current health
+                    this.addStatBonus('healthBonus', 25);
+                    this.playerStats.health += 25; // Heal for the bonus amount
+                }
+            },
+            {
+                id: 'armor',
+                name: 'Thick Hide',
+                description: 'Increases armor by 2 (reduces damage taken)',
+                icon: '🛡️',
+                apply: () => {
+                    this.addStatBonus('armorBonus', 2);
+                }
+            },
+            {
+                id: 'pickup_range',
+                name: 'Magnetic Attraction',
+                description: 'Increases XP pickup range by 30%',
+                icon: '🧲',
+                apply: () => {
+                    this.multiplyStats('pickupRangeMultiplier', 1.3);
+                }
+            },
+            {
+                id: 'ability_radius',
+                name: 'Power Extension',
+                description: 'Increases ability radius by 25%',
+                icon: '🎯',
+                apply: () => {
+                    this.multiplyStats('abilityRadiusMultiplier', 1.25);
                 }
             }
         ];
@@ -734,21 +905,21 @@ class GameScene extends Phaser.Scene {
         
         if (this.selectedCharacter.id === 'stab') {
             upgrades.push({
-                id: 'stab_aura_radius',
-                name: 'Toxic Expansion',
-                description: 'Increases aura radius by 25%',
-                icon: '☢️',
-                apply: () => {
-                    this.playerStats.stabAuraRadius += 20;
-                }
-            });
-            upgrades.push({
-                id: 'stab_aura_damage',
+                id: 'stab_extra_damage',
                 name: 'Toxic Potency',
                 description: 'Increases aura damage by 50%',
                 icon: '🧪',
                 apply: () => {
-                    this.gameConfig.STAB_BUFO_AURA_DAMAGE *= 1.5;
+                    this.multiplyStats('abilityDamageMultiplier', 1.5);
+                }
+            });
+            upgrades.push({
+                id: 'stab_faster_ticks',
+                name: 'Rapid Toxicity',
+                description: 'Aura damages enemies 25% faster',
+                icon: '⚡',
+                apply: () => {
+                    this.multiplyStats('abilityCooldownMultiplier', 0.75);
                 }
             });
         }
@@ -757,10 +928,10 @@ class GameScene extends Phaser.Scene {
             upgrades.push({
                 id: 'wizard_star_count',
                 name: 'Star Shower',
-                description: 'Increases starfall count by 2 stars',
+                description: 'Adds 2 more stars per cast',
                 icon: '⭐',
                 apply: () => {
-                    this.playerStats.wizardStarCount += 2;
+                    this.addStatBonus('projectileCountBonus', 2);
                 }
             });
             upgrades.push({
@@ -773,25 +944,44 @@ class GameScene extends Phaser.Scene {
                     this.confusionDurationBonus = (this.confusionDurationBonus || 0) + 2000;
                 }
             });
+            upgrades.push({
+                id: 'wizard_explosive_stars',
+                name: 'Explosive Stars',
+                description: 'Star explosions have 40% larger radius',
+                icon: '💥',
+                apply: () => {
+                    this.multiplyStats('abilityRadiusMultiplier', 1.4);
+                }
+            });
         }
         
         if (this.selectedCharacter.id === 'goose') {
-            upgrades.push({
-                id: 'goose_orbit_radius',
-                name: 'Extended Formation',
-                description: 'Increases goose orbit radius by 30%',
-                icon: '🪐',
-                apply: () => {
-                    this.playerStats.gooseOrbitRadius += 18;
-                }
-            });
             upgrades.push({
                 id: 'goose_count',
                 name: 'Goose Squadron',
                 description: 'Adds 1 more orbiting goose',
                 icon: '🦢',
                 apply: () => {
+                    this.addStatBonus('projectileCountBonus', 1);
                     this.addExtraGoose();
+                }
+            });
+            upgrades.push({
+                id: 'goose_speed',
+                name: 'Rapid Formation',
+                description: 'Geese orbit 30% faster',
+                icon: '💨',
+                apply: () => {
+                    this.multiplyStats('abilityCooldownMultiplier', 0.7);
+                }
+            });
+            upgrades.push({
+                id: 'goose_damage',
+                name: 'Sharp Beaks',
+                description: 'Geese deal 75% more damage',
+                icon: '🗡️',
+                apply: () => {
+                    this.multiplyStats('abilityDamageMultiplier', 1.75);
                 }
             });
         }
@@ -817,18 +1007,18 @@ class GameScene extends Phaser.Scene {
     
     setupCharacterAbilities() {
         if (this.selectedCharacter.id === 'stab') {
-            // Stab Bufo aura setup
+            // Stab Bufo aura setup (use ability cooldown stat)
             this.lastAuraTime = 0;
             this.auraTimer = this.time.addEvent({
-                delay: this.gameConfig.STAB_BUFO_AURA_TICK_INTERVAL,
+                delay: this.playerStats.abilityCooldown,
                 callback: this.applyStabAura,
                 callbackScope: this,
                 loop: true
             });
         } else if (this.selectedCharacter.id === 'wizard') {
-            // Wizard Bufo starfall setup
+            // Wizard Bufo starfall setup (use ability cooldown stat)
             this.lastStarfallTime = 0;
-            this.starfallCooldown = 1500; // Reduced from 2500 to 1500ms for more frequent starfall
+            this.starfallCooldown = this.playerStats.abilityCooldown;
             this.starfallProjectiles = this.add.group();
             this.confusedEnemies = new Set(); // Track confused enemies
         } else if (this.selectedCharacter.id === 'goose') {
@@ -909,11 +1099,11 @@ class GameScene extends Phaser.Scene {
         
         // Calculate number of enemies to spawn based on level (1-6 enemies per wave, balanced)
         const baseEnemyCount = 1; // Start with 1 enemy at level 1 (reduced from 2)
-        const levelBonus = Math.floor((this.playerStats.level - 1) / 3); // +1 enemy every 3 levels (slower than before)
+        const levelBonus = Math.floor((this.playerProgression.level - 1) / 3); // +1 enemy every 3 levels (slower than before)
         const randomBonus = Math.random() < 0.2 ? Phaser.Math.Between(1, 2) : 0; // 20% chance for 1-2 extra enemies (reduced)
         const enemyCount = Math.min(6, baseEnemyCount + levelBonus + randomBonus); // Cap at 6 enemies per wave (reduced from 12)
         
-        console.log(`Level ${this.playerStats.level}: Spawning ${enemyCount} enemies (base: ${baseEnemyCount}, level bonus: ${levelBonus}, random bonus: ${randomBonus})`);
+        console.log(`Level ${this.playerProgression.level}: Spawning ${enemyCount} enemies (base: ${baseEnemyCount}, level bonus: ${levelBonus}, random bonus: ${randomBonus})`);
         
         // Spawn multiple enemies in this wave
         for (let i = 0; i < enemyCount; i++) {
@@ -921,7 +1111,7 @@ class GameScene extends Phaser.Scene {
         }
         
         // 7% chance for an additional "mini-wave" at higher levels (reduced from 15%)
-        if (this.playerStats.level >= 7 && Math.random() < 0.07) {
+        if (this.playerProgression.level >= 7 && Math.random() < 0.07) {
             const miniWaveSize = Phaser.Math.Between(1, 2); // Reduced mini-wave size from 2-4 to 1-2
             console.log(`Bonus mini-wave: +${miniWaveSize} enemies!`);
             
@@ -975,7 +1165,7 @@ class GameScene extends Phaser.Scene {
         });
         
         // Enemy stats based on type (scale with player level)
-        const levelScaling = 1 + (this.playerStats.level - 1) * 0.2; // 20% increase per level
+        const levelScaling = 1 + (this.playerProgression.level - 1) * 0.2; // 20% increase per level
         enemy.health = Math.ceil(enemyType.health * levelScaling);
         enemy.maxHealth = Math.ceil(enemyType.health * levelScaling);
         enemy.speed = enemyType.speed;
@@ -996,8 +1186,9 @@ class GameScene extends Phaser.Scene {
     applyStabAura() {
         if (!this.gameStarted || this.selectedCharacter.id !== 'stab') return;
         
-        // Create visual aura effect (use upgraded radius)
-        const auraEffect = this.add.circle(this.player.x, this.player.y, this.playerStats.stabAuraRadius, 0x00ff00, 0.2);
+        // Create visual aura effect (use ability radius stat)
+        const auraRadius = this.playerStats.abilityRadius;
+        const auraEffect = this.add.circle(this.player.x, this.player.y, auraRadius, 0x00ff00, 0.2);
         auraEffect.setStrokeStyle(2, 0x00ff00, 0.5);
         this.auraEffects.add(auraEffect);
         
@@ -1009,7 +1200,7 @@ class GameScene extends Phaser.Scene {
             onComplete: () => auraEffect.destroy()
         });
         
-        // Damage enemies in range
+        // Damage enemies in range (use ability damage stat)
         const activeEnemies = this.enemies.children.entries.filter(enemy => enemy.active && enemy.body && enemy.scene);
         activeEnemies.forEach(enemy => {
             const distance = Phaser.Math.Distance.Between(
@@ -1017,8 +1208,8 @@ class GameScene extends Phaser.Scene {
                 enemy.x, enemy.y
             );
             
-            if (distance <= this.playerStats.stabAuraRadius) {
-                this.damageEnemy(enemy, this.gameConfig.STAB_BUFO_AURA_DAMAGE * this.playerStats.abilityDamageMultiplier);
+            if (distance <= auraRadius) {
+                this.damageEnemy(enemy, this.playerStats.abilityDamage);
                 
                 // Knockback (check if enemy still exists after damage)
                 if (enemy.active && enemy.body && enemy.scene) {
@@ -1111,8 +1302,13 @@ class GameScene extends Phaser.Scene {
             return;
         }
         
-        // Damage player
-        this.playerStats.health -= this.gameConfig.ENEMY_CONTACT_DAMAGE;
+        // Calculate damage after armor reduction
+        const baseDamage = this.gameConfig.ENEMY_CONTACT_DAMAGE;
+        const armorReduction = this.playerStats.armor * 0.5; // Each armor point reduces damage by 0.5
+        const finalDamage = Math.max(1, baseDamage - armorReduction); // Minimum 1 damage
+        this.playerStats.health -= finalDamage;
+        
+        console.log(`Player hit! Base damage: ${baseDamage}, Armor: ${this.playerStats.armor}, Final damage: ${finalDamage}`);
         enemy.lastAttack = currentTime;
         
         // Player invincibility
@@ -1155,7 +1351,7 @@ class GameScene extends Phaser.Scene {
             return;
         }
         
-        this.playerStats.xp += xpOrb.xpValue;
+        this.playerProgression.xp += xpOrb.xpValue;
         
         // Check for level up
         this.checkLevelUp();
@@ -1169,22 +1365,22 @@ class GameScene extends Phaser.Scene {
     }
     
     checkLevelUp() {
-        if (this.playerStats.xp >= this.playerStats.xpToNextLevel) {
+        if (this.playerProgression.xp >= this.playerProgression.xpToNextLevel) {
             this.levelUp();
         }
     }
     
     levelUp() {
-        this.playerStats.level++;
-        this.playerStats.xp -= this.playerStats.xpToNextLevel;
+        this.playerProgression.level++;
+        this.playerProgression.xp -= this.playerProgression.xpToNextLevel;
         
         // Increase XP requirement for next level (exponential scaling)
-        this.playerStats.xpToNextLevel = Math.floor(this.playerStats.xpToNextLevel * 1.5);
+        this.playerProgression.xpToNextLevel = Math.floor(this.playerProgression.xpToNextLevel * 1.5);
         
-        console.log(`Level up! Now level ${this.playerStats.level}`);
+        console.log(`Level up! Now level ${this.playerProgression.level}`);
         
         // Check for boss wave at milestone levels (every 5 levels)
-        if (this.playerStats.level % 5 === 0) {
+        if (this.playerProgression.level % 5 === 0) {
             this.triggerBossWave();
         }
         
@@ -1196,7 +1392,7 @@ class GameScene extends Phaser.Scene {
     }
     
     triggerBossWave() {
-        const level = this.playerStats.level;
+        const level = this.playerProgression.level;
         const bossWaveSize = 5 + Math.floor(level / 5) * 2; // 5 enemies at level 5, 7 at level 10, etc. (reduced from 8+3)
         
         console.log(`🚨 BOSS WAVE TRIGGERED! Level ${level} - Spawning ${bossWaveSize} tough enemies! 🚨`);
@@ -1266,7 +1462,7 @@ class GameScene extends Phaser.Scene {
         });
         
         // Enemy stats (boss wave enemies get +25% health bonus)
-        const levelScaling = 1 + (this.playerStats.level - 1) * 0.2;
+        const levelScaling = 1 + (this.playerProgression.level - 1) * 0.2;
         const bossWaveBonus = 1.25; // 25% more health for boss wave enemies
         enemy.health = Math.ceil(enemyType.health * levelScaling * bossWaveBonus);
         enemy.maxHealth = Math.ceil(enemyType.health * levelScaling * bossWaveBonus);
@@ -1320,7 +1516,7 @@ class GameScene extends Phaser.Scene {
     
     scaleEnemyDifficulty() {
         // Much more aggressive difficulty scaling
-        const level = this.playerStats.level;
+        const level = this.playerProgression.level;
         
         // Exponential spawn rate reduction (gets much faster at higher levels)
         // Level 1: 800ms, Level 5: 400ms, Level 10: 200ms, Level 15: 100ms
@@ -1440,7 +1636,7 @@ class GameScene extends Phaser.Scene {
         this.upgradeUIElements.push(panel);
         
         // Title
-        const title = this.add.text(400, 140, `LEVEL ${this.playerStats.level}!`, {
+        const title = this.add.text(400, 140, `LEVEL ${this.playerProgression.level}!`, {
             fontSize: '32px',
             color: '#ffff00',
             fontWeight: 'bold'
@@ -1825,8 +2021,8 @@ class GameScene extends Phaser.Scene {
         });
         
         if (nearbyEnemies.length > 0) {
-            // Cast starfall - create stars targeting random nearby enemies (use upgraded count)
-            const starCount = Math.min(this.playerStats.wizardStarCount, nearbyEnemies.length);
+            // Cast starfall - create stars targeting random nearby enemies (use projectile count stat)
+            const starCount = Math.min(this.playerStats.projectileCount, nearbyEnemies.length);
             for (let i = 0; i < starCount; i++) {
                 const targetEnemy = Phaser.Utils.Array.GetRandom(nearbyEnemies);
                 this.createStarfallProjectile(targetEnemy.x, targetEnemy.y);
@@ -1910,7 +2106,7 @@ class GameScene extends Phaser.Scene {
     }
     
     applyStarfallAOE(impactX, impactY, damage) {
-        const aoeRadius = 60;
+        const aoeRadius = this.playerStats.abilityRadius; // Use ability radius stat
         const currentTime = this.time.now;
         
         // Create visual AOE effect
@@ -1936,8 +2132,8 @@ class GameScene extends Phaser.Scene {
             if (distance <= aoeRadius) {
                 affectedEnemies.push(enemy);
                 
-                // Deal damage
-                this.damageEnemy(enemy, damage);
+                // Deal damage (use ability damage stat)
+                this.damageEnemy(enemy, this.playerStats.abilityDamage);
                 
                 // Apply confusion effect (with upgraded duration)
                 this.confusedEnemies.add(enemy);
@@ -1991,8 +2187,8 @@ class GameScene extends Phaser.Scene {
             return;
         }
         
-        // Damage the enemy
-        this.damageEnemy(enemy, 1);
+        // Damage the enemy (use ability damage stat)
+        this.damageEnemy(enemy, this.playerStats.abilityDamage);
         
         // Knockback enemy using Matter.js (only if enemy still exists after damage)
         if (enemy.active && enemy.body && enemy.scene) {
@@ -2067,12 +2263,12 @@ class GameScene extends Phaser.Scene {
         this.healthBar.fillColor = healthPercent > 0.5 ? 0x00ff00 : healthPercent > 0.25 ? 0xffff00 : 0xff0000;
         
         // Update character info
-        const xpProgress = `${this.playerStats.xp}/${this.playerStats.xpToNextLevel}`;
+        const xpProgress = `${this.playerProgression.xp}/${this.playerProgression.xpToNextLevel}`;
         this.characterText.setText([
             `Character: ${this.selectedCharacter.name}`,
-            `Health: ${Math.ceil(this.playerStats.health)}/${this.playerStats.maxHealth}`,
-            `Level: ${this.playerStats.level} | XP: ${xpProgress}`,
-            `Enemies: ${this.enemies.countActive(true)}`
+            `Health: ${Math.ceil(this.playerStats.health)}/${this.playerStats.maxHealth} | Armor: ${this.playerStats.armor}`,
+            `Level: ${this.playerProgression.level} | XP: ${xpProgress}`,
+            `Pickup Range: ${Math.round(this.playerStats.pickupRange)} | Regen: ${this.playerStats.healthRegen.toFixed(1)}/s`
         ]);
     }
     
@@ -2155,14 +2351,14 @@ class GameScene extends Phaser.Scene {
         this.updateAnimatedOverlay(this.player);
         
         // Health regeneration
-        if (this.playerStats.healthRegenPerSecond > 0) {
+        if (this.playerStats.healthRegen > 0) {
             const currentTime = this.time.now;
-            if (currentTime - this.playerStats.lastRegenTime >= 1000) { // Every second
+            if (currentTime - this.playerProgression.lastRegenTime >= 1000) { // Every second
                 this.playerStats.health = Math.min(
                     this.playerStats.maxHealth,
-                    this.playerStats.health + this.playerStats.healthRegenPerSecond
+                    this.playerStats.health + this.playerStats.healthRegen
                 );
-                this.playerStats.lastRegenTime = currentTime;
+                this.playerProgression.lastRegenTime = currentTime;
             }
         }
         
@@ -2217,11 +2413,11 @@ class GameScene extends Phaser.Scene {
             this.updateAnimatedOverlay(enemy);
         });
         
-        // XP Orb magnetism using Matter.js
+        // XP Orb magnetism using Matter.js (use pickup range stat)
         const activeOrbs = this.xpOrbs.children.entries.filter(orb => orb.active && orb.body && orb.scene);
         activeOrbs.forEach(orb => {
             const distance = Phaser.Math.Distance.Between(this.player.x, this.player.y, orb.x, orb.y);
-            if (distance < 100) { // Magnet range
+            if (distance < this.playerStats.pickupRange) { // Use pickup range stat
                 const angle = Phaser.Math.Angle.Between(orb.x, orb.y, this.player.x, this.player.y);
                 const speed = this.gameConfig.XP_ORB_MAGNET_SPEED / 50; // Scale down for Matter.js
                 this.matter.body.setVelocity(orb.body, {
@@ -2237,8 +2433,8 @@ class GameScene extends Phaser.Scene {
             this.updateStarfallProjectiles();
             this.updateConfusedEnemies();
         } else if (this.selectedCharacter.id === 'goose' && this.orbitingGeese) {
-            // Update goose orbit (use upgraded radius) with safety checks
-            const orbitRadius = this.playerStats.gooseOrbitRadius;
+            // Update goose orbit (use ability radius stat) with safety checks
+            const orbitRadius = this.playerStats.abilityRadius;
             const baseOrbitSpeed = 2;
             // Apply cooldown reduction to orbit speed (faster orbiting = more DPS)
             const orbitSpeed = baseOrbitSpeed / this.playerStats.abilityCooldownMultiplier;
