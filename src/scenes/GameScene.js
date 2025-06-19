@@ -703,15 +703,7 @@ class GameScene extends Phaser.Scene {
                     }
                 }
             },
-            {
-                id: 'move_speed',
-                name: 'Swift Movement',
-                description: 'Increases movement speed by 10%',
-                icon: '🏃',
-                apply: () => {
-                    this.playerStats.moveSpeedMultiplier += 0.1;
-                }
-            },
+
             {
                 id: 'health_regen',
                 name: 'Regeneration',
@@ -2247,7 +2239,9 @@ class GameScene extends Phaser.Scene {
         } else if (this.selectedCharacter.id === 'goose' && this.orbitingGeese) {
             // Update goose orbit (use upgraded radius) with safety checks
             const orbitRadius = this.playerStats.gooseOrbitRadius;
-            const orbitSpeed = 2;
+            const baseOrbitSpeed = 2;
+            // Apply cooldown reduction to orbit speed (faster orbiting = more DPS)
+            const orbitSpeed = baseOrbitSpeed / this.playerStats.abilityCooldownMultiplier;
             
             // Enhanced safety checks for geese
             const activeGeese = this.orbitingGeese.children.entries.filter(goose => 
@@ -2263,7 +2257,7 @@ class GameScene extends Phaser.Scene {
                         return;
                     }
                     
-                    // Update orbit angle
+                    // Update orbit angle (now affected by cooldown reduction)
                     goose.orbitAngle += orbitSpeed * 0.02; // Adjusted for frame rate
                     
                     // Calculate new position
