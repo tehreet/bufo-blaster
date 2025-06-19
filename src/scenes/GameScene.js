@@ -358,7 +358,7 @@ class GameScene extends Phaser.Scene {
     
     showGamepadHint() {
         // Show a temporary hint about gamepad controls
-        const hint = this.add.text(400, 50, 'Xbox Controller Connected!\nLeft Stick: Move/Navigate | A: Select | X: Reroll | Y: Debug', {
+        const hint = this.add.text(700, 50, 'Xbox Controller Connected!\nLeft Stick: Move/Navigate | A: Select | X: Reroll | Y: Debug', {
             fontSize: '14px',
             color: '#00ff00',
             backgroundColor: '#000000',
@@ -382,13 +382,13 @@ class GameScene extends Phaser.Scene {
         this.children.removeAll();
         
         // Title
-        this.add.text(400, 100, 'BUFO BLASTER', {
+        this.add.text(700, 100, 'BUFO BLASTER', {
             fontSize: '48px',
             color: '#ffffff',
             fontWeight: 'bold'
         }).setOrigin(0.5, 0.5);
         
-        this.add.text(400, 150, 'Choose Your Character', {
+        this.add.text(700, 150, 'Choose Your Character', {
             fontSize: '24px',
             color: '#cccccc'
         }).setOrigin(0.5, 0.5);
@@ -399,7 +399,7 @@ class GameScene extends Phaser.Scene {
         const cardHeight = 300;
         const spacing = 50;
         const totalWidth = (cardWidth * charactersArray.length) + (spacing * (charactersArray.length - 1));
-        const startX = (800 - totalWidth) / 2;
+        const startX = (1400 - totalWidth) / 2;
         const cardY = 250;
         
         this.characterCards = [];
@@ -472,7 +472,7 @@ class GameScene extends Phaser.Scene {
         });
         
         // Instructions
-        this.add.text(400, 580, 'Click on a character to begin your adventure!\nGamepad: Use D-Pad or Left Stick to navigate, A to select', {
+        this.add.text(700, 750, 'Click on a character to begin your adventure!\nGamepad: Use D-Pad or Left Stick to navigate, A to select', {
             fontSize: '16px',
             color: '#ffffff',
             align: 'center'
@@ -1484,7 +1484,7 @@ class GameScene extends Phaser.Scene {
     
     showBossWaveNotification(level) {
         // Create dramatic notification
-        const notification = this.add.text(400, 200, `🚨 BOSS WAVE! 🚨\nLevel ${level} Milestone`, {
+        const notification = this.add.text(700, 200, `🚨 BOSS WAVE! 🚨\nLevel ${level} Milestone`, {
             fontSize: '36px',
             color: '#ff0000',
             fontWeight: 'bold',
@@ -1621,7 +1621,7 @@ class GameScene extends Phaser.Scene {
         this.upgradeCardElements = []; // Track elements for each card separately
         
         // Background - make it fullscreen to block all clicks
-        const bg = this.add.rectangle(400, 300, 1600, 1200, 0x000000, 0.8);
+        const bg = this.add.rectangle(700, 450, 2000, 1400, 0x000000, 0.8);
         bg.setScrollFactor(0);
         bg.setDepth(1000);
         bg.setInteractive(); // Make it interactive to block clicks behind it
@@ -1629,14 +1629,14 @@ class GameScene extends Phaser.Scene {
         this.upgradeUIElements.push(bg);
         
         // Upgrade panel background
-        const panel = this.add.rectangle(400, 300, 700, 400, 0x222222, 1.0);
+        const panel = this.add.rectangle(700, 450, 700, 400, 0x222222, 1.0);
         panel.setScrollFactor(0);
         panel.setDepth(1001);
         panel.setStrokeStyle(4, 0xffffff);
         this.upgradeUIElements.push(panel);
         
         // Title
-        const title = this.add.text(400, 140, `LEVEL ${this.playerProgression.level}!`, {
+        const title = this.add.text(700, 290, `LEVEL ${this.playerProgression.level}!`, {
             fontSize: '32px',
             color: '#ffff00',
             fontWeight: 'bold'
@@ -1645,7 +1645,7 @@ class GameScene extends Phaser.Scene {
         title.setDepth(1002);
         this.upgradeUIElements.push(title);
         
-        const subtitle = this.add.text(400, 170, 'Choose an upgrade:', {
+        const subtitle = this.add.text(700, 320, 'Choose an upgrade:', {
             fontSize: '18px',
             color: '#ffffff'
         }).setOrigin(0.5, 0.5);
@@ -1657,11 +1657,11 @@ class GameScene extends Phaser.Scene {
         const cardWidth = 180;
         const cardHeight = 200;
         const spacing = 20;
-        const startX = 400 - (cardWidth + spacing);
+        const startX = 700 - (cardWidth + spacing);
         
         this.upgradeSystem.currentUpgradeChoices.forEach((upgrade, index) => {
             const cardX = startX + index * (cardWidth + spacing);
-            const cardY = 300;
+            const cardY = 450;
             
             // Initialize card elements array for this card
             this.upgradeCardElements[index] = [];
@@ -1757,9 +1757,9 @@ class GameScene extends Phaser.Scene {
         });
         
         // Reroll instructions and controller instructions
-        let instructionY = 440;
+        let instructionY = 590;
         if (this.upgradeSystem.rerollsRemaining > 0) {
-            const rerollInstructions = this.add.text(400, instructionY, `Rerolls remaining: ${this.upgradeSystem.rerollsRemaining}`, {
+            const rerollInstructions = this.add.text(700, instructionY, `Rerolls remaining: ${this.upgradeSystem.rerollsRemaining}`, {
                 fontSize: '14px',
                 color: '#ffff00'
             }).setOrigin(0.5, 0.5);
@@ -1772,7 +1772,7 @@ class GameScene extends Phaser.Scene {
         
         // Controller instructions (if controller is connected)
         if (this.gamepadState && this.gamepadState.connected) {
-            const controllerInstructions = this.add.text(400, instructionY, 'Controller: D-Pad/Left Stick to navigate | A to select | X to reroll', {
+            const controllerInstructions = this.add.text(700, instructionY, 'Controller: D-Pad/Left Stick to navigate | A to select | X to reroll', {
                 fontSize: '12px',
                 color: '#aaaaaa'
             }).setOrigin(0.5, 0.5);
@@ -1857,9 +1857,9 @@ class GameScene extends Phaser.Scene {
         const cardWidth = 180;
         const cardHeight = 200;
         const spacing = 20;
-        const startX = 400 - (cardWidth + spacing);
+        const startX = 700 - (cardWidth + spacing);
         const cardX = startX + upgradeIndex * (cardWidth + spacing);
-        const cardY = 300;
+        const cardY = 450;
         
         // Initialize card elements array for this card
         this.upgradeCardElements[upgradeIndex] = [];
@@ -2215,14 +2215,14 @@ class GameScene extends Phaser.Scene {
         if (this.auraTimer) this.auraTimer.remove();
         
         // Show game over screen
-        this.add.text(400, 300, 'GAME OVER', {
+        this.add.text(700, 450, 'GAME OVER', {
             fontSize: '48px',
             color: '#ff0000',
             backgroundColor: '#000000',
             padding: { x: 16, y: 8 }
         }).setOrigin(0.5, 0.5).setScrollFactor(0);
         
-        this.add.text(400, 350, 'Click to return to character selection', {
+        this.add.text(700, 500, 'Click to return to character selection', {
             fontSize: '16px',
             color: '#ffffff',
             backgroundColor: '#000000',
