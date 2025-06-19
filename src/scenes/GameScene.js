@@ -678,6 +678,9 @@ class GameScene extends Phaser.Scene {
     }
     
     initializePlayerStats() {
+        // Clear any existing player stats to ensure clean start
+        this.playerStats = null;
+        
         // Base character stats
         const baseStats = this.selectedCharacter.baseStats;
         
@@ -711,13 +714,13 @@ class GameScene extends Phaser.Scene {
             pickupRangeMultiplier: 1.0
         };
         
-        // Calculate and cache current stats
-        this.refreshPlayerStats();
+        // Calculate and cache current stats (reset health to max for new game)
+        this.refreshPlayerStats(true);
         
         console.log('Player stats initialized:', this.playerStats);
     }
     
-    refreshPlayerStats() {
+    refreshPlayerStats(resetHealth = false) {
         // Calculate current stats based on base stats + modifiers
         const baseStats = this.selectedCharacter.baseStats;
         const mods = this.statModifiers;
@@ -733,10 +736,20 @@ class GameScene extends Phaser.Scene {
         const projectileCount = Math.max(1, baseStats.projectileCount + mods.projectileCountBonus);
         const moveSpeed = Math.max(1, baseStats.moveSpeed * mods.moveSpeedMultiplier);
         
+        // Determine current health: reset to max if requested, otherwise preserve current health
+        let currentHealth;
+        if (resetHealth || !this.playerStats || typeof this.playerStats.health !== 'number') {
+            currentHealth = maxHealth; // Reset to full health for new game or if health is invalid
+            console.log(`Health reset to max: ${currentHealth} (resetHealth: ${resetHealth})`);
+        } else {
+            currentHealth = this.playerStats.health; // Preserve current health during upgrades
+            console.log(`Health preserved: ${currentHealth}`);
+        }
+        
         // Update cached stats
         this.playerStats = {
             // Core stats
-            health: this.playerStats ? this.playerStats.health : maxHealth, // Preserve current health
+            health: currentHealth,
             maxHealth: maxHealth,
             armor: armor,
             healthRegen: healthRegen,
