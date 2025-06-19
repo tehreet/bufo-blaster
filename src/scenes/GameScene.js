@@ -50,7 +50,7 @@ class GameScene extends Phaser.Scene {
             STAB_BUFO_AURA_RADIUS: 80,
             STAB_BUFO_AURA_DAMAGE: 0.6,
             STAB_BUFO_AURA_TICK_INTERVAL: 450,
-            ENEMY_SPAWN_INTERVAL: 800 // Reduced from 2000ms to 800ms for much faster spawning
+            ENEMY_SPAWN_INTERVAL: 1200 // Balanced at 1200ms (50% slower than previous 800ms)
         };
         
         // Character definitions (from original game)
@@ -707,10 +707,10 @@ class GameScene extends Phaser.Scene {
             {
                 id: 'health_regen',
                 name: 'Regeneration',
-                description: 'Regenerates 2 health per second',
+                description: 'Regenerates 1 health per second',
                 icon: '💚',
                 apply: () => {
-                    this.playerStats.healthRegenPerSecond += 2;
+                    this.playerStats.healthRegenPerSecond += 1;
                 }
             },
             {
@@ -907,11 +907,11 @@ class GameScene extends Phaser.Scene {
     spawnEnemy() {
         if (!this.gameStarted || this.upgradeSystem.isPaused) return;
         
-        // Calculate number of enemies to spawn based on level (2-8+ enemies per wave)
-        const baseEnemyCount = 2; // Start with 2 enemies at level 1
-        const levelBonus = Math.floor((this.playerStats.level - 1) / 2); // +1 enemy every 2 levels
-        const randomBonus = Math.random() < 0.3 ? Phaser.Math.Between(1, 3) : 0; // 30% chance for 1-3 extra enemies
-        const enemyCount = Math.min(12, baseEnemyCount + levelBonus + randomBonus); // Cap at 12 enemies per wave
+        // Calculate number of enemies to spawn based on level (1-6 enemies per wave, balanced)
+        const baseEnemyCount = 1; // Start with 1 enemy at level 1 (reduced from 2)
+        const levelBonus = Math.floor((this.playerStats.level - 1) / 3); // +1 enemy every 3 levels (slower than before)
+        const randomBonus = Math.random() < 0.2 ? Phaser.Math.Between(1, 2) : 0; // 20% chance for 1-2 extra enemies (reduced)
+        const enemyCount = Math.min(6, baseEnemyCount + levelBonus + randomBonus); // Cap at 6 enemies per wave (reduced from 12)
         
         console.log(`Level ${this.playerStats.level}: Spawning ${enemyCount} enemies (base: ${baseEnemyCount}, level bonus: ${levelBonus}, random bonus: ${randomBonus})`);
         
@@ -920,9 +920,9 @@ class GameScene extends Phaser.Scene {
             this.spawnSingleEnemy();
         }
         
-        // 15% chance for an additional "mini-wave" at higher levels
-        if (this.playerStats.level >= 5 && Math.random() < 0.15) {
-            const miniWaveSize = Phaser.Math.Between(2, 4);
+        // 7% chance for an additional "mini-wave" at higher levels (reduced from 15%)
+        if (this.playerStats.level >= 7 && Math.random() < 0.07) {
+            const miniWaveSize = Phaser.Math.Between(1, 2); // Reduced mini-wave size from 2-4 to 1-2
             console.log(`Bonus mini-wave: +${miniWaveSize} enemies!`);
             
             // Delay the mini-wave slightly
@@ -1197,7 +1197,7 @@ class GameScene extends Phaser.Scene {
     
     triggerBossWave() {
         const level = this.playerStats.level;
-        const bossWaveSize = 8 + Math.floor(level / 5) * 3; // 8 enemies at level 5, 11 at level 10, etc.
+        const bossWaveSize = 5 + Math.floor(level / 5) * 2; // 5 enemies at level 5, 7 at level 10, etc. (reduced from 8+3)
         
         console.log(`🚨 BOSS WAVE TRIGGERED! Level ${level} - Spawning ${bossWaveSize} tough enemies! 🚨`);
         
@@ -1346,7 +1346,7 @@ class GameScene extends Phaser.Scene {
         }
         
         // Calculate theoretical enemies per second for logging
-        const enemiesPerWave = 2 + Math.floor((level - 1) / 2); // Average enemies per wave
+        const enemiesPerWave = 1 + Math.floor((level - 1) / 3); // Average enemies per wave (updated to match new formula)
         const wavesPerSecond = 1000 / newSpawnRate;
         const enemiesPerSecond = enemiesPerWave * wavesPerSecond;
         
