@@ -29,7 +29,7 @@ class AssetConfig {
             enemies: {
                 'bufo-covid': {
                     png: 'assets/enemies/bufo-covid.png',
-                    gif: 'assets/enemies/bufo-covid.gif',
+                    gif: null, // PNG only - no GIF version exists
                     displaySize: 40
                 },
                 'bufo-clown': {
@@ -61,17 +61,8 @@ class AssetConfig {
                     png: 'assets/enemies/bufo-chicken.png',
                     gif: null, // PNG only
                     displaySize: 42
-                },
-                'bufo-dancing': {
-                    png: null, // No PNG version
-                    gif: 'assets/enemies/bufo-dancing.gif',
-                    displaySize: 40
-                },
-                'bufo-eyes': {
-                    png: null, // No PNG version
-                    gif: 'assets/enemies/bufo-eyes.gif',
-                    displaySize: 40
                 }
+                // Note: bufo-dancing.gif and bufo-eyes.gif exist in assets but are not used by any enemy types
             },
             
             // Map assets (keys must match what the game expects)
