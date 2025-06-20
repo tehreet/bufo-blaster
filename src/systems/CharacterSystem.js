@@ -464,6 +464,10 @@ class CharacterSystem {
         star.targetY = targetY;
         star.hasImpacted = false;
         
+        // Track position for movement detection
+        star.lastPosition = { x: startX, y: startY };
+        star.lastMoveTime = this.scene.time.now;
+        
         this.scene.starfallProjectiles.add(star);
     }
 
@@ -526,90 +530,52 @@ class CharacterSystem {
                 continue;
             }
 
-            // Check for impact with target area - MUCH MORE generous detection
-            let distanceToTarget = Infinity;
+            // Check if star hasn't moved significantly in 2 seconds
+            let hasntMoved = false;
+            try {
+                const distanceMoved = Phaser.Math.Distance.Between(
+                    star.x, star.y, star.lastPosition.x, star.lastPosition.y
+                );
+                
+                // If star moved more than 5 pixels, update last position and time
+                if (distanceMoved > 5) {
+                    star.lastPosition = { x: star.x, y: star.y };
+                    star.lastMoveTime = currentTime;
+                } else {
+                    // Check if star hasn't moved for 2 seconds
+                    hasntMoved = (currentTime - star.lastMoveTime) > 2000;
+                }
+            } catch (error) {
+                console.log('Error checking star movement:', error);
+                hasntMoved = true; // Treat as stuck if we can't check movement
+            }
+            
+            // Simple target detection with reasonable radius
             let targetReached = false;
             try {
-                distanceToTarget = Phaser.Math.Distance.Between(
+                const distanceToTarget = Phaser.Math.Distance.Between(
                     star.x, star.y, star.targetX, star.targetY
                 );
-                // VERY generous target detection for moving targets
-                targetReached = distanceToTarget < 120; // Increased from 60 to 120 for much better targeting
+                targetReached = distanceToTarget < 50; // Reasonable target detection
             } catch (error) {
-                console.log('Error calculating distance to target, treating as not reached:', error);
+                console.log('Error calculating distance to target:', error);
                 targetReached = false;
             }
             
-            // Additional check: if star is near ground level, explode regardless of exact target
-            let nearGround = false;
-            try {
-                const mapHeight = this.scene.map.heightInPixels || 2400;
-                const groundLevel = mapHeight - 200; // Consider "near ground" much higher
-                nearGround = star.y > groundLevel;
-            } catch (error) {
-                console.log('Error checking ground level:', error);
-            }
-            
-            // If star has been falling for a while and is anywhere near target area, explode
-            let nearTargetArea = false;
-            if (fallTime > 1000) { // After 1 second of falling
-                try {
-                    nearTargetArea = distanceToTarget < 200; // Even more generous after falling for a while
-                } catch (error) {
-                    nearTargetArea = false;
-                }
-            }
-            
-            // Check if star is near any enemy (not just original target)
-            let nearAnyEnemy = false;
-            try {
-                if (this.scene.enemies && this.scene.enemies.children.entries.length > 0) {
-                    const nearbyEnemies = this.scene.enemies.children.entries.filter(enemy => {
-                        if (!enemy || !enemy.active || !enemy.body || !enemy.scene) return false;
-                        const enemyDistance = Phaser.Math.Distance.Between(star.x, star.y, enemy.x, enemy.y);
-                        return enemyDistance < 80; // If star is within 80px of any enemy
-                    });
-                    nearAnyEnemy = nearbyEnemies.length > 0;
-                }
-            } catch (error) {
-                console.log('Error checking nearby enemies:', error);
-            }
-            
-            // Multiple ground detection methods for reliability
+            // Simple ground detection
             let hitGround = false;
-            let hitScreenBottom = false;
-            let offScreen = false;
             try {
                 const mapHeight = this.scene.map.heightInPixels || 2400;
-                hitGround = star.y > mapHeight - 150; // More generous ground detection (was 100)
-                hitScreenBottom = star.y > this.scene.cameras.main.height + this.scene.cameras.main.scrollY + 50;
-                
-                // Check if star went off-screen (outside map boundaries)
-                offScreen = star.x < -200 || star.x > mapHeight + 200 || star.y < -200 || star.y > mapHeight + 200;
+                hitGround = star.y > mapHeight - 50; // Hit actual ground
             } catch (error) {
-                console.log('Error checking ground/screen boundaries, treating as off-screen:', error);
-                offScreen = true; // Treat as off-screen if we can't check position
+                console.log('Error checking ground:', error);
             }
             
-            // Check if star has very low velocity (stuck/stopped) or is moving very slowly
-            let isStuck = false;
-            let movingSlowly = false;
-            try {
-                if (star.body && star.body.velocity) {
-                    const velocity = Math.sqrt(star.body.velocity.x * star.body.velocity.x + star.body.velocity.y * star.body.velocity.y);
-                    isStuck = velocity < 0.5; // Completely stuck
-                    movingSlowly = velocity < 2.0 && fallTime > 1500; // Moving slowly after 1.5 seconds
-                }
-            } catch (error) {
-                console.log('Error checking star velocity, treating as stuck:', error);
-                isStuck = true; // Treat as stuck if we can't check velocity
-            }
+            // Reasonable timeout
+            const tooOld = fallTime > 5000; // 5 seconds max (back to reasonable time)
             
-            // Much shorter timeout for faster cleanup
-            const tooOld = fallTime > 2000; // Reduced from 2500 to 2000ms (2 seconds max)
-            
-            // MUCH MORE aggressive cleanup conditions - stars should almost always explode
-            if (targetReached || nearGround || nearTargetArea || nearAnyEnemy || hitGround || hitScreenBottom || tooOld || isStuck || movingSlowly || offScreen) {
+            // Simple cleanup conditions - only explode when it makes sense
+            if (targetReached || hitGround || tooOld || hasntMoved) {
                 // Star should explode - trigger AOE explosion
                 try {
                     this.applyStarfallAOE(star.x, star.y, star.damage);
@@ -619,8 +585,9 @@ class CharacterSystem {
                 star.hasImpacted = true;
                 star.destroy();
                 
-                console.log(`Star exploded: target=${targetReached}, nearGround=${nearGround}, nearTargetArea=${nearTargetArea}, nearEnemy=${nearAnyEnemy}, ground=${hitGround}, screen=${hitScreenBottom}, old=${tooOld}, stuck=${isStuck}, movingSlowly=${movingSlowly}, offScreen=${offScreen}`);
+                console.log(`Star exploded: target=${targetReached}, ground=${hitGround}, tooOld=${tooOld}, hasntMoved=${hasntMoved}`);
                 try {
+                    const distanceToTarget = Phaser.Math.Distance.Between(star.x, star.y, star.targetX, star.targetY);
                     console.log(`Star details: pos=(${star.x.toFixed(1)}, ${star.y.toFixed(1)}), target=(${star.targetX.toFixed(1)}, ${star.targetY.toFixed(1)}), distance=${distanceToTarget.toFixed(1)}, age=${fallTime}ms`);
                 } catch (error) {
                     console.log('Error logging star details - star position may be invalid');
