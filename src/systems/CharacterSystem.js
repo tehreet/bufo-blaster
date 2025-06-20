@@ -517,9 +517,9 @@ class CharacterSystem {
             // Calculate elapsed time
             const fallTime = currentTime - star.birthTime;
             
-            // MANDATORY cleanup after 5 seconds (no exceptions)
-            if (fallTime > 5000) {
-                console.log('Star force-expired after 5 seconds - triggering explosion at current position');
+            // MANDATORY cleanup after 3 seconds (no exceptions) - much more aggressive
+            if (fallTime > 3000) {
+                console.log('Star force-expired after 3 seconds - triggering explosion at current position');
                 try {
                     this.applyStarfallAOE(star.x, star.y, star.damage);
                 } catch (error) {
@@ -530,20 +530,32 @@ class CharacterSystem {
                 continue;
             }
 
-            // Check if star hasn't moved significantly in 2 seconds
+            // Check if star hasn't moved significantly in 1 second (much more aggressive)
             let hasntMoved = false;
+            let movingVerySlowly = false;
             try {
                 const distanceMoved = Phaser.Math.Distance.Between(
                     star.x, star.y, star.lastPosition.x, star.lastPosition.y
                 );
                 
-                // If star moved more than 5 pixels, update last position and time
-                if (distanceMoved > 5) {
+                // If star moved more than 2 pixels, update last position and time (reduced threshold)
+                if (distanceMoved > 2) {
                     star.lastPosition = { x: star.x, y: star.y };
                     star.lastMoveTime = currentTime;
                 } else {
-                    // Check if star hasn't moved for 2 seconds
-                    hasntMoved = (currentTime - star.lastMoveTime) > 2000;
+                    // Check if star hasn't moved for 1 second (reduced timeout)
+                    hasntMoved = (currentTime - star.lastMoveTime) > 1000;
+                }
+                
+                // Additional check: if star has been alive for 1.5+ seconds and moving very slowly
+                if (fallTime > 1500) {
+                    try {
+                        const velocity = star.body && star.body.velocity ? 
+                            Math.sqrt(star.body.velocity.x * star.body.velocity.x + star.body.velocity.y * star.body.velocity.y) : 0;
+                        movingVerySlowly = velocity < 1.0; // Very slow movement after 1.5 seconds
+                    } catch (velocityError) {
+                        movingVerySlowly = true; // Assume slow if can't check
+                    }
                 }
             } catch (error) {
                 console.log('Error checking star movement:', error);
@@ -564,18 +576,20 @@ class CharacterSystem {
             
             // Simple ground detection
             let hitGround = false;
+            let nearGround = false;
             try {
                 const mapHeight = this.scene.map.heightInPixels || 2400;
                 hitGround = star.y > mapHeight - 50; // Hit actual ground
+                nearGround = star.y > mapHeight - 150; // Getting close to ground
             } catch (error) {
                 console.log('Error checking ground:', error);
             }
             
-            // Reasonable timeout
-            const tooOld = fallTime > 5000; // 5 seconds max (back to reasonable time)
+            // Much more aggressive timeout
+            const tooOld = fallTime > 3000; // 3 seconds max - no orb should live longer
             
-            // Simple cleanup conditions - only explode when it makes sense
-            if (targetReached || hitGround || tooOld || hasntMoved) {
+            // Aggressive cleanup conditions - prioritize cleaning up lingering orbs
+            if (targetReached || hitGround || nearGround || tooOld || hasntMoved || movingVerySlowly) {
                 // Star should explode - trigger AOE explosion
                 try {
                     this.applyStarfallAOE(star.x, star.y, star.damage);
@@ -585,7 +599,7 @@ class CharacterSystem {
                 star.hasImpacted = true;
                 star.destroy();
                 
-                console.log(`Star exploded: target=${targetReached}, ground=${hitGround}, tooOld=${tooOld}, hasntMoved=${hasntMoved}`);
+                console.log(`Star exploded: target=${targetReached}, ground=${hitGround}, nearGround=${nearGround}, tooOld=${tooOld}, hasntMoved=${hasntMoved}, movingSlowly=${movingVerySlowly}`);
                 try {
                     const distanceToTarget = Phaser.Math.Distance.Between(star.x, star.y, star.targetX, star.targetY);
                     console.log(`Star details: pos=(${star.x.toFixed(1)}, ${star.y.toFixed(1)}), target=(${star.targetX.toFixed(1)}, ${star.targetY.toFixed(1)}), distance=${distanceToTarget.toFixed(1)}, age=${fallTime}ms`);
