@@ -135,7 +135,7 @@ class StatusEffectSystem {
         // Note: Automatic removal is now handled in the update() method to respect pause state
         // The delayedCall timer has been removed as it doesn't pause with the game
         
-        console.log(`Status effect added: ${effectType} (${effectId}) for ${duration}ms`);
+        // Status effect added
         return effectId;
     }
     
@@ -160,7 +160,7 @@ class StatusEffectSystem {
                             effect.element.destroy();
                         }
                     } catch (error) {
-                        console.log('Status effect element already destroyed');
+                        // Status effect element already destroyed
                     }
                 }
             });
@@ -172,7 +172,7 @@ class StatusEffectSystem {
         // Update positions of remaining indicators
         this.updateIndicatorPositions();
         
-        console.log(`Status effect removed: ${effectId}`);
+        // Status effect removed
         return true;
     }
     
@@ -320,7 +320,7 @@ class StatusEffectSystem {
                 }
             }
             
-            console.log('Status effects paused');
+            // Status effects paused
         } else if (!isPaused && this.wasPaused) {
             // Game just resumed - calculate paused time and resume tweens
             const pauseDuration = this.scene.time.now - this.pauseStartTime;
@@ -337,7 +337,7 @@ class StatusEffectSystem {
                 }
             }
             
-            console.log('Status effects resumed after', pauseDuration, 'ms pause');
+            // Status effects resumed after pause
         }
         
         // Don't update positions or check expiration while paused
@@ -386,7 +386,7 @@ class StatusEffectSystem {
     
     // Clean up all status effects (called on game over/restart)
     cleanup() {
-        console.log(`Cleaning up ${this.activeEffects.size} status effects`);
+        // Cleaning up active status effects
         
         for (const [effectId, effect] of this.activeEffects) {
             if (effect.element && effect.element.active) {
@@ -394,7 +394,7 @@ class StatusEffectSystem {
                     this.scene.tweens.killTweensOf(effect.element);
                     effect.element.destroy();
                 } catch (error) {
-                    console.log('Error cleaning up status effect:', error);
+                    // Error cleaning up status effect
                 }
             }
         }
@@ -410,7 +410,7 @@ class StatusEffectSystem {
     // Add a new status effect type configuration
     addStatusEffectConfig(effectType, config) {
         this.effectConfigs.set(effectType, config);
-        console.log(`Status effect config added: ${effectType}`);
+        // Status effect config added
     }
     
     // Get debug info

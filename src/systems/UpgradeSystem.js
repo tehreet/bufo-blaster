@@ -41,7 +41,7 @@ class UpgradeSystem {
             }
         }
         
-        console.log('Generated upgrade choices:', this.currentUpgrades);
+        // Generated upgrade choices for selection
     }
 
     getAvailableUpgrades() {
@@ -123,7 +123,7 @@ class UpgradeSystem {
                     { id: 'bat_stun', name: 'Stunning Impact', description: 'Stun duration increased to 2 seconds', type: 'character', statType: 'unique',
                       effect: () => {
                           // This would extend stun duration in the boomerang system
-                          console.log('Stunning Impact upgrade applied - stun duration doubled');
+                          // Stunning Impact upgrade applied
                       }},
                     { id: 'bat_agility', name: 'Bat Agility', description: '+30% move speed and +25 health', type: 'character', statType: 'unique',
                       effect: () => {
@@ -298,7 +298,7 @@ class UpgradeSystem {
     }
 
     selectUpgrade(upgrade) {
-        console.log(`Selected upgrade: ${upgrade.name}`);
+        // Upgrade selected and applied
         
         // Apply the upgrade effect
         upgrade.effect();
@@ -312,7 +312,6 @@ class UpgradeSystem {
 
     rerollSingleUpgrade(upgradeIndex) {
         if (this.rerollCount <= 0) {
-            console.log('No rerolls remaining');
             return;
         }
         
@@ -331,7 +330,6 @@ class UpgradeSystem {
 
     rerollAllUpgrades() {
         if (this.rerollCount <= 0) {
-            console.log('No rerolls remaining');
             return;
         }
         
@@ -369,7 +367,7 @@ class UpgradeSystem {
             });
         }
         
-        console.log('Upgrade UI closed, game resumed');
+        // Upgrade UI closed, game resumed
     }
 
     updateUpgradeHighlight() {

@@ -129,13 +129,11 @@ class UISystem {
     }
 
     selectCharacter(character) {
-        console.log(`Selected character: ${character.name}`);
         this.scene.characterSystem.setSelectedCharacter(character);
         this.startGame();
     }
 
     startGame() {
-        console.log('Starting game...');
         
         // Clear character selection UI
         this.scene.children.removeAll();
@@ -160,7 +158,7 @@ class UISystem {
             this.scene.audioManager.onGameStart();
         }
         
-        console.log('Game started with character:', this.scene.characterSystem.getSelectedCharacter().name);
+        // Game started successfully
     }
 
     initializeGame() {
@@ -521,12 +519,10 @@ class UISystem {
         // Clean up poison and bleed timers
         if (this.scene.enemySystem) {
             if (this.scene.enemySystem.poisonTimer) {
-                console.log('🦠 POISON: Cleaning up poison timer on game over');
                 this.scene.enemySystem.poisonTimer.remove();
                 this.scene.enemySystem.poisonTimer = null;
             }
             if (this.scene.enemySystem.bleedTimer) {
-                console.log('🩸 BLEED: Cleaning up bleed timer on game over');
                 this.scene.enemySystem.bleedTimer.remove();
                 this.scene.enemySystem.bleedTimer = null;
             }

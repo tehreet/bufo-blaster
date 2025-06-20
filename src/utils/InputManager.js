@@ -397,7 +397,7 @@ class InputManager {
                     }
                 }
                 
-                console.log(`Character now facing: ${shouldFaceLeft ? 'LEFT' : 'RIGHT'}`);
+                // Character direction updated
             }
         }
     }
