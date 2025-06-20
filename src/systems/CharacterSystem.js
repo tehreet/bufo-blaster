@@ -519,7 +519,7 @@ class CharacterSystem {
             
             // MANDATORY cleanup after 3 seconds (no exceptions) - much more aggressive
             if (fallTime > 3000) {
-                console.log('Star force-expired after 3 seconds - triggering explosion at current position');
+                console.log(`Star force-expired after 3 seconds at pos=(${star.x.toFixed(1)}, ${star.y.toFixed(1)}) - triggering explosion`);
                 try {
                     this.applyStarfallAOE(star.x, star.y, star.damage);
                 } catch (error) {
@@ -590,6 +590,15 @@ class CharacterSystem {
             
             // Aggressive cleanup conditions - prioritize cleaning up lingering orbs
             if (targetReached || hitGround || nearGround || tooOld || hasntMoved || movingVerySlowly) {
+                // Capture star details BEFORE destruction for logging
+                const starDetails = {
+                    x: star.x,
+                    y: star.y,
+                    targetX: star.targetX,
+                    targetY: star.targetY,
+                    age: fallTime
+                };
+                
                 // Star should explode - trigger AOE explosion
                 try {
                     this.applyStarfallAOE(star.x, star.y, star.damage);
@@ -599,12 +608,13 @@ class CharacterSystem {
                 star.hasImpacted = true;
                 star.destroy();
                 
+                // Log details using captured data (after destruction)
                 console.log(`Star exploded: target=${targetReached}, ground=${hitGround}, nearGround=${nearGround}, tooOld=${tooOld}, hasntMoved=${hasntMoved}, movingSlowly=${movingVerySlowly}`);
                 try {
-                    const distanceToTarget = Phaser.Math.Distance.Between(star.x, star.y, star.targetX, star.targetY);
-                    console.log(`Star details: pos=(${star.x.toFixed(1)}, ${star.y.toFixed(1)}), target=(${star.targetX.toFixed(1)}, ${star.targetY.toFixed(1)}), distance=${distanceToTarget.toFixed(1)}, age=${fallTime}ms`);
+                    const distanceToTarget = Phaser.Math.Distance.Between(starDetails.x, starDetails.y, starDetails.targetX, starDetails.targetY);
+                    console.log(`Star details: pos=(${starDetails.x.toFixed(1)}, ${starDetails.y.toFixed(1)}), target=(${starDetails.targetX.toFixed(1)}, ${starDetails.targetY.toFixed(1)}), distance=${distanceToTarget.toFixed(1)}, age=${starDetails.age}ms`);
                 } catch (error) {
-                    console.log('Error logging star details - star position may be invalid');
+                    console.log('Error logging star details:', error);
                 }
             }
         }
