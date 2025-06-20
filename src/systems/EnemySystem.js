@@ -425,7 +425,10 @@ class EnemySystem {
     }
 
     playerCollectXP(player, xpOrb) {
-        if (!xpOrb || !xpOrb.active || !xpOrb.scene) return;
+        if (!xpOrb || !xpOrb.active || !xpOrb.scene || xpOrb.beingCollected) return;
+        
+        // Mark as being collected to prevent double collection
+        xpOrb.beingCollected = true;
         
         // Add XP to player
         this.scene.statsSystem.addXP(xpOrb.xpValue);
@@ -437,7 +440,13 @@ class EnemySystem {
             alpha: 0,
             scale: 3,
             duration: 200,
-            onComplete: () => collectEffect.destroy()
+            onComplete: () => {
+                try {
+                    collectEffect.destroy();
+                } catch (error) {
+                    console.log('Collect effect already destroyed');
+                }
+            }
         });
         
         // Remove XP orb
@@ -495,12 +504,14 @@ class EnemySystem {
         if (!this.scene.xpOrbs || !this.scene.statsSystem.getPlayerStats()) return;
         
         // XP Orb magnetism using Matter.js (use pickup range stat)
-        const activeOrbs = this.scene.xpOrbs.children.entries.filter(orb => orb && orb.active && orb.body && orb.scene);
+        const activeOrbs = this.scene.xpOrbs.children.entries.filter(orb => 
+            orb && orb.active && orb.body && orb.scene && !orb.beingCollected && !orb.isMagnetOrb
+        );
         const pickupRange = this.scene.statsSystem.getPlayerStats().pickupRange;
         
         activeOrbs.forEach(orb => {
-            // Additional safety check for body existence
-            if (!orb.body) return;
+            // Additional safety check for body existence and collection status
+            if (!orb.body || orb.beingCollected) return;
             
             const distance = Phaser.Math.Distance.Between(this.scene.player.x, this.scene.player.y, orb.x, orb.y);
             if (distance < pickupRange) {
@@ -743,38 +754,76 @@ class EnemySystem {
         
         // Get all XP orbs (excluding the magnet orb itself)
         const xpOrbs = this.scene.xpOrbs.children.entries.filter(orb => 
-            orb && orb.active && orb.scene && !orb.isMagnetOrb
+            orb && orb.active && orb.scene && !orb.isMagnetOrb && orb.xpValue
         );
         
+        // Process each orb immediately to prevent race conditions
         xpOrbs.forEach(orb => {
-            if (orb.xpValue) {
-                collectedXP += orb.xpValue;
-                orbsCollected++;
-                
-                // Visual effect - orb flies to player with safety checks
-                this.scene.tweens.add({
-                    targets: orb,
-                    x: player.x,
-                    y: player.y,
-                    scaleX: 0.1,
-                    scaleY: 0.1,
-                    duration: 300,
-                    onUpdate: () => {
-                        // Safety check - if orb is destroyed, stop the tween
-                        if (!orb.active || !orb.scene || !orb.body) {
-                            this.scene.tweens.killTweensOf(orb);
-                        }
-                    },
-                    onComplete: () => {
-                        if (orb.active && orb.scene) {
-                            orb.destroy();
+            // Mark orb as being collected to prevent double collection
+            if (orb.beingCollected) return;
+            orb.beingCollected = true;
+            
+            // Add XP value and count immediately
+            collectedXP += orb.xpValue;
+            orbsCollected++;
+            
+            // Store original position for safe tween animation
+            const startX = orb.x;
+            const startY = orb.y;
+            
+            // Remove orb from physics and groups immediately to prevent further collisions
+            if (orb.body) {
+                orb.body.isSensor = false; // Disable collision detection
+            }
+            this.scene.xpOrbs.remove(orb); // Remove from group
+            
+            // Create a visual-only tween object for animation
+            const orbAnimation = {
+                x: startX,
+                y: startY,
+                scaleX: 1,
+                scaleY: 1,
+                alpha: 1
+            };
+            
+            // Update the actual orb's position during tween to follow animation
+            this.scene.tweens.add({
+                targets: orbAnimation,
+                x: player.x,
+                y: player.y,
+                scaleX: 0.1,
+                scaleY: 0.1,
+                alpha: 0.5,
+                duration: 300,
+                onUpdate: () => {
+                    // Only update if orb still exists
+                    if (orb && orb.active && orb.scene) {
+                        try {
+                            orb.x = orbAnimation.x;
+                            orb.y = orbAnimation.y;
+                            orb.scaleX = orbAnimation.scaleX;
+                            orb.scaleY = orbAnimation.scaleY;
+                            orb.alpha = orbAnimation.alpha;
+                        } catch (error) {
+                            // Orb was destroyed, stop updating
+                            console.log('Orb destroyed during animation');
                         }
                     }
-                });
-            }
+                },
+                onComplete: () => {
+                    // Clean up the orb safely
+                    try {
+                        if (orb && orb.active && orb.scene) {
+                            orb.destroy();
+                        }
+                    } catch (error) {
+                        console.log('Orb already destroyed');
+                    }
+                }
+            });
         });
         
-        // Add all collected XP to player
+        // Add all collected XP to player immediately
         if (collectedXP > 0) {
             this.scene.statsSystem.addXP(collectedXP);
         }
@@ -786,7 +835,13 @@ class EnemySystem {
             alpha: 0,
             scale: 4,
             duration: 500,
-            onComplete: () => collectEffect.destroy()
+            onComplete: () => {
+                try {
+                    collectEffect.destroy();
+                } catch (error) {
+                    console.log('Collect effect already destroyed');
+                }
+            }
         });
         
         // Show collection summary
@@ -804,7 +859,13 @@ class EnemySystem {
                 y: summary.y - 30,
                 alpha: 0,
                 duration: 2000,
-                onComplete: () => summary.destroy()
+                onComplete: () => {
+                    try {
+                        summary.destroy();
+                    } catch (error) {
+                        console.log('Summary already destroyed');
+                    }
+                }
             });
         }
         
