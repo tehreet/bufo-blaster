@@ -225,68 +225,20 @@ class UISystem {
     }
 
     generateMap(mapWidth, mapHeight) {
-        // Create a blank tilemap for procedural generation
-        const tileSize = 16;
-        const tilesWide = Math.floor(mapWidth / tileSize);
-        const tilesHigh = Math.floor(mapHeight / tileSize);
-        
-        this.scene.map = this.scene.make.tilemap({
-            width: tilesWide,
-            height: tilesHigh,
-            tileWidth: tileSize,
-            tileHeight: tileSize
-        });
+        // Load the pre-generated grass/dirt map
+        this.scene.map = this.scene.make.tilemap({ key: 'level1' });
         
         // Add the tileset
-        const tileset = this.scene.map.addTilesetImage('custom-tiles', 'tileset');
+        const tileset = this.scene.map.addTilesetImage('grass-dirt', 'tileset');
         
-        // Create a blank layer
-        const backgroundLayer = this.scene.map.createBlankLayer('Ground', tileset);
+        // Create the layer from the pre-generated map data
+        const backgroundLayer = this.scene.map.createLayer('Ground', tileset);
         
-        // Fill the map procedurally with your custom tiles (125 total tiles available)
-        for (let y = 0; y < tilesHigh; y++) {
-            for (let x = 0; x < tilesWide; x++) {
-                let tileIndex = 0; // Default tile
-                
-                // Create zones with different tile sets for visual variety
-                const centerX = tilesWide / 2;
-                const centerY = tilesHigh / 2;
-                const distanceFromCenter = Math.sqrt((x - centerX) ** 2 + (y - centerY) ** 2);
-                const maxDistance = Math.sqrt(centerX ** 2 + centerY ** 2);
-                
-                // Zone-based tile selection using your 125 tiles
-                if (distanceFromCenter < maxDistance * 0.2) {
-                    // Center area - use tiles 0-24 (inner tiles)
-                    tileIndex = Math.floor(Math.random() * 25);
-                } else if (distanceFromCenter < maxDistance * 0.4) {
-                    // Inner ring - use tiles 25-49
-                    tileIndex = 25 + Math.floor(Math.random() * 25);
-                } else if (distanceFromCenter < maxDistance * 0.6) {
-                    // Middle ring - use tiles 50-74
-                    tileIndex = 50 + Math.floor(Math.random() * 25);
-                } else if (distanceFromCenter < maxDistance * 0.8) {
-                    // Outer ring - use tiles 75-99
-                    tileIndex = 75 + Math.floor(Math.random() * 25);
-                } else {
-                    // Edge areas - use tiles 100-124 (outer/border tiles)
-                    tileIndex = 100 + Math.floor(Math.random() * 25);
-                }
-                
-                // Add some randomness for natural variation
-                if (Math.random() < 0.05) {
-                    // 5% chance for completely random tile
-                    tileIndex = Math.floor(Math.random() * 125);
-                }
-                
-                backgroundLayer.putTileAt(tileIndex, x, y);
-            }
-        }
+        // Update map dimensions to match the actual map
+        this.scene.map.widthInPixels = this.scene.map.widthInPixels;
+        this.scene.map.heightInPixels = this.scene.map.heightInPixels;
         
-        // Update map dimensions
-        this.scene.map.widthInPixels = mapWidth;
-        this.scene.map.heightInPixels = mapHeight;
-        
-        console.log(`Generated procedural map: ${tilesWide}x${tilesHigh} tiles (${mapWidth}x${mapHeight} pixels)`);
+        console.log(`Loaded clean grass/dirt map: ${this.scene.map.width}x${this.scene.map.height} tiles (${this.scene.map.widthInPixels}x${this.scene.map.heightInPixels} pixels)`);
     }
 
     setupPhysicsCollisions() {
