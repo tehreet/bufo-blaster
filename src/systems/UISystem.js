@@ -229,7 +229,7 @@ class UISystem {
         this.scene.map = this.scene.make.tilemap({ key: 'level1' });
         
         // Add the tileset
-        const tileset = this.scene.map.addTilesetImage('grass-dirt', 'tileset');
+        const tileset = this.scene.map.addTilesetImage('single-tile', 'tileset');
         
         // Create the layer from the pre-generated map data
         const backgroundLayer = this.scene.map.createLayer('Ground', tileset);
@@ -238,7 +238,7 @@ class UISystem {
         this.scene.map.widthInPixels = this.scene.map.widthInPixels;
         this.scene.map.heightInPixels = this.scene.map.heightInPixels;
         
-        console.log(`Loaded clean grass/dirt map: ${this.scene.map.width}x${this.scene.map.height} tiles (${this.scene.map.widthInPixels}x${this.scene.map.heightInPixels} pixels)`);
+        console.log(`Loaded single-tile background map: ${this.scene.map.width}x${this.scene.map.height} tiles (${this.scene.map.widthInPixels}x${this.scene.map.heightInPixels} pixels)`);
     }
 
     setupPhysicsCollisions() {

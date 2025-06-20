@@ -18,9 +18,9 @@ class GameScene extends Phaser.Scene {
     }
 
     preload() {
-        // Load grass/dirt tilemap assets
-        this.load.image('tileset', 'assets/map/grass-dirt-tileset.png');
-        this.load.tilemapTiledJSON('level1', 'assets/map/grass-dirt-level.json');
+        // Load single-tile tilemap assets (Slice 65.png only)
+        this.load.image('tileset', 'assets/map/single-tile-tileset.png');
+        this.load.tilemapTiledJSON('level1', 'assets/map/single-tile-level.json');
         
         // Load character sprites (static for collision, we'll overlay GIFs for animation)
         this.load.image('shield-bufo', 'assets/characters/shield-bufo.png');
