@@ -66,7 +66,7 @@ class DebugUtils {
         const debugPanelX = 20;
         const debugPanelY = 180; // Start below main stats panel (20 + 140 + 20 margin)
         const debugPanelWidth = 200; // Same width as main stats panel
-        const debugPanelHeight = 300; // Enough height for all debug info
+        const debugPanelHeight = 420; // Increased height to prevent cut-off at bottom
         
         // Background panel - positioned to align with main stats panel
         const panel = this.scene.add.rectangle(
