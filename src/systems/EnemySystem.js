@@ -727,39 +727,92 @@ class EnemySystem {
         // Add to XP orbs group for easy management
         this.scene.xpOrbs.add(magnetOrb);
         
-        // Show notification
-        this.showMagnetOrbNotification();
+        // Store reference to current magnet orb for indicator
+        this.currentMagnetOrb = magnetOrb;
+        
+        // Show arrow indicator instead of text notification
+        this.showMagnetOrbIndicator();
     }
     
-    showMagnetOrbNotification() {
-        const notification = this.scene.add.text(700, 200, 'RARE XP MAGNET ORB SPAWNED!\n(Only 1 per map)', {
-            fontSize: '24px',
-            color: '#FFD700',
-            fontWeight: 'bold',
-            backgroundColor: '#000000',
-            padding: { x: 12, y: 6 },
-            align: 'center'
-        }).setOrigin(0.5, 0.5).setScrollFactor(0).setDepth(1500);
+    showMagnetOrbIndicator() {
+        // Clean up any existing indicator
+        this.hideMagnetOrbIndicator();
         
-        // More dramatic pulsing effect for rare item
-        this.scene.tweens.add({
-            targets: notification,
-            scaleX: 1.2,
-            scaleY: 1.2,
-            duration: 200,
+        // Create arrow indicator at edge of screen
+        this.magnetOrbIndicator = this.scene.add.triangle(0, 0, 0, -12, 10, 8, -10, 8, 0xFFD700);
+        this.magnetOrbIndicator.setStrokeStyle(2, 0xFFA500);
+        this.magnetOrbIndicator.setScrollFactor(0); // Stay fixed to camera
+        this.magnetOrbIndicator.setDepth(1500);
+        
+        // Add pulsing animation to make it more noticeable
+        this.magnetOrbIndicatorTween = this.scene.tweens.add({
+            targets: this.magnetOrbIndicator,
+            scaleX: 1.3,
+            scaleY: 1.3,
+            duration: 600,
             yoyo: true,
-            repeat: 5 // More pulses for rarity
+            repeat: -1
         });
         
-        // Keep notification longer for rare item
-        this.scene.time.delayedCall(4000, () => {
-            this.scene.tweens.add({
-                targets: notification,
-                alpha: 0,
-                duration: 1000,
-                onComplete: () => notification.destroy()
-            });
-        });
+        // Update arrow position immediately
+        this.updateMagnetOrbIndicator();
+    }
+    
+    updateMagnetOrbIndicator() {
+        // Only update if indicator exists and magnet orb exists
+        if (!this.magnetOrbIndicator || !this.currentMagnetOrb || !this.currentMagnetOrb.active) {
+            this.hideMagnetOrbIndicator();
+            return;
+        }
+        
+        // Get camera bounds
+        const camera = this.scene.cameras.main;
+        const cameraCenter = {
+            x: camera.scrollX + camera.width / 2,
+            y: camera.scrollY + camera.height / 2
+        };
+        
+        // Calculate direction from camera center to magnet orb
+        const dx = this.currentMagnetOrb.x - cameraCenter.x;
+        const dy = this.currentMagnetOrb.y - cameraCenter.y;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+        
+        // Only show indicator if magnet orb is outside a certain range or off-screen
+        const indicatorRange = Math.min(camera.width, camera.height) * 0.4; // Show when orb is in outer 40% of screen
+        
+        if (distance < indicatorRange) {
+            // Magnet orb is close to center, hide indicator
+            this.magnetOrbIndicator.setVisible(false);
+            return;
+        }
+        
+        // Show indicator
+        this.magnetOrbIndicator.setVisible(true);
+        
+        // Calculate angle to magnet orb
+        const angle = Math.atan2(dy, dx);
+        
+        // Position arrow at edge of screen in direction of magnet orb
+        const margin = 50; // Distance from edge of screen
+        const edgeDistance = Math.min(camera.width / 2 - margin, camera.height / 2 - margin);
+        
+        const arrowX = camera.width / 2 + Math.cos(angle) * edgeDistance;
+        const arrowY = camera.height / 2 + Math.sin(angle) * edgeDistance;
+        
+        // Update arrow position and rotation
+        this.magnetOrbIndicator.setPosition(arrowX, arrowY);
+        this.magnetOrbIndicator.setRotation(angle + Math.PI / 2); // Adjust rotation so arrow points correctly
+    }
+    
+    hideMagnetOrbIndicator() {
+        if (this.magnetOrbIndicator) {
+            if (this.magnetOrbIndicatorTween) {
+                this.magnetOrbIndicatorTween.destroy();
+                this.magnetOrbIndicatorTween = null;
+            }
+            this.magnetOrbIndicator.destroy();
+            this.magnetOrbIndicator = null;
+        }
     }
     
     playerCollectMagnetOrb(player, magnetOrb) {
@@ -891,6 +944,10 @@ class EnemySystem {
             console.error('Error cleaning up magnet orb:', error);
         }
         
+        // Hide indicator when orb is collected
+        this.currentMagnetOrb = null;
+        this.hideMagnetOrbIndicator();
+        
         console.log(`Magnet orb collected ${orbsCollected} XP orbs for ${collectedXP} total XP`);
         console.log(`Player position after collection: (${player.x.toFixed(1)}, ${player.y.toFixed(1)})`);
     }
@@ -917,6 +974,10 @@ class EnemySystem {
             }
         });
         
+        // Clean up indicator as well
+        this.currentMagnetOrb = null;
+        this.hideMagnetOrbIndicator();
+        
         console.log(`Cleaned up ${magnetOrbs.length} magnet orbs`);
     }
 
@@ -924,6 +985,9 @@ class EnemySystem {
         this.updateEnemyAI();
         this.updateXPOrbMagnetism();
         this.updateEnemyRegeneration();
+        
+        // Update magnet orb indicator
+        this.updateMagnetOrbIndicator();
         
         // Check for level-based magnet orb spawning
         this.checkLevelMagnetOrbSpawn();
