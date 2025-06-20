@@ -238,20 +238,44 @@ class UISystem {
         });
         
         // Add the tileset
-        const tileset = this.scene.map.addTilesetImage('ground', 'tileset');
+        const tileset = this.scene.map.addTilesetImage('custom-tiles', 'tileset');
         
         // Create a blank layer
         const backgroundLayer = this.scene.map.createBlankLayer('Ground', tileset);
         
-        // Fill the map procedurally with a simple pattern
+        // Fill the map procedurally with your custom tiles (125 total tiles available)
         for (let y = 0; y < tilesHigh; y++) {
             for (let x = 0; x < tilesWide; x++) {
-                // Create a simple grass pattern with some variation
-                let tileIndex = 0; // Default grass tile
+                let tileIndex = 0; // Default tile
                 
-                // Add some variation (assuming tileset has multiple grass tiles)
-                if (Math.random() < 0.1) {
-                    tileIndex = Math.floor(Math.random() * 3); // Use tiles 0, 1, or 2 for variation
+                // Create zones with different tile sets for visual variety
+                const centerX = tilesWide / 2;
+                const centerY = tilesHigh / 2;
+                const distanceFromCenter = Math.sqrt((x - centerX) ** 2 + (y - centerY) ** 2);
+                const maxDistance = Math.sqrt(centerX ** 2 + centerY ** 2);
+                
+                // Zone-based tile selection using your 125 tiles
+                if (distanceFromCenter < maxDistance * 0.2) {
+                    // Center area - use tiles 0-24 (inner tiles)
+                    tileIndex = Math.floor(Math.random() * 25);
+                } else if (distanceFromCenter < maxDistance * 0.4) {
+                    // Inner ring - use tiles 25-49
+                    tileIndex = 25 + Math.floor(Math.random() * 25);
+                } else if (distanceFromCenter < maxDistance * 0.6) {
+                    // Middle ring - use tiles 50-74
+                    tileIndex = 50 + Math.floor(Math.random() * 25);
+                } else if (distanceFromCenter < maxDistance * 0.8) {
+                    // Outer ring - use tiles 75-99
+                    tileIndex = 75 + Math.floor(Math.random() * 25);
+                } else {
+                    // Edge areas - use tiles 100-124 (outer/border tiles)
+                    tileIndex = 100 + Math.floor(Math.random() * 25);
+                }
+                
+                // Add some randomness for natural variation
+                if (Math.random() < 0.05) {
+                    // 5% chance for completely random tile
+                    tileIndex = Math.floor(Math.random() * 125);
                 }
                 
                 backgroundLayer.putTileAt(tileIndex, x, y);

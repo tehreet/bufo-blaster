@@ -18,9 +18,9 @@ class GameScene extends Phaser.Scene {
     }
 
     preload() {
-        // Load tilemap assets
-        this.load.image('tileset', 'assets/map/tilemap.png');
-        this.load.tilemapTiledJSON('level1', 'assets/map/level1.json');
+        // Load custom tilemap assets
+        this.load.image('tileset', 'assets/map/custom-tileset.png');
+        this.load.tilemapTiledJSON('level1', 'assets/map/custom-level.json');
         
         // Load character sprites (static for collision, we'll overlay GIFs for animation)
         this.load.image('shield-bufo', 'assets/characters/shield-bufo.png');
