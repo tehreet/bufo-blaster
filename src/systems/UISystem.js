@@ -532,6 +532,23 @@ class UISystem {
             this.scene.shieldBashTimer.remove();
         }
         
+        // Clean up poison and bleed timers
+        if (this.scene.enemySystem) {
+            if (this.scene.enemySystem.poisonTimer) {
+                console.log('🦠 POISON: Cleaning up poison timer on game over');
+                this.scene.enemySystem.poisonTimer.remove();
+                this.scene.enemySystem.poisonTimer = null;
+            }
+            if (this.scene.enemySystem.bleedTimer) {
+                console.log('🩸 BLEED: Cleaning up bleed timer on game over');
+                this.scene.enemySystem.bleedTimer.remove();
+                this.scene.enemySystem.bleedTimer = null;
+            }
+            // Clear poison/bleed state
+            this.scene.enemySystem.clearPoisonEffect();
+            this.scene.enemySystem.clearBleedEffect();
+        }
+        
         // Hide debug UIs
         this.scene.debugUtils.hideStatsDebugUI();
         

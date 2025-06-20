@@ -196,6 +196,11 @@ class StatsSystem {
         
         console.log(`💔 DAMAGE: Player took ${actualDamage} damage (${amount} - ${this.playerStats.armor} armor). Health: ${this.playerStats.health}/${this.playerStats.maxHealth}${bypassInvincibility ? ' [DOT]' : ''}`);
         
+        // Show health change visually in debug
+        if (bypassInvincibility) {
+            console.log(`💔 DOT DAMAGE: Health changed from ${this.playerStats.health + actualDamage} → ${this.playerStats.health}`);
+        }
+        
         // Only trigger invincibility frames for regular damage, not damage over time
         if (!bypassInvincibility) {
             console.log(`💔 DAMAGE: Setting invincibility for 1000ms`);

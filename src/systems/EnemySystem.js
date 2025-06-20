@@ -632,13 +632,16 @@ class EnemySystem {
             callback: () => {
                 console.log(`🦠 POISON: Timer callback triggered! Tick ${currentTick + 1}/${poisonTicks}`);
                 
-                if (this.scene.statsSystem.getPlayerProgression().health > 0) {
-                    console.log(`🦠 POISON: Applying ${this.poisonDamage} damage (bypassing invincibility)`);
-                    this.scene.statsSystem.takeDamage(this.poisonDamage, true); // true = bypass invincibility
-                    console.log(`🦠 POISON: Poison damage: ${this.poisonDamage} (tick ${currentTick + 1}/${poisonTicks})`);
-                } else {
-                    console.log(`🦠 POISON: Player health is 0, skipping damage`);
+                // Check if game is still active and player is alive
+                if (!this.scene.gameStarted || this.scene.statsSystem.getPlayerProgression().health <= 0) {
+                    console.log(`🦠 POISON: Game ended or player dead, clearing poison effect`);
+                    this.clearPoisonEffect();
+                    return;
                 }
+                
+                console.log(`🦠 POISON: Applying ${this.poisonDamage} damage (bypassing invincibility)`);
+                this.scene.statsSystem.takeDamage(this.poisonDamage, true); // true = bypass invincibility
+                console.log(`🦠 POISON: Poison damage: ${this.poisonDamage} (tick ${currentTick + 1}/${poisonTicks})`);
                 
                 currentTick++;
                 // Clear effect after all ticks are complete
@@ -712,13 +715,16 @@ class EnemySystem {
             callback: () => {
                 console.log(`🩸 BLEED: Timer callback triggered! Tick ${currentTick + 1}/${bleedTicks}`);
                 
-                if (this.scene.statsSystem.getPlayerProgression().health > 0) {
-                    console.log(`🩸 BLEED: Applying ${this.bleedDamage} damage (bypassing invincibility)`);
-                    this.scene.statsSystem.takeDamage(this.bleedDamage, true); // true = bypass invincibility
-                    console.log(`🩸 BLEED: Bleed damage: ${this.bleedDamage} (tick ${currentTick + 1}/${bleedTicks})`);
-                } else {
-                    console.log(`🩸 BLEED: Player health is 0, skipping damage`);
+                // Check if game is still active and player is alive
+                if (!this.scene.gameStarted || this.scene.statsSystem.getPlayerProgression().health <= 0) {
+                    console.log(`🩸 BLEED: Game ended or player dead, clearing bleed effect`);
+                    this.clearBleedEffect();
+                    return;
                 }
+                
+                console.log(`🩸 BLEED: Applying ${this.bleedDamage} damage (bypassing invincibility)`);
+                this.scene.statsSystem.takeDamage(this.bleedDamage, true); // true = bypass invincibility
+                console.log(`🩸 BLEED: Bleed damage: ${this.bleedDamage} (tick ${currentTick + 1}/${bleedTicks})`);
                 
                 currentTick++;
                 // Clear effect after all ticks are complete
