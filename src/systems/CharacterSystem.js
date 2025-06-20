@@ -193,18 +193,20 @@ class CharacterSystem {
         let targetAngle = 0; // Default direction (right)
         let closestDistance = Infinity;
         
-        this.scene.enemies.children.entries.forEach(enemy => {
-            if (!enemy || !enemy.active || !enemy.body || !enemy.scene) return;
-            const distance = Phaser.Math.Distance.Between(
-                this.scene.player.x, this.scene.player.y, enemy.x, enemy.y
-            );
+        const enemies = this.scene.enemies.children.entries;
+        const playerX = this.scene.player.x;
+        const playerY = this.scene.player.y;
+        
+        for (let i = 0, len = enemies.length; i < len; i++) {
+            const enemy = enemies[i];
+            if (!enemy || !enemy.active || !enemy.body || !enemy.scene) continue;
+            
+            const distance = Phaser.Math.Distance.Between(playerX, playerY, enemy.x, enemy.y);
             if (distance < closestDistance) {
                 closestDistance = distance;
-                targetAngle = Phaser.Math.Angle.Between(
-                    this.scene.player.x, this.scene.player.y, enemy.x, enemy.y
-                );
+                targetAngle = Phaser.Math.Angle.Between(playerX, playerY, enemy.x, enemy.y);
             }
-        });
+        }
         
         // Create boomerang projectile (bigger and slower)
         const boomerang = this.scene.add.rectangle(this.scene.player.x, this.scene.player.y, 32, 16, 0x8B4513);
@@ -269,16 +271,19 @@ class CharacterSystem {
         
         let enemiesHit = 0;
         
-        // Find enemies within bash range (simplified to circular range like original aura)
+        // Find enemies within bash range - optimized for loop
         const enemies = this.scene.enemies.children.entries || [];
-        enemies.forEach(enemy => {
-            // Enhanced safety checks
-            if (!enemy || !enemy.active || !enemy.body || !enemy.scene) return;
-            if (typeof enemy.x !== 'number' || typeof enemy.y !== 'number') return;
-            if (!this.scene.player || typeof this.scene.player.x !== 'number' || typeof this.scene.player.y !== 'number') return;
+        const playerX = this.scene.player.x;
+        const playerY = this.scene.player.y;
+        
+        for (let i = 0, len = enemies.length; i < len; i++) {
+            const enemy = enemies[i];
             
-            const playerX = this.scene.player.x;
-            const playerY = this.scene.player.y;
+            // Enhanced safety checks
+            if (!enemy || !enemy.active || !enemy.body || !enemy.scene) continue;
+            if (typeof enemy.x !== 'number' || typeof enemy.y !== 'number') continue;
+            if (typeof playerX !== 'number' || typeof playerY !== 'number') continue;
+            
             const enemyX = enemy.x;
             const enemyY = enemy.y;
             
@@ -353,7 +358,7 @@ class CharacterSystem {
                     Logger.error('Shield bash visual feedback error:', error);
                 }
             }
-        });
+        }
     }
 
     updateCharacterAbilities() {
@@ -608,28 +613,35 @@ class CharacterSystem {
             onComplete: () => aoeEffect.destroy()
         });
         
-        // Find all enemies within AOE radius and damage them
-        this.scene.enemies.children.entries.forEach(enemy => {
-            if (!enemy || !enemy.active || !enemy.body || !enemy.scene) return;
+        // Find all enemies within AOE radius and damage them - optimized for loop
+        const enemies = this.scene.enemies.children.entries;
+        for (let i = 0, len = enemies.length; i < len; i++) {
+            const enemy = enemies[i];
+            if (!enemy || !enemy.active || !enemy.body || !enemy.scene) continue;
             
             const distance = Phaser.Math.Distance.Between(impactX, impactY, enemy.x, enemy.y);
             if (distance <= aoeRadius) {
                 // Deal damage
                 this.scene.enemySystem.damageEnemy(enemy, damage);
             }
-        });
+        }
     }
 
 
 
     updateBoomerangs() {
-        if (!this.scene.boomerangs) return;
+        if (!this.scene.boomerangs || !this.scene.player) return;
         
-        const activeBoomerangs = this.scene.boomerangs.children.entries.filter(boomerang => 
-            boomerang && boomerang.active && boomerang.scene
-        );
+        const boomerangs = this.scene.boomerangs.children.entries;
+        const playerX = this.scene.player.x;
+        const playerY = this.scene.player.y;
         
-        activeBoomerangs.forEach(boomerang => {
+        for (let i = 0, len = boomerangs.length; i < len; i++) {
+            const boomerang = boomerangs[i];
+            
+            // Fast validation checks
+            if (!boomerang || !boomerang.active || !boomerang.scene) continue;
+            
             try {
                 // Rotate boomerang for visual effect
                 boomerang.rotation += 0.3;
@@ -658,14 +670,7 @@ class CharacterSystem {
                     }
                 } else {
                     // Return flight - move towards player
-                    if (!this.scene.player) {
-                        boomerang.destroy();
-                        return;
-                    }
-                    
-                    const angleToPlayer = Phaser.Math.Angle.Between(
-                        boomerang.x, boomerang.y, this.scene.player.x, this.scene.player.y
-                    );
+                    const angleToPlayer = Phaser.Math.Angle.Between(boomerang.x, boomerang.y, playerX, playerY);
                     
                     const moveX = Math.cos(angleToPlayer) * boomerang.speed;
                     const moveY = Math.sin(angleToPlayer) * boomerang.speed;
@@ -683,28 +688,27 @@ class CharacterSystem {
                     }
                     
                     // Check if returned to player
-                    const distanceToPlayer = Phaser.Math.Distance.Between(
-                        boomerang.x, boomerang.y, this.scene.player.x, this.scene.player.y
-                    );
+                    const distanceToPlayer = Phaser.Math.Distance.Between(boomerang.x, boomerang.y, playerX, playerY);
                     
                     if (distanceToPlayer < 32) { // Increased catch radius
                         // Boomerang caught by player
                         boomerang.destroy();
-                        return;
+                        continue;
                     }
                 }
                 
             } catch (error) {
                 Logger.error('Boomerang update error:', error);
             }
-        });
+        }
     }
     
     updateStunnedEnemies() {
         if (!this.scene.stunnedEnemies) return;
         
         const currentTime = this.scene.time.now;
-        this.scene.stunnedEnemies.forEach(enemy => {
+        // Use Set iterator for better performance with Set.delete()
+        for (const enemy of this.scene.stunnedEnemies) {
             if (!enemy || !enemy.active || !enemy.scene || currentTime > enemy.stunEndTime) {
                 // Remove stun effect
                 if (enemy.clearTint) {
@@ -712,7 +716,7 @@ class CharacterSystem {
                 }
                 this.scene.stunnedEnemies.delete(enemy);
             }
-        });
+        }
     }
 
     starfallHitEnemy(starfall, enemy) {

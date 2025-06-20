@@ -261,10 +261,10 @@ class AssetManager {
     }
 
     updateAllOverlays() {
-        // Update all overlay positions
-        this.animatedOverlays.forEach((overlay, gameObject) => {
+        // Update all overlay positions - optimized iteration
+        for (const [gameObject, overlay] of this.animatedOverlays) {
             this.updateAnimatedOverlay(gameObject);
-        });
+        }
     }
 
     getOverlayCount() {

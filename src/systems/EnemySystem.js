@@ -525,33 +525,38 @@ class EnemySystem {
 
     updateEnemyAI() {
         // Return early if enemies group doesn't exist yet
-        if (!this.scene.enemies) return;
+        if (!this.scene.enemies || !this.scene.player) return;
         
-        // Update enemy movement and behavior
-        const activeEnemies = this.scene.enemies.children.entries.filter(enemy => enemy && enemy.active && enemy.body && enemy.scene);
+        // Update enemy movement and behavior - optimized for loop
+        const enemies = this.scene.enemies.children.entries;
+        const currentTime = this.scene.time.now;
+        const playerX = this.scene.player.x;
+        const playerY = this.scene.player.y;
         
-        activeEnemies.forEach(enemy => {
-            // Check if enemy is currently being knocked back
-            if (enemy.knockbackTime && this.scene.time.now < enemy.knockbackTime) {
-                // Skip AI movement while being knocked back
-                // Enemy in knockback state, skip AI movement
-                return;
-            }
+        for (let i = 0, len = enemies.length; i < len; i++) {
+            const enemy = enemies[i];
             
-            let angle, speed = enemy.speed / 50; // Scale down for Matter.js
+            // Fast validation checks
+            if (!enemy || !enemy.active || !enemy.body || !enemy.scene) continue;
+            
+            // Check if enemy is currently being knocked back
+            if (enemy.knockbackTime && currentTime < enemy.knockbackTime) {
+                continue; // Skip AI movement while being knocked back
+            }
             
             // Check if enemy is stunned
             if (this.scene.stunnedEnemies && this.scene.stunnedEnemies.has(enemy)) {
-                // Stunned enemies don't move
-                return;
+                continue; // Stunned enemies don't move
             }
+            
+            const speed = enemy.speed / 50; // Scale down for Matter.js
             
             // Handle special AI behaviors
             if (enemy.enemyType.specialEffect === 'ranged') {
                 this.handleRangedEnemyAI(enemy);
             } else {
                 // Normal chase AI - move towards player
-                angle = Phaser.Math.Angle.Between(enemy.x, enemy.y, this.scene.player.x, this.scene.player.y);
+                const angle = Phaser.Math.Angle.Between(enemy.x, enemy.y, playerX, playerY);
                 
                 try {
                     this.scene.matter.body.setVelocity(enemy.body, {
@@ -559,7 +564,7 @@ class EnemySystem {
                         y: Math.sin(angle) * speed
                     });
                 } catch (error) {
-                    console.error('Error setting enemy velocity:', error);
+                    Logger.error('Enemy velocity error:', error);
                 }
             }
             
@@ -571,27 +576,29 @@ class EnemySystem {
             
             // Update animated overlay position
             this.scene.assetManager.updateAnimatedOverlay(enemy);
-        });
+        }
     }
 
     updateXPOrbMagnetism() {
         // Return early if XP orbs group doesn't exist yet or player stats not initialized
-        if (!this.scene.xpOrbs || !this.scene.statsSystem.getPlayerStats()) return;
+        if (!this.scene.xpOrbs || !this.scene.statsSystem.getPlayerStats() || !this.scene.player) return;
         
-        // XP Orb magnetism using Matter.js (use pickup range stat)
-        const activeOrbs = this.scene.xpOrbs.children.entries.filter(orb => 
-            orb && orb.active && orb.body && orb.scene && !orb.beingCollected && !orb.isMagnetOrb
-        );
+        // XP Orb magnetism using Matter.js - optimized for loop
+        const orbs = this.scene.xpOrbs.children.entries;
         const pickupRange = this.scene.statsSystem.getPlayerStats().pickupRange;
+        const playerX = this.scene.player.x;
+        const playerY = this.scene.player.y;
+        const speed = this.scene.gameConfig.XP_ORB_MAGNET_SPEED / 50; // Scale down for Matter.js
         
-        activeOrbs.forEach(orb => {
-            // Additional safety check for body existence and collection status
-            if (!orb.body || orb.beingCollected) return;
+        for (let i = 0, len = orbs.length; i < len; i++) {
+            const orb = orbs[i];
             
-            const distance = Phaser.Math.Distance.Between(this.scene.player.x, this.scene.player.y, orb.x, orb.y);
+            // Fast validation checks
+            if (!orb || !orb.active || !orb.body || !orb.scene || orb.beingCollected || orb.isMagnetOrb) continue;
+            
+            const distance = Phaser.Math.Distance.Between(playerX, playerY, orb.x, orb.y);
             if (distance < pickupRange) {
-                const angle = Phaser.Math.Angle.Between(orb.x, orb.y, this.scene.player.x, this.scene.player.y);
-                const speed = this.scene.gameConfig.XP_ORB_MAGNET_SPEED / 50; // Scale down for Matter.js
+                const angle = Phaser.Math.Angle.Between(orb.x, orb.y, playerX, playerY);
                 
                 try {
                     this.scene.matter.body.setVelocity(orb.body, {
@@ -599,10 +606,10 @@ class EnemySystem {
                         y: Math.sin(angle) * speed
                     });
                 } catch (error) {
-                    console.error('Error setting orb velocity:', error);
+                    Logger.error('Orb velocity error:', error);
                 }
             }
-        });
+        }
     }
     
     updateEnemyRegeneration() {
@@ -610,10 +617,14 @@ class EnemySystem {
         if (!this.scene.enemies) return;
         
         const currentTime = this.scene.time.now;
-        const activeEnemies = this.scene.enemies.children.entries.filter(enemy => 
-            enemy && enemy.active && enemy.scene && enemy.healthRegen);
+        const enemies = this.scene.enemies.children.entries;
         
-        activeEnemies.forEach(enemy => {
+        for (let i = 0, len = enemies.length; i < len; i++) {
+            const enemy = enemies[i];
+            
+            // Fast validation checks - only process enemies with regen
+            if (!enemy || !enemy.active || !enemy.scene || !enemy.healthRegen) continue;
+            
             // Regenerate health every second
             if (currentTime - enemy.lastRegenTime >= 1000) {
                 enemy.lastRegenTime = currentTime;
@@ -636,7 +647,7 @@ class EnemySystem {
                     });
                 }
             }
-        });
+        }
     }
 
     applyPoisonEffect() {
