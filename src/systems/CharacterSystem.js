@@ -137,7 +137,7 @@ class CharacterSystem {
             loop: true
         });
         
-        console.log('Shield Bufo shield bash ability setup complete');
+
     }
 
     setupWizardStarfall() {
@@ -147,7 +147,7 @@ class CharacterSystem {
         this.scene.lastStarfallTime = 0;
         this.scene.starfallCooldown = statsSystem.getPlayerStats().abilityCooldown;
         
-        console.log('Wizard Bufo starfall ability setup complete');
+
     }
 
     setupBatBoomerang() {
@@ -156,7 +156,7 @@ class CharacterSystem {
         this.scene.lastBoomerangTime = 0;
         this.scene.stunnedEnemies = new Set(); // Track stunned enemies
         
-        console.log('Bat Bufo boomerang ability setup complete');
+
     }
 
     updateBatBoomerang() {
@@ -229,13 +229,6 @@ class CharacterSystem {
         boomerang.hitEnemies = new Set(); // Track which enemies were already hit
         
         this.scene.boomerangs.add(boomerang);
-        
-        console.log('Boomerang thrown!', { 
-            targetAngle: targetAngle, 
-            range: boomerangRange, 
-            startPos: `(${boomerang.startX}, ${boomerang.startY})`,
-            closestEnemyDistance: closestDistance 
-        });
     }
 
     applyShieldBash() {
@@ -379,7 +372,6 @@ class CharacterSystem {
 
     updateCharacterAbilities() {
         if (!this.selectedCharacter) {
-            console.log('updateCharacterAbilities: no selected character');
             return;
         }
 
@@ -480,10 +472,7 @@ class CharacterSystem {
         const currentTime = this.scene.time.now;
         const starCount = this.scene.starfallProjectiles.children.entries.length;
         
-        // Debug log to see if function is running and how many stars exist
-        if (starCount > 0) {
-            console.log(`updateStarfallProjectiles running: ${starCount} stars active`);
-        }
+
         
         for (let i = this.scene.starfallProjectiles.children.entries.length - 1; i >= 0; i--) {
             const star = this.scene.starfallProjectiles.children.entries[i];
@@ -668,14 +657,10 @@ class CharacterSystem {
             boomerang && boomerang.active && boomerang.scene
         );
         
-        console.log(`Updating ${activeBoomerangs.length} boomerangs`);
-        
         activeBoomerangs.forEach(boomerang => {
             try {
                 // Rotate boomerang for visual effect
                 boomerang.rotation += 0.3;
-                
-                console.log(`Boomerang status: returning=${boomerang.returning}, distance=${boomerang.currentDistance}/${boomerang.maxDistance}, pos=(${boomerang.x.toFixed(1)}, ${boomerang.y.toFixed(1)})`);
                 
                 if (!boomerang.returning) {
                     // Outward flight - use FIXED angle
@@ -686,24 +671,26 @@ class CharacterSystem {
                     boomerang.y += moveY;
                     boomerang.currentDistance += boomerang.speed;
                     
-                    console.log(`Moving outward: fixedAngle=${boomerang.fixedAngle.toFixed(2)}, move=(${moveX.toFixed(1)}, ${moveY.toFixed(1)})`);
-                    
                     // Update physics body position to match visual
                     if (boomerang.body) {
                         try {
                             this.scene.matter.body.setPosition(boomerang.body, { x: boomerang.x, y: boomerang.y });
                         } catch (error) {
-                            console.error('Error setting boomerang outward position:', error);
+                            // Silently handle physics errors
                         }
                     }
                     
                     // Check if reached max distance
                     if (boomerang.currentDistance >= boomerang.maxDistance) {
                         boomerang.returning = true;
-                        console.log('Boomerang returning');
                     }
                 } else {
                     // Return flight - move towards player
+                    if (!this.scene.player) {
+                        boomerang.destroy();
+                        return;
+                    }
+                    
                     const angleToPlayer = Phaser.Math.Angle.Between(
                         boomerang.x, boomerang.y, this.scene.player.x, this.scene.player.y
                     );
@@ -714,14 +701,12 @@ class CharacterSystem {
                     boomerang.x += moveX;
                     boomerang.y += moveY;
                     
-                    console.log(`Returning to player: angle=${angleToPlayer.toFixed(2)}, move=(${moveX.toFixed(1)}, ${moveY.toFixed(1)})`);
-                    
                     // Update physics body position to match visual
                     if (boomerang.body) {
                         try {
                             this.scene.matter.body.setPosition(boomerang.body, { x: boomerang.x, y: boomerang.y });
                         } catch (error) {
-                            console.error('Error setting boomerang return position:', error);
+                            // Silently handle physics errors
                         }
                     }
                     
@@ -730,21 +715,15 @@ class CharacterSystem {
                         boomerang.x, boomerang.y, this.scene.player.x, this.scene.player.y
                     );
                     
-                    console.log(`Distance to player: ${distanceToPlayer.toFixed(1)}`);
-                    
                     if (distanceToPlayer < 32) { // Increased catch radius
                         // Boomerang caught by player
-                        console.log('Boomerang caught by player');
                         boomerang.destroy();
                         return;
                     }
                 }
                 
-                // Physics collision detection handles enemy hits now
-                // No need for manual collision detection
-                
             } catch (error) {
-                console.error('Error updating boomerang:', error, boomerang);
+                console.error('Error updating boomerang:', error);
             }
         });
     }
@@ -760,7 +739,6 @@ class CharacterSystem {
                     enemy.clearTint();
                 }
                 this.scene.stunnedEnemies.delete(enemy);
-                console.log('Enemy stun expired');
             }
         });
     }
@@ -800,38 +778,56 @@ class CharacterSystem {
 
     boomerangHitEnemy(boomerang, enemy) {
         try {
-            console.log('boomerangHitEnemy called with:', {
-                boomerang: !!boomerang,
-                enemy: !!enemy,
-                characterId: this.selectedCharacter?.id
-            });
+            // Comprehensive null/undefined checks BEFORE accessing any properties
+            if (!boomerang || !enemy) {
+                console.warn('boomerangHitEnemy: null/undefined objects passed');
+                return;
+            }
             
-            // Enhanced safety checks
+            // Check if objects have the expected structure
+            if (typeof boomerang !== 'object' || typeof enemy !== 'object') {
+                console.warn('boomerangHitEnemy: invalid object types');
+                return;
+            }
+            
+            // Enhanced safety checks with property existence verification
             if (!this.selectedCharacter || this.selectedCharacter.id !== 'bat') {
-                console.log('Not bat character, skipping boomerang hit');
-                return;
+                return; // Silently ignore if not bat character
             }
-            if (!boomerang || !enemy || !boomerang.active || !enemy.active) {
-                console.log('Invalid boomerang or enemy objects');
-                return;
+            
+            // Check active state safely
+            if (!boomerang.hasOwnProperty('active') || !enemy.hasOwnProperty('active') || 
+                !boomerang.active || !enemy.active) {
+                return; // Objects are being destroyed
             }
-            if (!enemy.body || !enemy.scene || !boomerang.scene) {
-                console.log('Missing body or scene references');
-                return;
+            
+            // Check scene references safely
+            if (!enemy.hasOwnProperty('scene') || !boomerang.hasOwnProperty('scene') || 
+                !enemy.scene || !boomerang.scene) {
+                return; // Objects removed from scene
             }
-            if (typeof enemy.x !== 'number' || typeof enemy.y !== 'number') {
-                console.log('Invalid enemy position');
-                return;
+            
+            // Check body existence safely (enemy.body is critical for physics)
+            if (!enemy.hasOwnProperty('body') || !enemy.body) {
+                return; // Enemy physics body destroyed
             }
-            if (typeof boomerang.x !== 'number' || typeof boomerang.y !== 'number') {
-                console.log('Invalid boomerang position');
-                return;
+            
+            // Check position properties exist and are valid numbers
+            if (!enemy.hasOwnProperty('x') || !enemy.hasOwnProperty('y') ||
+                typeof enemy.x !== 'number' || typeof enemy.y !== 'number' ||
+                !isFinite(enemy.x) || !isFinite(enemy.y)) {
+                return; // Invalid enemy position
+            }
+            
+            if (!boomerang.hasOwnProperty('x') || !boomerang.hasOwnProperty('y') ||
+                typeof boomerang.x !== 'number' || typeof boomerang.y !== 'number' ||
+                !isFinite(boomerang.x) || !isFinite(boomerang.y)) {
+                return; // Invalid boomerang position
             }
             
             // Check if this enemy was already hit by this boomerang
             if (boomerang.hitEnemies && boomerang.hitEnemies.has(enemy)) {
-                console.log('Enemy already hit by this boomerang');
-                return;
+                return; // Already hit
             }
             
             // Mark this enemy as hit by this boomerang
@@ -857,16 +853,18 @@ class CharacterSystem {
                 enemy.setTint(0x0080FF);
             }
             
-            // Light knockback
-            const angle = Phaser.Math.Angle.Between(boomerang.x, boomerang.y, enemy.x, enemy.y);
-            if (enemy.body && this.scene.matter && this.scene.matter.body) {
-                this.scene.matter.body.setVelocity(enemy.body, {
-                    x: Math.cos(angle) * 2,
-                    y: Math.sin(angle) * 2
-                });
+            // Light knockback with safe angle calculation
+            try {
+                const angle = Phaser.Math.Angle.Between(boomerang.x, boomerang.y, enemy.x, enemy.y);
+                if (enemy.body && this.scene.matter && this.scene.matter.body && isFinite(angle)) {
+                    this.scene.matter.body.setVelocity(enemy.body, {
+                        x: Math.cos(angle) * 2,
+                        y: Math.sin(angle) * 2
+                    });
+                }
+            } catch (knockbackError) {
+                // Silently ignore knockback errors
             }
-            
-            console.log('Boomerang hit enemy successfully - stunned for 1 second');
             
         } catch (error) {
             console.error('Error in boomerangHitEnemy:', error);
