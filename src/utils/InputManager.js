@@ -290,26 +290,38 @@ class InputManager {
         let velocityY = 0;
         
         if (this.cursors.left.isDown || this.wasd.A.isDown) {
-            velocityX = -this.scene.statsSystem.getPlayerStats().speed;
+            velocityX = -1;
         } else if (this.cursors.right.isDown || this.wasd.D.isDown) {
-            velocityX = this.scene.statsSystem.getPlayerStats().speed;
+            velocityX = 1;
         }
         
         if (this.cursors.up.isDown || this.wasd.W.isDown) {
-            velocityY = -this.scene.statsSystem.getPlayerStats().speed;
+            velocityY = -1;
         } else if (this.cursors.down.isDown || this.wasd.S.isDown) {
-            velocityY = this.scene.statsSystem.getPlayerStats().speed;
+            velocityY = 1;
         }
         
-        // Gamepad movement
+        // Gamepad movement (analog stick already provides normalized input)
         if (this.gamepadState.connected && this.gamepadState.pad) {
             const leftStick = this.gamepadState.pad.leftStick;
             if (leftStick && (Math.abs(leftStick.x) > this.gamepadState.deadzone || Math.abs(leftStick.y) > this.gamepadState.deadzone)) {
-                const speed = this.scene.statsSystem.getPlayerStats().speed;
-                velocityX = leftStick.x * speed;
-                velocityY = leftStick.y * speed;
+                velocityX = leftStick.x;
+                velocityY = leftStick.y;
             }
         }
+        
+        // Normalize diagonal movement to prevent speed boost
+        if (velocityX !== 0 && velocityY !== 0) {
+            // Diagonal movement: normalize the vector to maintain consistent speed
+            const magnitude = Math.sqrt(velocityX * velocityX + velocityY * velocityY);
+            velocityX = velocityX / magnitude;
+            velocityY = velocityY / magnitude;
+        }
+        
+        // Apply speed scaling after normalization
+        const playerSpeed = this.scene.statsSystem.getPlayerStats().speed;
+        velocityX *= playerSpeed;
+        velocityY *= playerSpeed;
         
         // Handle character direction based on horizontal movement
         this.updateCharacterDirection(velocityX);
