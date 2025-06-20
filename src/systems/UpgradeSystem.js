@@ -59,9 +59,9 @@ class UpgradeSystem {
             { id: 'speed', name: '+30% Move Speed', description: 'Increases movement speed by 30%', type: 'generic', statType: 'speed',
               effect: () => this.scene.statsSystem.multiplyStats('moveSpeedMultiplier', 1.3) },
             
-            // Ability upgrades
-            { id: 'damage', name: '+50% Ability Damage', description: 'Increases ability damage by 50%', type: 'generic', statType: 'damage',
-              effect: () => this.scene.statsSystem.multiplyStats('abilityDamageMultiplier', 1.5) },
+            // Ability upgrades (reduced by 75%)
+            { id: 'damage', name: '+12.5% Ability Damage', description: 'Increases ability damage by 12.5%', type: 'generic', statType: 'damage',
+              effect: () => this.scene.statsSystem.multiplyStats('abilityDamageMultiplier', 1.125) },
             { id: 'cooldown', name: '-30% Ability Cooldown', description: 'Reduces ability cooldown by 30%', type: 'generic', statType: 'cooldown',
               effect: () => this.scene.statsSystem.multiplyStats('abilityCooldownMultiplier', 0.7) },
             { id: 'radius', name: '+40% Ability Radius', description: 'Increases ability area of effect by 40%', type: 'generic', statType: 'radius',
@@ -85,8 +85,8 @@ class UpgradeSystem {
         switch(character.id) {
             case 'shield':
                 return [
-                    { id: 'shield_bash_power', name: 'Shield Slam', description: 'Shield bash damage increased by 100%', type: 'character', statType: 'damage',
-                      effect: () => this.scene.statsSystem.multiplyStats('abilityDamageMultiplier', 2.0) },
+                    { id: 'shield_bash_power', name: 'Shield Slam', description: 'Shield bash damage increased by 25%', type: 'character', statType: 'damage',
+                      effect: () => this.scene.statsSystem.multiplyStats('abilityDamageMultiplier', 1.25) },
                     { id: 'shield_bash_speed', name: 'Rapid Bash', description: 'Shield bash triggers 40% faster', type: 'character', statType: 'cooldown',
                       effect: () => this.scene.statsSystem.multiplyStats('abilityCooldownMultiplier', 0.6) },
                     { id: 'shield_bash_range', name: 'Shield Sweep', description: 'Shield bash range increased by 50%', type: 'character', statType: 'radius',
@@ -104,8 +104,8 @@ class UpgradeSystem {
                 return [
                     { id: 'wizard_more_stars', name: 'Meteor Shower', description: '+3 stars per cast', type: 'character', statType: 'unique',
                       effect: () => this.scene.statsSystem.addStatBonus('projectileCountBonus', 3) },
-                    { id: 'wizard_star_power', name: 'Stellar Power', description: 'Star damage increased by 75%', type: 'character', statType: 'damage',
-                      effect: () => this.scene.statsSystem.multiplyStats('abilityDamageMultiplier', 1.75) },
+                    { id: 'wizard_star_power', name: 'Stellar Power', description: 'Star damage increased by 18.75%', type: 'character', statType: 'damage',
+                      effect: () => this.scene.statsSystem.multiplyStats('abilityDamageMultiplier', 1.1875) },
                     { id: 'wizard_star_size', name: 'Greater Impact', description: 'Star explosion radius increased by 50%', type: 'character', statType: 'radius',
                       effect: () => this.scene.statsSystem.multiplyStats('abilityRadiusMultiplier', 1.5) },
                     { id: 'wizard_rapid_cast', name: 'Arcane Haste', description: 'Starfall cooldown reduced by 40%', type: 'character', statType: 'cooldown',
@@ -114,8 +114,8 @@ class UpgradeSystem {
                 
             case 'bat':
                 return [
-                    { id: 'bat_power', name: 'Sharpened Boomerang', description: 'Boomerang damage increased by 100%', type: 'character', statType: 'damage',
-                      effect: () => this.scene.statsSystem.multiplyStats('abilityDamageMultiplier', 2.0) },
+                    { id: 'bat_power', name: 'Sharpened Boomerang', description: 'Boomerang damage increased by 25%', type: 'character', statType: 'damage',
+                      effect: () => this.scene.statsSystem.multiplyStats('abilityDamageMultiplier', 1.25) },
                     { id: 'bat_speed', name: 'Quick Throw', description: 'Boomerang cooldown reduced by 40%', type: 'character', statType: 'cooldown',
                       effect: () => this.scene.statsSystem.multiplyStats('abilityCooldownMultiplier', 0.6) },
                     { id: 'bat_range', name: 'Aerodynamic Design', description: 'Boomerang range increased by 50%', type: 'character', statType: 'radius',
@@ -341,8 +341,6 @@ class UpgradeSystem {
         this.generateUpgradeChoices();
         this.createUpgradeUI();
     }
-
-
 
     closeUpgradeUI() {
         // Clear upgrade UI
