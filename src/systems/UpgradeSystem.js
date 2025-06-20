@@ -55,10 +55,6 @@ class UpgradeSystem {
             { id: 'regen', name: '+1 Health Regen', description: 'Regenerates 1 health per second', type: 'generic', statType: 'regen',
               effect: () => this.scene.statsSystem.addStatBonus('healthRegenBonus', 1) },
             
-            // Movement upgrades
-            { id: 'speed', name: '+30% Move Speed', description: 'Increases movement speed by 30%', type: 'generic', statType: 'speed',
-              effect: () => this.scene.statsSystem.multiplyStats('moveSpeedMultiplier', 1.3) },
-            
             // Ability upgrades (reduced by 75%)
             { id: 'damage', name: '+12.5% Ability Damage', description: 'Increases ability damage by 12.5%', type: 'generic', statType: 'damage',
               effect: () => this.scene.statsSystem.multiplyStats('abilityDamageMultiplier', 1.125) },
