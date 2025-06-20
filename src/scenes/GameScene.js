@@ -9,6 +9,7 @@ import UISystem from '../systems/UISystem.js';
 import StatusEffectSystem from '../systems/StatusEffectSystem.js';
 import InputManager from '../utils/InputManager.js';
 import AssetManager from '../utils/AssetManager.js';
+import AudioManager from '../utils/AudioManager.js';
 import DebugUtils from '../utils/DebugUtils.js';
 
 class GameScene extends Phaser.Scene {
@@ -79,6 +80,7 @@ class GameScene extends Phaser.Scene {
         // Utility systems
         this.inputManager = new InputManager(this);
         this.assetManager = new AssetManager(this);
+        this.audioManager = new AudioManager(this);
         this.debugUtils = new DebugUtils(this);
         
         // Legacy properties for compatibility (some systems still reference these directly)

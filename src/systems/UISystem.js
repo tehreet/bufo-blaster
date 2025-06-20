@@ -135,8 +135,7 @@ class UISystem {
     }
 
     startGame() {
-        // Clean up all animated overlays from character selection
-        this.scene.assetManager.cleanupAllOverlays();
+        console.log('Starting game...');
         
         // Clear character selection UI
         this.scene.children.removeAll();
@@ -152,6 +151,11 @@ class UISystem {
         
         // Create game UI
         this.createGameUI();
+        
+        // Start background music
+        if (this.scene.audioManager) {
+            this.scene.audioManager.onGameStart();
+        }
         
         console.log('Game started with character:', this.scene.characterSystem.getSelectedCharacter().name);
     }
@@ -443,6 +447,12 @@ class UISystem {
     pauseGame() {
         this.isPaused = true;
         this.scene.matter.world.enabled = false; // Pause physics
+        
+        // Pause background music
+        if (this.scene.audioManager) {
+            this.scene.audioManager.onGamePause();
+        }
+        
         this.showPauseUI();
         console.log('Game paused');
     }
@@ -450,6 +460,12 @@ class UISystem {
     resumeGame() {
         this.isPaused = false;
         this.scene.matter.world.enabled = true; // Resume physics
+        
+        // Resume background music
+        if (this.scene.audioManager) {
+            this.scene.audioManager.onGameResume();
+        }
+        
         this.hidePauseUI();
         console.log('Game resumed');
     }
@@ -527,6 +543,11 @@ class UISystem {
         // Clean up status effects
         if (this.scene.statusEffectSystem) {
             this.scene.statusEffectSystem.cleanup();
+        }
+        
+        // Handle game over music (keep playing by default)
+        if (this.scene.audioManager) {
+            this.scene.audioManager.onGameOver();
         }
         
         // Clean up animated overlays
