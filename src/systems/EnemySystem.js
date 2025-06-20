@@ -10,9 +10,9 @@ class EnemySystem {
         this.poisonDamage = 6; // 6 damage per tick (was 2)
         this.poisonTickInterval = 800; // 0.8 seconds between damage ticks (was 1.0)
         
-        // XP Magnet Orb system
+        // XP Magnet Orb system - MUCH MORE RARE
         this.lastMagnetOrbLevel = 0; // Track last level where magnet orb was spawned
-        this.magnetOrbKillChance = 0.015; // 1.5% chance per enemy kill
+        this.magnetOrbKillChance = 0.005; // 0.5% chance per enemy kill (was 1.5% - reduced by 75%)
         
         // Enemy type definitions (hitbox radii matched to player's 12.5% sprite ratio)
         this.enemyTypes = [
@@ -637,9 +637,15 @@ class EnemySystem {
     }
 
     checkMagnetOrbSpawn(x, y) {
-        // Random chance spawn on enemy kill
+        // Only spawn if no magnet orb already exists on map
+        if (this.isMagnetOrbAlreadyOnMap()) {
+            console.log('Magnet orb spawn blocked - one already exists on map');
+            return; // Don't spawn another one
+        }
+        
+        // Random chance spawn on enemy kill (much rarer now)
         if (Math.random() < this.magnetOrbKillChance) {
-            console.log('XP Magnet Orb spawned by random chance!');
+            console.log('RARE XP Magnet Orb spawned by random chance! (0.5% chance)');
             this.spawnMagnetOrb(x, y);
         }
     }
@@ -647,8 +653,14 @@ class EnemySystem {
     checkLevelMagnetOrbSpawn() {
         const currentLevel = this.scene.statsSystem.getPlayerProgression().level;
         
-        // Spawn magnet orb every 3 levels (3, 6, 9, etc.)
-        if (currentLevel % 3 === 0 && currentLevel > this.lastMagnetOrbLevel) {
+        // Only spawn if no magnet orb already exists on map
+        if (this.isMagnetOrbAlreadyOnMap()) {
+            console.log(`Level ${currentLevel}: Magnet orb spawn blocked - one already exists on map`);
+            return; // Don't spawn another one
+        }
+        
+        // Spawn magnet orb every 2 levels (2, 4, 6, etc.) instead of every 3
+        if (currentLevel % 2 === 0 && currentLevel > this.lastMagnetOrbLevel) {
             this.lastMagnetOrbLevel = currentLevel;
             
             // Spawn near player but not too close
@@ -657,9 +669,20 @@ class EnemySystem {
             const spawnX = this.scene.player.x + Math.cos(angle) * distance;
             const spawnY = this.scene.player.y + Math.sin(angle) * distance;
             
-            console.log(`XP Magnet Orb spawned for level ${currentLevel}!`);
+            console.log(`RARE XP Magnet Orb spawned for level ${currentLevel}! (Every 2 levels)`);
             this.spawnMagnetOrb(spawnX, spawnY);
         }
+    }
+    
+    // Helper method to check if a magnet orb already exists on the map
+    isMagnetOrbAlreadyOnMap() {
+        if (!this.scene.xpOrbs) return false;
+        
+        const existingMagnetOrbs = this.scene.xpOrbs.children.entries.filter(orb => 
+            orb && orb.active && orb.scene && orb.isMagnetOrb
+        );
+        
+        return existingMagnetOrbs.length > 0;
     }
     
     spawnMagnetOrb(x, y) {
@@ -709,26 +732,27 @@ class EnemySystem {
     }
     
     showMagnetOrbNotification() {
-        const notification = this.scene.add.text(700, 200, 'XP MAGNET ORB SPAWNED!', {
+        const notification = this.scene.add.text(700, 200, 'RARE XP MAGNET ORB SPAWNED!\n(Only 1 per map)', {
             fontSize: '24px',
             color: '#FFD700',
             fontWeight: 'bold',
             backgroundColor: '#000000',
-            padding: { x: 12, y: 6 }
+            padding: { x: 12, y: 6 },
+            align: 'center'
         }).setOrigin(0.5, 0.5).setScrollFactor(0).setDepth(1500);
         
-        // Pulsing effect
+        // More dramatic pulsing effect for rare item
         this.scene.tweens.add({
             targets: notification,
-            scaleX: 1.1,
-            scaleY: 1.1,
-            duration: 300,
+            scaleX: 1.2,
+            scaleY: 1.2,
+            duration: 200,
             yoyo: true,
-            repeat: 3
+            repeat: 5 // More pulses for rarity
         });
         
-        // Fade out after 3 seconds
-        this.scene.time.delayedCall(3000, () => {
+        // Keep notification longer for rare item
+        this.scene.time.delayedCall(4000, () => {
             this.scene.tweens.add({
                 targets: notification,
                 alpha: 0,
