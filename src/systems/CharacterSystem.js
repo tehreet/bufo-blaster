@@ -50,10 +50,10 @@ class CharacterSystem {
                     armor: 0, // Glass cannon
                     healthRegen: 0,
                     
-                    // Ability Stats
-                    abilityDamage: 3, // Star damage
-                    abilityCooldown: 1500, // Milliseconds between starfall casts
-                    abilityRadius: 100, // AOE radius of star impact
+                                    // Ability Stats
+                abilityDamage: 2, // Star damage (reduced from 3 to 2)
+                abilityCooldown: 1500, // Milliseconds between starfall casts
+                abilityRadius: 100, // AOE radius of star impact
                     
                     // Utility Stats
                     pickupRange: 100, // Higher pickup range for ranged character
