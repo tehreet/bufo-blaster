@@ -56,7 +56,7 @@ class GameScene extends Phaser.Scene {
             ENEMY_CONTACT_DAMAGE: 10,
             PLAYER_RADIUS: 8, // Updated to match actual collision radius
             XP_ORB_RADIUS: 8,
-            XP_ORB_MAGNET_SPEED: 200,
+            XP_ORB_MAGNET_SPEED: 400, // Doubled from 200 to 400 - much stronger magnetism
             SHIELD_BUFO_BASH_RANGE: 100,
             SHIELD_BUFO_BASH_DAMAGE: 1.2,
             SHIELD_BUFO_BASH_COOLDOWN: 800,
