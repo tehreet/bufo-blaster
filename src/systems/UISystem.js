@@ -205,16 +205,19 @@ class UISystem {
             this.scene.player.setAlpha(1);
         }
         
-        // Add Matter.js physics to player (much smaller collision radius to match visual sprite)
+        // Get character-specific hitbox radius
+        const hitboxRadius = selectedCharacter.hitboxRadius || 8; // Default to 8 if not specified
+        
+        // Add Matter.js physics to player (character-specific collision radius)
         this.scene.matter.add.gameObject(this.scene.player, {
             shape: 'circle',
-            radius: 8, // Much smaller radius - visual sprite is 64px, so 8px radius (16px diameter) should work better
+            radius: hitboxRadius,
             frictionAir: 0.05,
             label: 'player'
         });
         
-        // Add debug hitbox visualization for player (updated radius)
-        this.scene.player.hitboxDebug = this.scene.debugUtils.createHitboxDebug(this.scene.player, 8, 0x00ff00);
+        // Add debug hitbox visualization for player (character-specific radius)
+        this.scene.player.hitboxDebug = this.scene.debugUtils.createHitboxDebug(this.scene.player, hitboxRadius, 0x00ff00);
         
         // Initialize character facing direction (default to facing right)
         this.scene.inputManager.lastFacingDirection = false; // false = facing right, true = facing left

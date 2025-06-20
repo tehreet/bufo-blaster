@@ -85,7 +85,7 @@ class GameScene extends Phaser.Scene {
             ENEMY_SPEED: 75,
             ENEMY_MAX_HEALTH: 3,
             ENEMY_CONTACT_DAMAGE: 10,
-            PLAYER_RADIUS: 8, // Updated to match actual collision radius
+            // PLAYER_RADIUS is now character-specific (defined in CharacterRegistry)
             XP_ORB_RADIUS: 8,
             XP_ORB_MAGNET_SPEED: 400, // Doubled from 200 to 400 - much stronger magnetism
             SHIELD_BUFO_BASH_RANGE: 100,
