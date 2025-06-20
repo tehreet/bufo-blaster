@@ -747,6 +747,7 @@ class EnemySystem {
         if (!player || !magnetOrb || !magnetOrb.active || !magnetOrb.scene || !magnetOrb.isMagnetOrb) return;
         
         console.log('XP Magnet Orb collected! Collecting all XP orbs on map...');
+        console.log(`Player position before collection: (${player.x.toFixed(1)}, ${player.y.toFixed(1)})`);
         
         // Collect all regular XP orbs on the map
         let collectedXP = 0;
@@ -773,7 +774,13 @@ class EnemySystem {
             
             // Remove orb from physics and groups immediately to prevent further collisions
             if (orb.body) {
-                orb.body.isSensor = false; // Disable collision detection
+                // Remove from physics world entirely to prevent any collision issues
+                try {
+                    this.scene.matter.world.remove(orb.body);
+                    orb.body = null;
+                } catch (error) {
+                    console.log('Error removing orb from physics:', error);
+                }
             }
             this.scene.xpOrbs.remove(orb); // Remove from group
             
@@ -884,6 +891,7 @@ class EnemySystem {
         }
         
         console.log(`Magnet orb collected ${orbsCollected} XP orbs for ${collectedXP} total XP`);
+        console.log(`Player position after collection: (${player.x.toFixed(1)}, ${player.y.toFixed(1)})`);
     }
     
     cleanupAllMagnetOrbs() {

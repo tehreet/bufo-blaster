@@ -378,7 +378,10 @@ class CharacterSystem {
     }
 
     updateCharacterAbilities() {
-        if (!this.selectedCharacter) return;
+        if (!this.selectedCharacter) {
+            console.log('updateCharacterAbilities: no selected character');
+            return;
+        }
 
         if (this.selectedCharacter.id === 'wizard') {
             this.updateWizardStarfall();
@@ -475,6 +478,12 @@ class CharacterSystem {
         if (!this.scene.starfallProjectiles) return;
         
         const currentTime = this.scene.time.now;
+        const starCount = this.scene.starfallProjectiles.children.entries.length;
+        
+        // Debug log to see if function is running and how many stars exist
+        if (starCount > 0) {
+            console.log(`updateStarfallProjectiles running: ${starCount} stars active`);
+        }
         
         for (let i = this.scene.starfallProjectiles.children.entries.length - 1; i >= 0; i--) {
             const star = this.scene.starfallProjectiles.children.entries[i];

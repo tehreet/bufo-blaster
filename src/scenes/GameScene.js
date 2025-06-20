@@ -100,6 +100,15 @@ class GameScene extends Phaser.Scene {
             this.characterSystem.updateCharacterAbilities();
             this.debugUtils.update();
             this.uiSystem.updateUI();
+        } else {
+            // Debug: Log why update is not running
+            const reasons = [];
+            if (!this.gameStarted) reasons.push('game not started');
+            if (this.isPaused) reasons.push('game paused');
+            if (this.upgradeSystem.upgradeActive) reasons.push('upgrade active');
+            if (reasons.length > 0 && Math.random() < 0.01) { // Only log 1% of the time to avoid spam
+                console.log('Game update blocked:', reasons.join(', '));
+            }
         }
         
         // Always update upgrade system for input handling
