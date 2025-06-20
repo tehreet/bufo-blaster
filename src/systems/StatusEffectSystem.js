@@ -20,12 +20,12 @@ class StatusEffectSystem {
         // Define visual configurations for different status effects
         this.effectConfigs.set('poison', {
             text: 'POISONED',
-            fontSize: '14px',
-            color: '#00ff00',
-            backgroundColor: '#004400',
-            padding: { x: 6, y: 3 },
-            pulseColor: '#66ff66',
-            pulseSpeed: 600,
+            fontSize: '16px',
+            color: '#ff0040',
+            backgroundColor: '#440000',
+            padding: { x: 8, y: 4 },
+            pulseColor: '#ff4466',
+            pulseSpeed: 400,
             priority: 1 // Higher priority effects show closer to player
         });
         

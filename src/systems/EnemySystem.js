@@ -4,11 +4,11 @@ class EnemySystem {
     constructor(scene) {
         this.scene = scene;
         
-        // Poison system tracking
+        // Poison system tracking - MUCH STRONGER POISON
         this.poisonTimer = null;
-        this.poisonDuration = 5000; // 5 seconds of poison
-        this.poisonDamage = 2; // Damage per second
-        this.poisonTickInterval = 1000; // 1 second between damage ticks
+        this.poisonDuration = 10000; // 10 seconds of poison (was 5)
+        this.poisonDamage = 6; // 6 damage per tick (was 2)
+        this.poisonTickInterval = 800; // 0.8 seconds between damage ticks (was 1.0)
         
         // XP Magnet Orb system
         this.lastMagnetOrbLevel = 0; // Track last level where magnet orb was spawned
@@ -20,12 +20,12 @@ class EnemySystem {
                 id: 'hazmat',
                 name: 'Hazmat Bufo',
                 sprite: 'bufo-covid',
-                health: 2,
-                speed: 80, // Increased movement speed
+                health: 4, // Increased from 2 to 4
+                speed: 90, // Increased from 80 to 90
                 displaySize: 40,
                 hitboxRadius: 5, // 40px * 12.5% = 5px (matches player ratio)
-                xpValue: 15, // More valuable due to poison effect
-                weight: 30,
+                xpValue: 25, // Increased from 15 to 25 due to much stronger poison
+                weight: 25, // Slightly reduced weight (was 30) - more dangerous so less common
                 specialEffect: 'poison' // Causes poison on contact
             },
             {
