@@ -270,19 +270,8 @@ class UISystem {
                     this.scene.enemySystem.playerCollectMagnetOrb(bodyB.gameObject, bodyA.gameObject);
                 }
                 
-                // Boomerang hits enemy (for Bat Bufo character)
-                if (bodyA.label === 'boomerang' && bodyB.label === 'enemy') {
-                    this.scene.characterSystem.boomerangHitEnemy(bodyA.gameObject, bodyB.gameObject);
-                } else if (bodyA.label === 'enemy' && bodyB.label === 'boomerang') {
-                    this.scene.characterSystem.boomerangHitEnemy(bodyB.gameObject, bodyA.gameObject);
-                }
-                
-                // Starfall hits enemy (for Wizard Bufo character)
-                if (bodyA.label === 'starfall' && bodyB.label === 'enemy') {
-                    this.scene.characterSystem.starfallHitEnemy(bodyA.gameObject, bodyB.gameObject);
-                } else if (bodyA.label === 'enemy' && bodyB.label === 'starfall') {
-                    this.scene.characterSystem.starfallHitEnemy(bodyB.gameObject, bodyA.gameObject);
-                }
+                // Dynamic character projectile collisions
+                this.handleCharacterProjectileCollisions(bodyA, bodyB);
                 
                 // Enemy projectile hits player (for Chicken Bufo eggs)
                 if (bodyA.label === 'enemyProjectile' && bodyB.label === 'player') {
@@ -292,6 +281,23 @@ class UISystem {
                 }
             });
         });
+    }
+
+    // Dynamic collision handler for character projectiles
+    handleCharacterProjectileCollisions(bodyA, bodyB) {
+        // Get all registered collision handlers from the character system
+        if (!this.scene.characterSystem.collisionHandlers) return;
+        
+        // Check all registered projectile labels
+        for (const [label, handler] of this.scene.characterSystem.collisionHandlers) {
+            if (bodyA.label === label && bodyB.label === 'enemy') {
+                this.scene.characterSystem.handleProjectileCollision(label, bodyA.gameObject, bodyB.gameObject);
+                return;
+            } else if (bodyA.label === 'enemy' && bodyB.label === label) {
+                this.scene.characterSystem.handleProjectileCollision(label, bodyB.gameObject, bodyA.gameObject);
+                return;
+            }
+        }
     }
 
     createGameUI() {
@@ -670,9 +676,8 @@ class UISystem {
         if (this.scene.boomerangs) this.scene.boomerangs.clear(true, true);
         if (this.scene.enemyProjectiles) this.scene.enemyProjectiles.clear(true, true);
         
-        // Reset character system and character-specific timers
-        this.scene.characterSystem.selectedCharacter = null;
-        this.scene.characterSystem.characterSelected = false;
+        // Clean up character system using new cleanup method
+        this.scene.characterSystem.cleanup();
         
         // Clear character-specific timer states
         this.scene.lastStarfallTime = 0;

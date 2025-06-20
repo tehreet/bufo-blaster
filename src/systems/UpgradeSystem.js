@@ -75,62 +75,8 @@ class UpgradeSystem {
     }
 
     getCharacterSpecificUpgrades() {
-        const character = this.scene.characterSystem.getSelectedCharacter();
-        if (!character) return [];
-        
-        switch(character.id) {
-            case 'shield':
-                return [
-                    { id: 'shield_bash_power', name: 'Shield Slam', description: 'Shield bash damage increased by 25%', type: 'character', statType: 'damage',
-                      effect: () => this.scene.statsSystem.multiplyStats('abilityDamageMultiplier', 1.25) },
-                    { id: 'shield_bash_speed', name: 'Rapid Bash', description: 'Shield bash triggers 40% faster', type: 'character', statType: 'cooldown',
-                      effect: () => this.scene.statsSystem.multiplyStats('abilityCooldownMultiplier', 0.6) },
-                    { id: 'shield_bash_range', name: 'Shield Sweep', description: 'Shield bash range increased by 50%', type: 'character', statType: 'radius',
-                      effect: () => this.scene.statsSystem.multiplyStats('abilityRadiusMultiplier', 1.5) },
-                    { id: 'shield_fortress', name: 'Fortress Form', description: '+60 Health and +3 Armor', type: 'character', statType: 'unique',
-                      effect: () => { 
-                          this.scene.statsSystem.addStatBonus('healthBonus', 60);
-                          this.scene.statsSystem.addStatBonus('armorBonus', 3);
-                      }},
-                    { id: 'shield_regeneration', name: 'Shield Blessing', description: 'Health regeneration doubled', type: 'character', statType: 'regen',
-                      effect: () => this.scene.statsSystem.multiplyStats('healthRegenMultiplier', 2.0) }
-                ];
-                
-            case 'wizard':
-                return [
-                    { id: 'wizard_more_stars', name: 'Meteor Shower', description: '+1 star per cast', type: 'character', statType: 'unique',
-                      effect: () => this.scene.statsSystem.addStatBonus('projectileCountBonus', 1) },
-                    { id: 'wizard_star_power', name: 'Stellar Power', description: 'Star damage increased by 18.75%', type: 'character', statType: 'damage',
-                      effect: () => this.scene.statsSystem.multiplyStats('abilityDamageMultiplier', 1.1875) },
-                    { id: 'wizard_star_size', name: 'Greater Impact', description: 'Star explosion radius increased by 50%', type: 'character', statType: 'radius',
-                      effect: () => this.scene.statsSystem.multiplyStats('abilityRadiusMultiplier', 1.5) },
-                    { id: 'wizard_rapid_cast', name: 'Arcane Haste', description: 'Starfall cooldown reduced by 40%', type: 'character', statType: 'cooldown',
-                      effect: () => this.scene.statsSystem.multiplyStats('abilityCooldownMultiplier', 0.6) }
-                ];
-                
-            case 'bat':
-                return [
-                    { id: 'bat_power', name: 'Sharpened Boomerang', description: 'Boomerang damage increased by 25%', type: 'character', statType: 'damage',
-                      effect: () => this.scene.statsSystem.multiplyStats('abilityDamageMultiplier', 1.25) },
-                    { id: 'bat_speed', name: 'Quick Throw', description: 'Boomerang cooldown reduced by 40%', type: 'character', statType: 'cooldown',
-                      effect: () => this.scene.statsSystem.multiplyStats('abilityCooldownMultiplier', 0.6) },
-                    { id: 'bat_range', name: 'Aerodynamic Design', description: 'Boomerang range increased by 50%', type: 'character', statType: 'radius',
-                      effect: () => this.scene.statsSystem.multiplyStats('abilityRadiusMultiplier', 1.5) },
-                    { id: 'bat_stun', name: 'Stunning Impact', description: 'Stun duration increased to 2 seconds', type: 'character', statType: 'unique',
-                      effect: () => {
-                          // This would extend stun duration in the boomerang system
-                          // Stunning Impact upgrade applied
-                      }},
-                    { id: 'bat_agility', name: 'Bat Agility', description: '+30% move speed and +25 health', type: 'character', statType: 'unique',
-                      effect: () => {
-                          this.scene.statsSystem.multiplyStats('moveSpeedMultiplier', 1.3);
-                          this.scene.statsSystem.addStatBonus('healthBonus', 25);
-                      }}
-                ];
-                
-            default:
-                return [];
-        }
+        // Use the new character system to get upgrades dynamically
+        return this.scene.characterSystem.getCharacterUpgrades();
     }
 
     getUniqueRandomUpgrade(availableUpgrades) {

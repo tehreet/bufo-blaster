@@ -4,14 +4,14 @@ A fast-paced action roguelike game featuring three unique Bufo characters, each 
 
 ## 🎮 Game Features
 
-### **Three Unique Characters**
+### **Three Unique Characters (Easily Expandable!)**
 - **🛡️ Shield Bufo**: Defensive tank with shield bash attacks that push enemies away
 - **🧙 Magician Bufo**: Ranged caster with starfall spells that rain down from above
 - **🦇 Bat Bufo**: Agile fighter with boomerang attacks that stun and damage enemies
 
 ### **Dynamic Upgrade System**
 - **XP-based leveling** starting at 100 XP, scaling 1.5x per level
-- **Generic and character-specific upgrades** with strategic reroll system
+- **Character-specific upgrades** dynamically loaded from each character class
 - **Individual card rerolling** with limited rerolls per level
 - **No duplicate stat types** in the same upgrade selection
 - **Boss waves** every 5 levels for extra challenge
@@ -99,13 +99,14 @@ Seven distinct enemy types with unique stats, behaviors, and special effects:
 - **❤️ +30 Health**: Increases maximum health by 30 points
 - **🛡️ +2 Armor**: Reduces incoming damage by 2
 - **💚 +1 Health Regen**: Regenerates 1 health per second
-- **💨 +30% Move Speed**: Increases movement speed by 30%
 
 ### **Ability Upgrades**
 - **⚔️ +12.5% Ability Damage**: Increases ability damage by 12.5%
 - **⏰ -30% Ability Cooldown**: Reduces ability cooldowns by 30%
 - **📏 +40% Ability Radius**: Increases ability area of effect by 40%
 - **🧲 +50% Pickup Range**: Increases XP magnetism range by 50%
+
+*Note: Movement speed upgrades are now character-specific only (e.g., Bat Bufo's "Bat Agility")*
 
 ## 🛠️ Technical Features
 
@@ -115,6 +116,13 @@ Seven distinct enemy types with unique stats, behaviors, and special effects:
 - **Vite 6.3.5**: Fast development and build tooling
 - **ES6 Modules**: Clean, modular code architecture
 
+### **Plugin-Based Character System**
+- **Modular character architecture**: Each character is a separate class extending `BaseCharacter`
+- **Dynamic collision detection**: Collision handlers automatically registered from character classes
+- **Character registry**: Centralized management of all character data and implementations
+- **Automatic cleanup**: Characters manage their own timers, groups, and state
+- **Scalable design**: Adding new characters requires minimal code changes
+
 ### **Advanced Systems**
 - **Modular architecture**: Separate systems for characters, enemies, stats, UI, upgrades, etc.
 - **Status effect system**: Visual indicators for poison, bleeding, and other effects
@@ -123,9 +131,11 @@ Seven distinct enemy types with unique stats, behaviors, and special effects:
 - **Input management**: Unified keyboard, mouse, and gamepad input
 
 ### **Performance Optimizations**
+- **Optimized update loops**: Replaced forEach with for loops for 60fps performance
 - **Efficient collision detection** with properly sized hitboxes (12.5% sprite ratio)
+- **Fixed diagonal movement speed**: Vector normalization prevents speed boost
 - **Smooth camera system** with world bounds
-- **Pause-aware systems** that respect game state
+- **Clean console output**: Removed debug spam for production-ready performance
 - **Memory management** with proper cleanup of physics bodies and DOM elements
 
 ### **Quality of Life**
@@ -133,6 +143,7 @@ Seven distinct enemy types with unique stats, behaviors, and special effects:
 - **Smart gamepad detection** (filters out audio devices like headsets)
 - **Comprehensive debug tools** with F-key shortcuts
 - **Pause system** that works during gameplay but not during menus
+- **Physics bug fixes**: Restart properly re-enables physics world
 
 ## 🎨 Visual & Audio Design
 
@@ -182,18 +193,25 @@ bufo-blaster/
 │   ├── main.js              # Game initialization and config
 │   ├── scenes/
 │   │   └── GameScene.js     # Main game scene logic
+│   ├── characters/          # 🆕 Modular character classes
+│   │   ├── BaseCharacter.js # Base class for all characters
+│   │   ├── CharacterRegistry.js # Character data and class registry
+│   │   ├── ShieldBufo.js    # Shield Bufo implementation
+│   │   ├── WizardBufo.js    # Wizard Bufo implementation
+│   │   └── BatBufo.js       # Bat Bufo implementation
 │   ├── systems/             # Game systems
-│   │   ├── CharacterSystem.js
-│   │   ├── EnemySystem.js
-│   │   ├── StatsSystem.js
-│   │   ├── UISystem.js
-│   │   ├── UpgradeSystem.js
+│   │   ├── CharacterSystem.js # 🔄 Refactored to use plugin system
+│   │   ├── EnemySystem.js   # 🔄 Performance optimized
+│   │   ├── StatsSystem.js   # 🔄 Cleaned up logging
+│   │   ├── UISystem.js      # 🔄 Dynamic collision handling
+│   │   ├── UpgradeSystem.js # 🔄 Uses character-defined upgrades
 │   │   └── StatusEffectSystem.js
 │   └── utils/               # Utility classes
-│       ├── InputManager.js
-│       ├── AssetManager.js
+│       ├── InputManager.js  # 🔄 Fixed diagonal movement
+│       ├── AssetManager.js  # 🔄 Performance optimized
 │       ├── AudioManager.js
-│       └── DebugUtils.js
+│       ├── DebugUtils.js
+│       └── Logger.js        # 🔄 Categorized logging system
 ├── public/
 │   └── assets/              # Game assets
 │       ├── characters/      # Character sprites (PNG/GIF)
@@ -203,10 +221,159 @@ bufo-blaster/
 └── package.json
 ```
 
+## 🆕 Adding New Characters
+
+### **How to Add a New Character (3 Simple Steps!)**
+
+The new plugin-based system makes adding characters incredibly easy:
+
+#### **Step 1: Create Character Class**
+Create a new file in `src/characters/` (e.g., `ThunderBufo.js`):
+
+```javascript
+import BaseCharacter from './BaseCharacter.js';
+
+class ThunderBufo extends BaseCharacter {
+    setupAbility() {
+        // Initialize your character's ability groups and state
+        this.createAbilityGroup('lightning');
+        this.setAbilityState('lastLightningTime', 0);
+    }
+
+    updateAbility() {
+        // Handle ability logic (called every frame)
+        const currentTime = this.scene.time.now;
+        const playerStats = this.getPlayerStats();
+        // ... your ability logic here
+    }
+
+    getUpgrades() {
+        // Define character-specific upgrades
+        return [
+            { 
+                id: 'thunder_power', 
+                name: 'Thunder Strike', 
+                description: 'Lightning damage increased by 30%', 
+                type: 'character', 
+                statType: 'damage',
+                effect: () => this.scene.statsSystem.multiplyStats('abilityDamageMultiplier', 1.3) 
+            },
+            // ... more upgrades
+        ];
+    }
+
+    getCollisionHandlers() {
+        // Register collision detection for your projectiles
+        return [
+            { 
+                projectileLabel: 'lightning', 
+                handler: this.lightningHitEnemy.bind(this) 
+            }
+        ];
+    }
+
+    lightningHitEnemy(lightning, enemy) {
+        // Handle what happens when your projectile hits an enemy
+        this.damageEnemy(enemy, lightning.damage);
+    }
+}
+
+export default ThunderBufo;
+```
+
+#### **Step 2: Register in CharacterRegistry**
+Add your character to `src/characters/CharacterRegistry.js`:
+
+```javascript
+// Import your character
+import ThunderBufo from './ThunderBufo.js';
+
+// Add character data
+const CHARACTER_DATA = {
+    // ... existing characters
+    THUNDER_BUFO: {
+        id: 'thunder',
+        name: 'Thunder Bufo',
+        description: 'Electric mage with chain lightning',
+        abilityName: 'Lightning Strike',
+        abilityDescription: 'Strikes enemies with chaining lightning bolts',
+        color: 0x00ffff,
+        sprite: 'thunder-bufo',
+        baseStats: {
+            health: 110,
+            armor: 1,
+            healthRegen: 0.5,
+            abilityDamage: 3.0,
+            abilityCooldown: 1800,
+            abilityRadius: 150,
+            pickupRange: 90,
+            projectileCount: 2,
+            moveSpeed: 4.5
+        }
+    }
+};
+
+// Add to class mapping
+const CHARACTER_CLASSES = {
+    // ... existing characters
+    'thunder': ThunderBufo
+};
+```
+
+#### **Step 3: Add Sprite Asset**
+Add your character sprite to `public/assets/characters/thunder-bufo.png`
+
+#### **That's It! 🎉**
+Your character will automatically:
+- ✅ Appear in character selection
+- ✅ Handle collisions dynamically  
+- ✅ Show upgrades in upgrade system
+- ✅ Clean up properly on restart/death
+- ✅ Work with all existing systems
+
+### **Character Development Tips**
+
+#### **BaseCharacter Helper Methods**
+The `BaseCharacter` class provides many helpful methods:
+
+```javascript
+// Ability management
+this.createAbilityGroup('projectiles');     // Create physics group
+this.getAbilityGroup('projectiles');        // Get physics group
+this.createAbilityTimer('cooldown', config); // Create timer
+this.setAbilityState('key', value);         // Store state data
+
+// Enemy interaction
+this.getEnemiesInRange(x, y, radius);       // Find nearby enemies
+this.getVisibleEnemies();                   // Get enemies on screen
+this.damageEnemy(enemy, damage);            // Deal damage safely
+
+// Visual effects
+this.createVisualEffect(x, y, config);      // Create explosion effects
+
+// Stats access
+this.getPlayerStats();                      // Current player stats
+this.getPlayerProgression();                // XP, level, etc.
+```
+
+#### **Ability Design Patterns**
+
+1. **Timer-based abilities** (like Shield Bash): Use `createAbilityTimer()`
+2. **Cooldown-based abilities** (like Starfall): Check time in `updateAbility()`
+3. **Projectile abilities** (like Boomerang): Use physics groups and collision handlers
+4. **Instant abilities** (like Lightning): Apply effects immediately with visuals
+
+#### **Testing Your Character**
+1. Use **F1** to see hitboxes and collision detection
+2. Use **F2** to monitor stats and multipliers
+3. Test all upgrades to ensure they work correctly
+4. Verify cleanup by restarting the game multiple times
+
 ## 🎯 Game Balance
 
 ### **Difficulty Scaling**
 - **Enemy Health**: +20% per player level
+- **Boss Wave Health**: +25% bonus health for boss wave enemies
 - **Enemy Speed**: Varies by type, scaled by level
 - **Spawn Rate**: Decreases by 50ms per level (minimum 400ms)
 - **XP Requirements**: 1.5x multiplier per level (starts at 100 XP)
@@ -258,9 +425,28 @@ bufo-blaster/
 - **Asset optimization** with Sharp for image processing
 - **Production builds** with minification and tree-shaking
 
+## 🏆 Recent Major Improvements
+
+### **🔄 Character System Refactor (v2.0)**
+- **Plugin-based architecture**: Characters are now individual classes
+- **Scalable design**: Adding new characters requires minimal code
+- **Dynamic collision detection**: No more hard-coded collision handlers
+- **Automatic cleanup**: Proper memory management and timer cleanup
+
+### **⚡ Performance Optimizations**
+- **60fps optimization**: Replaced forEach with for loops in update cycles
+- **Reduced console spam**: Removed 80+ debug statements for production
+- **Fixed diagonal movement**: Vector normalization prevents speed boost
+- **Physics bug fixes**: Restart properly re-enables physics world
+
+### **🎮 Gameplay Balance**
+- **Movement speed rebalance**: Now character-specific only
+- **Upgrade system cleanup**: No duplicate stat types in selections
+- **Collision improvements**: Better hitbox accuracy and error handling
+
 ## 🏆 Future Enhancements
 
-- **Additional characters** with unique abilities
+- **Additional characters** using the new plugin system
 - **More enemy types** and special behaviors
 - **Save system** for persistent progression
 - **Leaderboards** and score tracking
@@ -270,7 +456,13 @@ bufo-blaster/
 
 ## 🤝 Contributing
 
-Contributions are welcome! Please feel free to submit pull requests or open issues for bugs and feature requests.
+Contributions are welcome! The new modular character system makes it especially easy to contribute new characters.
+
+### **Contributing a New Character**
+1. Follow the **Adding New Characters** guide above
+2. Ensure your character has unique gameplay mechanics
+3. Test thoroughly with all upgrades and interactions
+4. Submit a pull request with character sprite assets
 
 ### **Known Issues**
 - Some animated GIF overlays may not load on all browsers
@@ -284,3 +476,5 @@ This project is open source. Sprite assets are courtesy of all-the.bufo.zone.
 ---
 
 **Built with ❤️ for the Bufo community**
+
+*Ready to add 7 more characters? The new system makes it easy! 🚀*
