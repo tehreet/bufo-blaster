@@ -355,6 +355,9 @@ class EnemySystem {
         // Stop all tweens on this enemy before destroying it
         this.scene.tweens.killTweensOf(enemy);
         
+        // Increment kill count in UI
+        this.scene.uiSystem.incrementKillCount();
+        
         // Drop XP orb
         this.dropXPOrb(enemy.x, enemy.y, enemy.xpValue);
         

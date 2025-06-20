@@ -299,35 +299,84 @@ class UISystem {
         this.gameUIElements.forEach(element => element.destroy());
         this.gameUIElements = [];
         
+        // Create stats panel background (semi-transparent black box)
+        const panelWidth = 200;
+        const panelHeight = 140;
+        const panelX = 20;
+        const panelY = 20;
+        
+        const statsPanel = this.scene.add.rectangle(panelX + panelWidth/2, panelY + panelHeight/2, panelWidth, panelHeight, 0x000000, 0.7);
+        statsPanel.setStrokeStyle(2, 0x666666);
+        statsPanel.setScrollFactor(0).setDepth(1000);
+        this.gameUIElements.push(statsPanel);
+        
+        // Health bar (inside the panel)
+        const healthBarWidth = 160;
+        const healthBarHeight = 16;
+        const healthBarX = panelX + 20;
+        const healthBarY = panelY + 25;
+        
         // Health bar background
-        const healthBarBg = this.scene.add.rectangle(100, 30, 200, 20, 0x330000);
-        healthBarBg.setStrokeStyle(2, 0x666666);
-        healthBarBg.setScrollFactor(0).setDepth(1000);
+        const healthBarBg = this.scene.add.rectangle(healthBarX + healthBarWidth/2, healthBarY + healthBarHeight/2, healthBarWidth, healthBarHeight, 0x330000);
+        healthBarBg.setStrokeStyle(1, 0x666666);
+        healthBarBg.setScrollFactor(0).setDepth(1001);
         this.gameUIElements.push(healthBarBg);
         
-        // Health bar
-        const healthBar = this.scene.add.rectangle(100, 30, 200, 20, 0xff0000);
-        healthBar.setScrollFactor(0).setDepth(1001);
+        // Health bar foreground
+        const healthBar = this.scene.add.rectangle(healthBarX + healthBarWidth/2, healthBarY + healthBarHeight/2, healthBarWidth, healthBarHeight, 0x00ff00);
+        healthBar.setScrollFactor(0).setDepth(1002);
         this.gameUIElements.push(healthBar);
         
-        // Health text
-        const healthText = this.scene.add.text(100, 30, '', {
-            fontSize: '12px',
-            color: '#ffffff'
-        }).setOrigin(0.5, 0.5).setScrollFactor(0).setDepth(1002);
+        // Health text (centered on health bar)
+        const healthText = this.scene.add.text(healthBarX + healthBarWidth/2, healthBarY + healthBarHeight/2, '', {
+            fontSize: '11px',
+            color: '#ffffff',
+            fontStyle: 'bold'
+        }).setOrigin(0.5, 0.5).setScrollFactor(0).setDepth(1003);
         this.gameUIElements.push(healthText);
         
-        // Level and XP
-        const levelText = this.scene.add.text(50, 70, '', {
-            fontSize: '16px',
-            color: '#ffff00'
-        }).setScrollFactor(0).setDepth(1000);
+        // Stats text (below health bar)
+        const textX = panelX + 10;
+        let textY = healthBarY + healthBarHeight + 15;
+        const textStyle = {
+            fontSize: '12px',
+            color: '#ffffff'
+        };
+        
+        // Level text
+        const levelText = this.scene.add.text(textX, textY, '', textStyle);
+        levelText.setScrollFactor(0).setDepth(1001);
         this.gameUIElements.push(levelText);
+        textY += 16;
+        
+        // XP text
+        const xpText = this.scene.add.text(textX, textY, '', textStyle);
+        xpText.setScrollFactor(0).setDepth(1001);
+        this.gameUIElements.push(xpText);
+        textY += 16;
+        
+        // Time text
+        const timeText = this.scene.add.text(textX, textY, '', textStyle);
+        timeText.setScrollFactor(0).setDepth(1001);
+        this.gameUIElements.push(timeText);
+        textY += 16;
+        
+        // Kills text
+        const killsText = this.scene.add.text(textX, textY, '', textStyle);
+        killsText.setScrollFactor(0).setDepth(1001);
+        this.gameUIElements.push(killsText);
         
         // Store references for updates
         this.healthBar = healthBar;
         this.healthText = healthText;
         this.levelText = levelText;
+        this.xpText = xpText;
+        this.timeText = timeText;
+        this.killsText = killsText;
+        
+        // Initialize time and kill tracking
+        this.gameStartTime = Date.now();
+        this.enemyKillCount = 0;
     }
 
     updateUI() {
@@ -344,9 +393,33 @@ class UISystem {
         }
         
         if (progression && this.levelText) {
-            // Update level and XP
-            this.levelText.setText(`Level ${progression.level}\nXP: ${progression.xp}/${progression.xpToNextLevel}`);
+            // Update level
+            this.levelText.setText(`Level: ${progression.level}`);
         }
+        
+        if (progression && this.xpText) {
+            // Update XP
+            this.xpText.setText(`XP: ${progression.xp}/${progression.xpToNextLevel}`);
+        }
+        
+        if (this.timeText && this.gameStartTime) {
+            // Update elapsed time
+            const elapsedMs = Date.now() - this.gameStartTime;
+            const elapsedMinutes = Math.floor(elapsedMs / 60000);
+            const elapsedSeconds = Math.floor((elapsedMs % 60000) / 1000);
+            const timeString = `${elapsedMinutes}:${elapsedSeconds.toString().padStart(2, '0')}`;
+            this.timeText.setText(`Time: ${timeString}`);
+        }
+        
+        if (this.killsText) {
+            // Update kill count
+            this.killsText.setText(`Kills: ${this.enemyKillCount}`);
+        }
+    }
+
+    // Method to increment kill count when enemies are defeated
+    incrementKillCount() {
+        this.enemyKillCount++;
     }
 
     togglePause() {
