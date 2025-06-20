@@ -22,6 +22,12 @@ class AssetConfig {
                     gif: null, // PNG only character
                     displaySize: 64,
                     previewSize: 120
+                },
+                'juice-bufo': {
+                    png: 'assets/characters/juice-bufo.png',
+                    gif: null, // PNG only character
+                    displaySize: 64,
+                    previewSize: 120
                 }
             },
             
