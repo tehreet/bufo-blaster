@@ -1,4 +1,5 @@
 // Stats System - Handles player stats, progression, and stat modifications
+import Logger from '../utils/Logger.js';
 
 class StatsSystem {
     constructor(scene) {
@@ -48,8 +49,6 @@ class StatsSystem {
         
         // Calculate and cache current stats (reset health to max for new game)
         this.refreshPlayerStats(true);
-        
-        console.log('Player stats initialized:', this.playerStats);
     }
 
     refreshPlayerStats(resetHealth = false) {
@@ -72,10 +71,8 @@ class StatsSystem {
         let currentHealth;
         if (resetHealth || !this.playerStats || typeof this.playerStats.health !== 'number') {
             currentHealth = maxHealth; // Reset to full health for new game or if health is invalid
-            console.log(`Health reset to max: ${currentHealth} (resetHealth: ${resetHealth})`);
         } else {
             currentHealth = this.playerStats.health; // Preserve current health during upgrades
-            console.log(`Health preserved: ${currentHealth}`);
         }
         
         // Update cached stats
@@ -122,9 +119,8 @@ class StatsSystem {
         if (this.statModifiers.hasOwnProperty(statName)) {
             this.statModifiers[statName] += amount;
             this.refreshPlayerStats();
-            console.log(`Added ${amount} to ${statName}. New value: ${this.statModifiers[statName]}`);
         } else {
-            console.warn(`Unknown stat: ${statName}`);
+            Logger.warn(`Unknown stat: ${statName}`);
         }
     }
     
@@ -133,9 +129,8 @@ class StatsSystem {
         if (this.statModifiers.hasOwnProperty(statName)) {
             this.statModifiers[statName] *= multiplier;
             this.refreshPlayerStats();
-            console.log(`Multiplied ${statName} by ${multiplier}. New value: ${this.statModifiers[statName]}`);
         } else {
-            console.warn(`Unknown stat: ${statName}`);
+            Logger.warn(`Unknown stat: ${statName}`);
         }
     }
 
@@ -153,7 +148,6 @@ class StatsSystem {
 
     addXP(amount) {
         this.playerProgression.xp += amount;
-        console.log(`Gained ${amount} XP. Total: ${this.playerProgression.xp}/${this.playerProgression.xpToNextLevel}`);
         
         // Check for level up
         this.checkLevelUp();
@@ -170,7 +164,7 @@ class StatsSystem {
         this.playerProgression.xp -= this.playerProgression.xpToNextLevel;
         this.playerProgression.xpToNextLevel = Math.floor(this.playerProgression.xpToNextLevel * 1.5); // 1.5x scaling
         
-        console.log(`Level up! Now level ${this.playerProgression.level}. Next level needs ${this.playerProgression.xpToNextLevel} XP.`);
+        Logger.system(`Level up! Now level ${this.playerProgression.level}`);
         
         // Trigger level up effects
         this.scene.upgradeSystem.showUpgradeSelection();
@@ -182,11 +176,8 @@ class StatsSystem {
     }
 
     takeDamage(amount, bypassInvincibility = false) {
-        console.log(`💔 DAMAGE: takeDamage called with amount=${amount}, bypass=${bypassInvincibility}, invincible=${this.playerProgression.invincible}`);
-        
         // Check invincibility, but allow bypass for damage over time effects
         if (this.playerProgression.invincible && !bypassInvincibility) {
-            console.log(`💔 DAMAGE: Blocked by invincibility (no bypass)`);
             return 0;
         }
         
@@ -194,24 +185,13 @@ class StatsSystem {
         const actualDamage = Math.max(1, amount - this.playerStats.armor);
         this.playerStats.health -= actualDamage;
         
-        console.log(`💔 DAMAGE: Player took ${actualDamage} damage (${amount} - ${this.playerStats.armor} armor). Health: ${this.playerStats.health}/${this.playerStats.maxHealth}${bypassInvincibility ? ' [DOT]' : ''}`);
-        
-        // Show health change visually in debug
-        if (bypassInvincibility) {
-            console.log(`💔 DOT DAMAGE: Health changed from ${this.playerStats.health + actualDamage} → ${this.playerStats.health}`);
-        }
-        
         // Only trigger invincibility frames for regular damage, not damage over time
         if (!bypassInvincibility) {
-            console.log(`💔 DAMAGE: Setting invincibility for 1000ms`);
             this.setInvincible(1000); // 1 second invincibility
-        } else {
-            console.log(`💔 DAMAGE: Skipping invincibility (DOT damage)`);
         }
         
         // Check for game over
         if (this.playerStats.health <= 0) {
-            console.log(`💔 DAMAGE: Player health <= 0, triggering game over`);
             this.scene.gameOver();
         }
         
@@ -223,9 +203,7 @@ class StatsSystem {
         this.playerStats.health = Math.min(this.playerStats.maxHealth, this.playerStats.health + amount);
         const actualHeal = this.playerStats.health - oldHealth;
         
-        if (actualHeal > 0) {
-            console.log(`Player healed for ${actualHeal}. Health: ${this.playerStats.health}/${this.playerStats.maxHealth}`);
-        }
+        // Healing completed silently
         
         return actualHeal;
     }
@@ -256,7 +234,6 @@ class StatsSystem {
         
         if (this.playerProgression.invincible && this.scene.time.now >= this.playerProgression.invincibilityEnd) {
             this.playerProgression.invincible = false;
-            console.log('Invincibility ended');
         }
     }
 

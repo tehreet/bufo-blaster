@@ -1,4 +1,5 @@
 // Enemy System - Handles enemy definitions, spawning, behavior, and interactions
+import Logger from '../utils/Logger.js';
 
 class EnemySystem {
     constructor(scene) {
@@ -272,7 +273,7 @@ class EnemySystem {
         // Spawn a boss wave with multiple tough enemies
         const waveSize = Math.min(Math.floor(level / 5) + 2, 8); // 2-8 enemies based on level
         
-        console.log(`Triggering boss wave for level ${level} with ${waveSize} enemies`);
+        Logger.system(`Boss wave triggered: Level ${level} with ${waveSize} enemies`);
         
         // Show boss wave notification
         this.showBossWaveNotification(level);
@@ -478,10 +479,8 @@ class EnemySystem {
         
         // Special effects based on enemy type
         if (enemy.enemyType.specialEffect === 'poison') {
-            console.log('🦠 Enemy has poison effect, calling applyPoisonEffect()');
             this.applyPoisonEffect();
         } else if (enemy.enemyType.specialEffect === 'bleed') {
-            console.log('🩸 Enemy has bleed effect, calling applyBleedEffect()');
             this.applyBleedEffect();
         }
         
@@ -515,7 +514,7 @@ class EnemySystem {
                 try {
                     collectEffect.destroy();
                 } catch (error) {
-                    console.log('Collect effect already destroyed');
+                    // Collect effect already destroyed
                 }
             }
         });
@@ -535,7 +534,7 @@ class EnemySystem {
             // Check if enemy is currently being knocked back
             if (enemy.knockbackTime && this.scene.time.now < enemy.knockbackTime) {
                 // Skip AI movement while being knocked back
-                console.log(`Enemy skipping AI movement due to knockback: ${enemy.knockbackTime - this.scene.time.now}ms remaining`);
+                // Enemy in knockback state, skip AI movement
                 return;
             }
             
@@ -641,17 +640,13 @@ class EnemySystem {
     }
 
     applyPoisonEffect() {
-        console.log('🦠 POISON: applyPoisonEffect() called!');
-        
         // Clear any existing poison timer
         if (this.poisonTimer) {
-            console.log('🦠 POISON: Clearing existing poison timer');
             this.poisonTimer.remove();
         }
         
         // Mark player as poisoned
         this.scene.statsSystem.getPlayerProgression().isPoisoned = true;
-        console.log('🦠 POISON: Player marked as poisoned');
         
         // Add visual indicator using StatusEffectSystem
         if (this.scene.statusEffectSystem) {
@@ -660,44 +655,31 @@ class EnemySystem {
             
             // Add new poison effect with duration
             this.poisonEffectId = this.scene.statusEffectSystem.addStatusEffect('poison', this.poisonDuration);
-            console.log('🦠 POISON: Visual indicator added');
         }
-        
-        console.log('🦠 POISON: Player poisoned! Regen stopped, taking damage over time.');
         
         // Start poison damage timer - use simple repeat count, let Phaser handle the timing
         const poisonTicks = Math.floor(this.poisonDuration / this.poisonTickInterval);
         let currentTick = 0;
         
-        console.log(`🦠 POISON: Creating timer with ${poisonTicks} ticks, ${this.poisonTickInterval}ms interval`);
-        
         this.poisonTimer = this.scene.time.addEvent({
             delay: this.poisonTickInterval,
             callback: () => {
-                console.log(`🦠 POISON: Timer callback triggered! Tick ${currentTick + 1}/${poisonTicks}`);
-                
                 // Check if game is still active and player is alive
                 if (!this.scene.gameStarted || this.scene.statsSystem.getPlayerProgression().health <= 0) {
-                    console.log(`🦠 POISON: Game ended or player dead, clearing poison effect`);
                     this.clearPoisonEffect();
                     return;
                 }
                 
-                console.log(`🦠 POISON: Applying ${this.poisonDamage} damage (bypassing invincibility)`);
                 this.scene.statsSystem.takeDamage(this.poisonDamage, true); // true = bypass invincibility
-                console.log(`🦠 POISON: Poison damage: ${this.poisonDamage} (tick ${currentTick + 1}/${poisonTicks})`);
                 
                 currentTick++;
                 // Clear effect after all ticks are complete
                 if (currentTick >= poisonTicks) {
-                    console.log(`🦠 POISON: All ticks complete, clearing poison effect`);
                     this.clearPoisonEffect();
                 }
             },
             repeat: poisonTicks - 1 // This will make the callback run poisonTicks times total
         });
-        
-        console.log(`🦠 POISON: Timer created successfully:`, this.poisonTimer);
     }
     
     clearPoisonEffect() {
@@ -719,22 +701,16 @@ class EnemySystem {
                 this.scene.statusEffectSystem.removeStatusEffectsByType('poison');
             }
         }
-        
-        console.log('Poison effect cleared.');
     }
     
     applyBleedEffect() {
-        console.log('🩸 BLEED: applyBleedEffect() called!');
-        
         // Clear any existing bleed timer
         if (this.bleedTimer) {
-            console.log('🩸 BLEED: Clearing existing bleed timer');
             this.bleedTimer.remove();
         }
         
         // Mark player as bleeding
         this.scene.statsSystem.getPlayerProgression().isBleeding = true;
-        console.log('🩸 BLEED: Player marked as bleeding');
         
         // Add visual indicator using StatusEffectSystem
         if (this.scene.statusEffectSystem) {
@@ -743,44 +719,31 @@ class EnemySystem {
             
             // Add new bleed effect with duration
             this.bleedEffectId = this.scene.statusEffectSystem.addStatusEffect('bleed', this.bleedDuration);
-            console.log('🩸 BLEED: Visual indicator added');
         }
-        
-        console.log('🩸 BLEED: Player is bleeding! Taking damage over time.');
         
         // Start bleed damage timer - use simple repeat count, let Phaser handle the timing
         const bleedTicks = Math.floor(this.bleedDuration / this.bleedTickInterval);
         let currentTick = 0;
         
-        console.log(`🩸 BLEED: Creating timer with ${bleedTicks} ticks, ${this.bleedTickInterval}ms interval`);
-        
         this.bleedTimer = this.scene.time.addEvent({
             delay: this.bleedTickInterval,
             callback: () => {
-                console.log(`🩸 BLEED: Timer callback triggered! Tick ${currentTick + 1}/${bleedTicks}`);
-                
                 // Check if game is still active and player is alive
                 if (!this.scene.gameStarted || this.scene.statsSystem.getPlayerProgression().health <= 0) {
-                    console.log(`🩸 BLEED: Game ended or player dead, clearing bleed effect`);
                     this.clearBleedEffect();
                     return;
                 }
                 
-                console.log(`🩸 BLEED: Applying ${this.bleedDamage} damage (bypassing invincibility)`);
                 this.scene.statsSystem.takeDamage(this.bleedDamage, true); // true = bypass invincibility
-                console.log(`🩸 BLEED: Bleed damage: ${this.bleedDamage} (tick ${currentTick + 1}/${bleedTicks})`);
                 
                 currentTick++;
                 // Clear effect after all ticks are complete
                 if (currentTick >= bleedTicks) {
-                    console.log(`🩸 BLEED: All ticks complete, clearing bleed effect`);
                     this.clearBleedEffect();
                 }
             },
             repeat: bleedTicks - 1 // This will make the callback run bleedTicks times total
         });
-        
-        console.log(`🩸 BLEED: Timer created successfully:`, this.bleedTimer);
     }
     
     clearBleedEffect() {
@@ -802,30 +765,24 @@ class EnemySystem {
                 this.scene.statusEffectSystem.removeStatusEffectsByType('bleed');
             }
         }
-        
-        console.log('Bleed effect cleared.');
     }
     
     showPoisonEffect() {
         // Legacy method - now handled by applyPoisonEffect
-        console.log('showPoisonEffect called - now handled by StatusEffectSystem');
     }
     
     hidePoisonEffect() {
         // Legacy method - now handled by clearPoisonEffect
-        console.log('hidePoisonEffect called - now handled by StatusEffectSystem');
     }
 
     checkMagnetOrbSpawn(x, y) {
         // Only spawn if no magnet orb already exists on map
         if (this.isMagnetOrbAlreadyOnMap()) {
-            console.log('Magnet orb spawn blocked - one already exists on map');
             return; // Don't spawn another one
         }
         
         // Random chance spawn on enemy kill (much rarer now)
         if (Math.random() < this.magnetOrbKillChance) {
-            console.log('RARE XP Magnet Orb spawned by random chance! (0.5% chance)');
             this.spawnMagnetOrb(x, y);
         }
     }
@@ -835,7 +792,6 @@ class EnemySystem {
         
         // Only spawn if no magnet orb already exists on map
         if (this.isMagnetOrbAlreadyOnMap()) {
-            console.log(`Level ${currentLevel}: Magnet orb spawn blocked - one already exists on map`);
             return; // Don't spawn another one
         }
         
@@ -849,7 +805,6 @@ class EnemySystem {
             const spawnX = this.scene.player.x + Math.cos(angle) * distance;
             const spawnY = this.scene.player.y + Math.sin(angle) * distance;
             
-            console.log(`RARE XP Magnet Orb spawned for level ${currentLevel}! (Every 2 levels)`);
             this.spawnMagnetOrb(spawnX, spawnY);
         }
     }
@@ -998,9 +953,6 @@ class EnemySystem {
     playerCollectMagnetOrb(player, magnetOrb) {
         if (!player || !magnetOrb || !magnetOrb.active || !magnetOrb.scene || !magnetOrb.isMagnetOrb) return;
         
-        console.log('XP Magnet Orb collected! Collecting all XP orbs on map...');
-        console.log(`Player position before collection: (${player.x.toFixed(1)}, ${player.y.toFixed(1)})`);
-        
         // Collect all regular XP orbs on the map
         let collectedXP = 0;
         let orbsCollected = 0;
@@ -1034,7 +986,7 @@ class EnemySystem {
                 this.scene.xpOrbs.remove(orb);
                 orb.destroy();
             } catch (error) {
-                console.log('Error removing orb:', error);
+                // Orb already cleaned up
             }
             
             // Create a new visual-only element for animation (no physics)
@@ -1058,7 +1010,7 @@ class EnemySystem {
                             animationOrb.destroy();
                         }
                     } catch (error) {
-                        console.log('Animation orb already destroyed');
+                        // Animation orb already destroyed
                     }
                 }
             });
@@ -1080,7 +1032,7 @@ class EnemySystem {
                 try {
                     collectEffect.destroy();
                 } catch (error) {
-                    console.log('Collect effect already destroyed');
+                    // Collect effect already destroyed
                 }
             }
         });
@@ -1104,7 +1056,7 @@ class EnemySystem {
                     try {
                         summary.destroy();
                     } catch (error) {
-                        console.log('Summary already destroyed');
+                        // Summary already destroyed
                     }
                 }
             });
@@ -1127,9 +1079,6 @@ class EnemySystem {
         // Hide indicator when orb is collected
         this.currentMagnetOrb = null;
         this.hideMagnetOrbIndicator();
-        
-        console.log(`Magnet orb collected ${orbsCollected} XP orbs for ${collectedXP} total XP`);
-        console.log(`Player position after collection: (${player.x.toFixed(1)}, ${player.y.toFixed(1)})`);
     }
     
     cleanupAllMagnetOrbs() {
@@ -1158,7 +1107,7 @@ class EnemySystem {
         this.currentMagnetOrb = null;
         this.hideMagnetOrbIndicator();
         
-        console.log(`Cleaned up ${magnetOrbs.length} magnet orbs`);
+        // Cleaned up magnet orbs on restart
     }
 
     handleRangedEnemyAI(enemy) {
@@ -1266,7 +1215,7 @@ class EnemySystem {
             onComplete: () => muzzleFlash.destroy()
         });
         
-        console.log(`Chicken Bufo fired egg projectile at angle ${(angle * 180 / Math.PI).toFixed(1)}°`);
+        // Chicken Bufo fired egg projectile
     }
     
     updateEnemyProjectiles() {
@@ -1309,7 +1258,7 @@ class EnemySystem {
                 try {
                     destroyEffect.destroy();
                 } catch (error) {
-                    console.log('Destroy effect already cleaned up');
+                    // Destroy effect already cleaned up
                 }
             }
         });
@@ -1339,7 +1288,7 @@ class EnemySystem {
         // Destroy the projectile
         this.destroyEnemyProjectile(projectile);
         
-        console.log(`Player hit by enemy projectile for ${damage} damage`);
+        // Player hit by enemy projectile
     }
 
     update() {

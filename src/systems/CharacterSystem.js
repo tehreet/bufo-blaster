@@ -1,4 +1,5 @@
 // Character System - Handles character definitions, abilities, and character-specific logic
+import Logger from '../utils/Logger.js';
 
 class CharacterSystem {
     constructor(scene) {
@@ -233,11 +234,6 @@ class CharacterSystem {
 
     applyShieldBash() {
         if (this.selectedCharacter.id !== 'shield' || !this.scene.player || !this.scene.enemies) {
-            console.log('Shield bash early return:', {
-                characterId: this.selectedCharacter?.id,
-                hasPlayer: !!this.scene.player,
-                hasEnemies: !!this.scene.enemies
-            });
             return;
         }
         
@@ -245,8 +241,6 @@ class CharacterSystem {
         const playerStats = statsSystem.getPlayerStats();
         const bashRange = playerStats.abilityRadius;
         const bashDamage = playerStats.abilityDamage;
-        
-        console.log('Shield bash triggered!', { bashRange, bashDamage, enemyCount: this.scene.enemies.children.entries.length });
         
         // Create visual effects for left and right shield bash
         const leftBashEffect = this.scene.add.rectangle(
@@ -291,10 +285,7 @@ class CharacterSystem {
             // Simple distance check like original aura
             const distance = Phaser.Math.Distance.Between(playerX, playerY, enemyX, enemyY);
             
-            console.log(`Enemy distance check: distance=${distance}, bashRange=${bashRange}`);
-            
             if (distance <= bashRange) {
-                console.log('Enemy hit by shield bash!', { enemyX, enemyY, playerX, playerY, bashDamage, distance });
                 enemiesHit++;
                 
                 // Deal damage with error handling
@@ -303,7 +294,7 @@ class CharacterSystem {
                         this.scene.enemySystem.damageEnemy(enemy, bashDamage);
                     }
                 } catch (error) {
-                    console.error('Error dealing damage:', error);
+                    Logger.error('Shield bash damage error:', error);
                 }
                 
                 // Apply horizontal knockback (push left/right based on position)
@@ -334,8 +325,6 @@ class CharacterSystem {
                             }
                         }
                         
-                        console.log(`Applying knockback to enemy: x=${knockbackX}, y=${knockbackY}`);
-                        
                         // Apply knockback velocity
                         this.scene.matter.body.setVelocity(enemy.body, {
                             x: knockbackX,
@@ -344,10 +333,9 @@ class CharacterSystem {
                         
                         // Mark enemy as being knocked back to prevent AI override
                         enemy.knockbackTime = this.scene.time.now + 300; // 300ms of knockback immunity
-                        console.log(`Enemy marked with knockback immunity until: ${enemy.knockbackTime}`);
                     }
                 } catch (error) {
-                    console.error('Error applying knockback:', error);
+                    Logger.error('Shield bash knockback error:', error);
                 }
                 
                 // Visual feedback for hit enemy with error handling
@@ -362,12 +350,10 @@ class CharacterSystem {
                         });
                     }
                 } catch (error) {
-                    console.error('Error adding visual feedback:', error);
+                    Logger.error('Shield bash visual feedback error:', error);
                 }
             }
         });
-        
-        console.log(`Shield bash completed: ${enemiesHit} enemies hit`);
     }
 
     updateCharacterAbilities() {
@@ -447,7 +433,7 @@ class CharacterSystem {
             try {
                 this.scene.matter.body.setVelocity(star.body, { x: velocityX, y: velocityY });
             } catch (error) {
-                console.error('Error setting star velocity:', error);
+                Logger.error('Star velocity error:', error);
             }
         }
         
@@ -485,29 +471,27 @@ class CharacterSystem {
                         star.destroy();
                     }
                 } catch (error) {
-                    console.log('Error destroying invalid star:', error);
+                    // Invalid star already cleaned up
                 }
                 continue;
             }
             
             // Additional safety checks for position properties
             if (typeof star.x !== 'number' || typeof star.y !== 'number') {
-                console.log('Star has invalid position, removing:', { x: star.x, y: star.y });
                 try {
                     star.destroy();
                 } catch (error) {
-                    console.log('Error destroying star with invalid position:', error);
+                    // Star with invalid position already cleaned up
                 }
                 continue;
             }
             
             // Check if star has required properties
             if (typeof star.birthTime !== 'number' || typeof star.targetX !== 'number' || typeof star.targetY !== 'number') {
-                console.log('Star missing required properties, removing');
                 try {
                     star.destroy();
                 } catch (error) {
-                    console.log('Error destroying star with missing properties:', error);
+                    // Star with missing properties already cleaned up
                 }
                 continue;
             }
@@ -517,11 +501,10 @@ class CharacterSystem {
             
             // MANDATORY cleanup after 3 seconds (no exceptions) - much more aggressive
             if (fallTime > 3000) {
-                console.log(`Star force-expired after 3 seconds at pos=(${star.x.toFixed(1)}, ${star.y.toFixed(1)}) - triggering explosion`);
                 try {
                     this.applyStarfallAOE(star.x, star.y, star.damage);
                 } catch (error) {
-                    console.log('Error applying force-expired starfall AOE:', error);
+                    // Force-expired starfall AOE error handled silently
                 }
                 star.hasImpacted = true;
                 star.destroy();
@@ -556,7 +539,6 @@ class CharacterSystem {
                     }
                 }
             } catch (error) {
-                console.log('Error checking star movement:', error);
                 hasntMoved = true; // Treat as stuck if we can't check movement
             }
             
@@ -568,7 +550,6 @@ class CharacterSystem {
                 );
                 targetReached = distanceToTarget < 50; // Reasonable target detection
             } catch (error) {
-                console.log('Error calculating distance to target:', error);
                 targetReached = false;
             }
             
@@ -580,7 +561,7 @@ class CharacterSystem {
                 hitGround = star.y > mapHeight - 50; // Hit actual ground
                 nearGround = star.y > mapHeight - 150; // Getting close to ground
             } catch (error) {
-                console.log('Error checking ground:', error);
+                // Ground checking error handled silently
             }
             
             // Much more aggressive timeout
@@ -601,19 +582,10 @@ class CharacterSystem {
                 try {
                     this.applyStarfallAOE(star.x, star.y, star.damage);
                 } catch (error) {
-                    console.log('Error applying starfall AOE:', error);
+                    // Starfall AOE error handled silently
                 }
                 star.hasImpacted = true;
                 star.destroy();
-                
-                // Log details using captured data (after destruction)
-                console.log(`Star exploded: target=${targetReached}, ground=${hitGround}, nearGround=${nearGround}, tooOld=${tooOld}, hasntMoved=${hasntMoved}, movingSlowly=${movingVerySlowly}`);
-                try {
-                    const distanceToTarget = Phaser.Math.Distance.Between(starDetails.x, starDetails.y, starDetails.targetX, starDetails.targetY);
-                    console.log(`Star details: pos=(${starDetails.x.toFixed(1)}, ${starDetails.y.toFixed(1)}), target=(${starDetails.targetX.toFixed(1)}, ${starDetails.targetY.toFixed(1)}), distance=${distanceToTarget.toFixed(1)}, age=${starDetails.age}ms`);
-                } catch (error) {
-                    console.log('Error logging star details:', error);
-                }
             }
         }
     }
@@ -723,7 +695,7 @@ class CharacterSystem {
                 }
                 
             } catch (error) {
-                console.error('Error updating boomerang:', error);
+                Logger.error('Boomerang update error:', error);
             }
         });
     }
@@ -745,19 +717,14 @@ class CharacterSystem {
 
     starfallHitEnemy(starfall, enemy) {
         try {
-            console.log('starfallHitEnemy called - direct collision detected');
-            
             // Safety checks
             if (!this.selectedCharacter || this.selectedCharacter.id !== 'wizard') {
-                console.log('Not wizard character, skipping starfall hit');
                 return;
             }
             if (!starfall || !enemy || !starfall.active || !enemy.active) {
-                console.log('Invalid starfall or enemy objects');
                 return;
             }
             if (starfall.hasImpacted) {
-                console.log('Starfall already impacted, skipping');
                 return;
             }
             
@@ -765,14 +732,13 @@ class CharacterSystem {
             starfall.hasImpacted = true;
             
             // Trigger immediate AOE explosion at collision point
-            console.log(`Starfall direct hit! Exploding at (${starfall.x.toFixed(1)}, ${starfall.y.toFixed(1)})`);
             this.applyStarfallAOE(starfall.x, starfall.y, starfall.damage);
             
             // Destroy the starfall projectile
             starfall.destroy();
             
         } catch (error) {
-            console.error('Error in starfallHitEnemy:', error);
+            Logger.error('Starfall hit enemy error:', error);
         }
     }
 
@@ -780,13 +746,11 @@ class CharacterSystem {
         try {
             // Comprehensive null/undefined checks BEFORE accessing any properties
             if (!boomerang || !enemy) {
-                console.warn('boomerangHitEnemy: null/undefined objects passed');
                 return;
             }
             
             // Check if objects have the expected structure
             if (typeof boomerang !== 'object' || typeof enemy !== 'object') {
-                console.warn('boomerangHitEnemy: invalid object types');
                 return;
             }
             
@@ -867,7 +831,7 @@ class CharacterSystem {
             }
             
         } catch (error) {
-            console.error('Error in boomerangHitEnemy:', error);
+            Logger.error('Boomerang hit enemy error:', error);
         }
     }
 }
