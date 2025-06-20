@@ -107,10 +107,10 @@ class EnemySystem {
                 specialEffect: 'ranged', // Shoots projectiles
                 contactDamage: 8, // Low contact damage since it's ranged
                 rangedAttack: {
-                    range: 200, // Preferred attack range
-                    keepDistance: 150, // Minimum distance to maintain from player
+                    range: 400, // Doubled from 200 to 400 - much longer range
+                    keepDistance: 300, // Increased proportionally from 150 to 300
                     projectileSpeed: 120, // Speed of egg projectiles
-                    projectileDamage: 6, // Damage per egg
+                    projectileDamage: 12, // Doubled from 6 to 12 - much more damage
                     attackCooldown: 2000, // 2 seconds between attacks
                     accuracy: 0.8 // 80% accuracy (some spread)
                 }
