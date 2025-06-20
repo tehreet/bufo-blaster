@@ -614,22 +614,25 @@ class EnemySystem {
         
         console.log('Player poisoned! Regen stopped, taking damage over time.');
         
-        // Start poison damage timer
-        let poisonTicks = Math.floor(this.poisonDuration / this.poisonTickInterval);
+        // Start poison damage timer - use simple repeat count, let Phaser handle the timing
+        const poisonTicks = Math.floor(this.poisonDuration / this.poisonTickInterval);
+        let currentTick = 0;
+        
         this.poisonTimer = this.scene.time.addEvent({
             delay: this.poisonTickInterval,
             callback: () => {
                 if (this.scene.statsSystem.getPlayerProgression().health > 0) {
-                    this.scene.statsSystem.takeDamage(this.poisonDamage);
-                    console.log(`Poison damage: ${this.poisonDamage}`);
+                    this.scene.statsSystem.takeDamage(this.poisonDamage, true); // true = bypass invincibility
+                    console.log(`Poison damage: ${this.poisonDamage} (tick ${currentTick + 1}/${poisonTicks})`);
                 }
                 
-                poisonTicks--;
-                if (poisonTicks <= 0) {
+                currentTick++;
+                // Clear effect after all ticks are complete
+                if (currentTick >= poisonTicks) {
                     this.clearPoisonEffect();
                 }
             },
-            repeat: poisonTicks - 1
+            repeat: poisonTicks - 1 // This will make the callback run poisonTicks times total
         });
     }
     
@@ -676,22 +679,25 @@ class EnemySystem {
         
         console.log('Player is bleeding! Taking damage over time.');
         
-        // Start bleed damage timer
-        let bleedTicks = Math.floor(this.bleedDuration / this.bleedTickInterval);
+        // Start bleed damage timer - use simple repeat count, let Phaser handle the timing
+        const bleedTicks = Math.floor(this.bleedDuration / this.bleedTickInterval);
+        let currentTick = 0;
+        
         this.bleedTimer = this.scene.time.addEvent({
             delay: this.bleedTickInterval,
             callback: () => {
                 if (this.scene.statsSystem.getPlayerProgression().health > 0) {
-                    this.scene.statsSystem.takeDamage(this.bleedDamage);
-                    console.log(`Bleed damage: ${this.bleedDamage}`);
+                    this.scene.statsSystem.takeDamage(this.bleedDamage, true); // true = bypass invincibility
+                    console.log(`Bleed damage: ${this.bleedDamage} (tick ${currentTick + 1}/${bleedTicks})`);
                 }
                 
-                bleedTicks--;
-                if (bleedTicks <= 0) {
+                currentTick++;
+                // Clear effect after all ticks are complete
+                if (currentTick >= bleedTicks) {
                     this.clearBleedEffect();
                 }
             },
-            repeat: bleedTicks - 1
+            repeat: bleedTicks - 1 // This will make the callback run bleedTicks times total
         });
     }
     

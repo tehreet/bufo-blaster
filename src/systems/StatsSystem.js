@@ -181,17 +181,20 @@ class StatsSystem {
         }
     }
 
-    takeDamage(amount) {
-        if (this.playerProgression.invincible) return 0;
+    takeDamage(amount, bypassInvincibility = false) {
+        // Check invincibility, but allow bypass for damage over time effects
+        if (this.playerProgression.invincible && !bypassInvincibility) return 0;
         
         // Apply armor reduction
         const actualDamage = Math.max(1, amount - this.playerStats.armor);
         this.playerStats.health -= actualDamage;
         
-        console.log(`Player took ${actualDamage} damage (${amount} - ${this.playerStats.armor} armor). Health: ${this.playerStats.health}/${this.playerStats.maxHealth}`);
+        console.log(`Player took ${actualDamage} damage (${amount} - ${this.playerStats.armor} armor). Health: ${this.playerStats.health}/${this.playerStats.maxHealth}${bypassInvincibility ? ' [DOT]' : ''}`);
         
-        // Trigger invincibility frames
-        this.setInvincible(1000); // 1 second invincibility
+        // Only trigger invincibility frames for regular damage, not damage over time
+        if (!bypassInvincibility) {
+            this.setInvincible(1000); // 1 second invincibility
+        }
         
         // Check for game over
         if (this.playerStats.health <= 0) {
@@ -246,8 +249,8 @@ class StatsSystem {
     updateHealthRegeneration() {
         if (!this.playerStats || !this.playerProgression) return; // Guard against null
         
-        // Skip regeneration if player is poisoned
-        if (this.playerProgression.isPoisoned) {
+        // Skip regeneration if player is poisoned or bleeding
+        if (this.playerProgression.isPoisoned || this.playerProgression.isBleeding) {
             return;
         }
         
