@@ -182,22 +182,31 @@ class StatsSystem {
     }
 
     takeDamage(amount, bypassInvincibility = false) {
+        console.log(`💔 DAMAGE: takeDamage called with amount=${amount}, bypass=${bypassInvincibility}, invincible=${this.playerProgression.invincible}`);
+        
         // Check invincibility, but allow bypass for damage over time effects
-        if (this.playerProgression.invincible && !bypassInvincibility) return 0;
+        if (this.playerProgression.invincible && !bypassInvincibility) {
+            console.log(`💔 DAMAGE: Blocked by invincibility (no bypass)`);
+            return 0;
+        }
         
         // Apply armor reduction
         const actualDamage = Math.max(1, amount - this.playerStats.armor);
         this.playerStats.health -= actualDamage;
         
-        console.log(`Player took ${actualDamage} damage (${amount} - ${this.playerStats.armor} armor). Health: ${this.playerStats.health}/${this.playerStats.maxHealth}${bypassInvincibility ? ' [DOT]' : ''}`);
+        console.log(`💔 DAMAGE: Player took ${actualDamage} damage (${amount} - ${this.playerStats.armor} armor). Health: ${this.playerStats.health}/${this.playerStats.maxHealth}${bypassInvincibility ? ' [DOT]' : ''}`);
         
         // Only trigger invincibility frames for regular damage, not damage over time
         if (!bypassInvincibility) {
+            console.log(`💔 DAMAGE: Setting invincibility for 1000ms`);
             this.setInvincible(1000); // 1 second invincibility
+        } else {
+            console.log(`💔 DAMAGE: Skipping invincibility (DOT damage)`);
         }
         
         // Check for game over
         if (this.playerStats.health <= 0) {
+            console.log(`💔 DAMAGE: Player health <= 0, triggering game over`);
             this.scene.gameOver();
         }
         

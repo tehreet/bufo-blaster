@@ -439,8 +439,10 @@ class EnemySystem {
         
         // Special effects based on enemy type
         if (enemy.enemyType.specialEffect === 'poison') {
+            console.log('🦠 Enemy has poison effect, calling applyPoisonEffect()');
             this.applyPoisonEffect();
         } else if (enemy.enemyType.specialEffect === 'bleed') {
+            console.log('🩸 Enemy has bleed effect, calling applyBleedEffect()');
             this.applyBleedEffect();
         }
         
@@ -595,13 +597,17 @@ class EnemySystem {
     }
 
     applyPoisonEffect() {
+        console.log('🦠 POISON: applyPoisonEffect() called!');
+        
         // Clear any existing poison timer
         if (this.poisonTimer) {
+            console.log('🦠 POISON: Clearing existing poison timer');
             this.poisonTimer.remove();
         }
         
         // Mark player as poisoned
         this.scene.statsSystem.getPlayerProgression().isPoisoned = true;
+        console.log('🦠 POISON: Player marked as poisoned');
         
         // Add visual indicator using StatusEffectSystem
         if (this.scene.statusEffectSystem) {
@@ -610,30 +616,41 @@ class EnemySystem {
             
             // Add new poison effect with duration
             this.poisonEffectId = this.scene.statusEffectSystem.addStatusEffect('poison', this.poisonDuration);
+            console.log('🦠 POISON: Visual indicator added');
         }
         
-        console.log('Player poisoned! Regen stopped, taking damage over time.');
+        console.log('🦠 POISON: Player poisoned! Regen stopped, taking damage over time.');
         
         // Start poison damage timer - use simple repeat count, let Phaser handle the timing
         const poisonTicks = Math.floor(this.poisonDuration / this.poisonTickInterval);
         let currentTick = 0;
         
+        console.log(`🦠 POISON: Creating timer with ${poisonTicks} ticks, ${this.poisonTickInterval}ms interval`);
+        
         this.poisonTimer = this.scene.time.addEvent({
             delay: this.poisonTickInterval,
             callback: () => {
+                console.log(`🦠 POISON: Timer callback triggered! Tick ${currentTick + 1}/${poisonTicks}`);
+                
                 if (this.scene.statsSystem.getPlayerProgression().health > 0) {
+                    console.log(`🦠 POISON: Applying ${this.poisonDamage} damage (bypassing invincibility)`);
                     this.scene.statsSystem.takeDamage(this.poisonDamage, true); // true = bypass invincibility
-                    console.log(`Poison damage: ${this.poisonDamage} (tick ${currentTick + 1}/${poisonTicks})`);
+                    console.log(`🦠 POISON: Poison damage: ${this.poisonDamage} (tick ${currentTick + 1}/${poisonTicks})`);
+                } else {
+                    console.log(`🦠 POISON: Player health is 0, skipping damage`);
                 }
                 
                 currentTick++;
                 // Clear effect after all ticks are complete
                 if (currentTick >= poisonTicks) {
+                    console.log(`🦠 POISON: All ticks complete, clearing poison effect`);
                     this.clearPoisonEffect();
                 }
             },
             repeat: poisonTicks - 1 // This will make the callback run poisonTicks times total
         });
+        
+        console.log(`🦠 POISON: Timer created successfully:`, this.poisonTimer);
     }
     
     clearPoisonEffect() {
@@ -660,13 +677,17 @@ class EnemySystem {
     }
     
     applyBleedEffect() {
+        console.log('🩸 BLEED: applyBleedEffect() called!');
+        
         // Clear any existing bleed timer
         if (this.bleedTimer) {
+            console.log('🩸 BLEED: Clearing existing bleed timer');
             this.bleedTimer.remove();
         }
         
         // Mark player as bleeding
         this.scene.statsSystem.getPlayerProgression().isBleeding = true;
+        console.log('🩸 BLEED: Player marked as bleeding');
         
         // Add visual indicator using StatusEffectSystem
         if (this.scene.statusEffectSystem) {
@@ -675,30 +696,41 @@ class EnemySystem {
             
             // Add new bleed effect with duration
             this.bleedEffectId = this.scene.statusEffectSystem.addStatusEffect('bleed', this.bleedDuration);
+            console.log('🩸 BLEED: Visual indicator added');
         }
         
-        console.log('Player is bleeding! Taking damage over time.');
+        console.log('🩸 BLEED: Player is bleeding! Taking damage over time.');
         
         // Start bleed damage timer - use simple repeat count, let Phaser handle the timing
         const bleedTicks = Math.floor(this.bleedDuration / this.bleedTickInterval);
         let currentTick = 0;
         
+        console.log(`🩸 BLEED: Creating timer with ${bleedTicks} ticks, ${this.bleedTickInterval}ms interval`);
+        
         this.bleedTimer = this.scene.time.addEvent({
             delay: this.bleedTickInterval,
             callback: () => {
+                console.log(`🩸 BLEED: Timer callback triggered! Tick ${currentTick + 1}/${bleedTicks}`);
+                
                 if (this.scene.statsSystem.getPlayerProgression().health > 0) {
+                    console.log(`🩸 BLEED: Applying ${this.bleedDamage} damage (bypassing invincibility)`);
                     this.scene.statsSystem.takeDamage(this.bleedDamage, true); // true = bypass invincibility
-                    console.log(`Bleed damage: ${this.bleedDamage} (tick ${currentTick + 1}/${bleedTicks})`);
+                    console.log(`🩸 BLEED: Bleed damage: ${this.bleedDamage} (tick ${currentTick + 1}/${bleedTicks})`);
+                } else {
+                    console.log(`🩸 BLEED: Player health is 0, skipping damage`);
                 }
                 
                 currentTick++;
                 // Clear effect after all ticks are complete
                 if (currentTick >= bleedTicks) {
+                    console.log(`🩸 BLEED: All ticks complete, clearing bleed effect`);
                     this.clearBleedEffect();
                 }
             },
             repeat: bleedTicks - 1 // This will make the callback run bleedTicks times total
         });
+        
+        console.log(`🩸 BLEED: Timer created successfully:`, this.bleedTimer);
     }
     
     clearBleedEffect() {
