@@ -45,46 +45,30 @@ class UpgradeSystem {
     }
 
     getAvailableUpgrades() {
-        // Generic upgrades available to all characters
+        // Generic upgrades available to all characters - only keeping the better version of each stat
         const genericUpgrades = [
-            // Health upgrades
-            { id: 'health1', name: '+20 Health', description: 'Increases maximum health by 20 points', type: 'generic', 
-              effect: () => this.scene.statsSystem.addStatBonus('healthBonus', 20) },
-            { id: 'health2', name: '+30 Health', description: 'Increases maximum health by 30 points', type: 'generic', 
+            // Health upgrades (only one version per stat type)
+            { id: 'health', name: '+30 Health', description: 'Increases maximum health by 30 points', type: 'generic', statType: 'health',
               effect: () => this.scene.statsSystem.addStatBonus('healthBonus', 30) },
-            { id: 'armor1', name: '+1 Armor', description: 'Reduces incoming damage by 1', type: 'generic', 
-              effect: () => this.scene.statsSystem.addStatBonus('armorBonus', 1) },
-            { id: 'armor2', name: '+2 Armor', description: 'Reduces incoming damage by 2', type: 'generic', 
+            { id: 'armor', name: '+2 Armor', description: 'Reduces incoming damage by 2', type: 'generic', statType: 'armor',
               effect: () => this.scene.statsSystem.addStatBonus('armorBonus', 2) },
-            { id: 'regen1', name: '+0.5 Health Regen', description: 'Regenerates 0.5 health per second', type: 'generic', 
-              effect: () => this.scene.statsSystem.addStatBonus('healthRegenBonus', 0.5) },
-            { id: 'regen2', name: '+1 Health Regen', description: 'Regenerates 1 health per second', type: 'generic', 
+            { id: 'regen', name: '+1 Health Regen', description: 'Regenerates 1 health per second', type: 'generic', statType: 'regen',
               effect: () => this.scene.statsSystem.addStatBonus('healthRegenBonus', 1) },
             
             // Movement upgrades
-            { id: 'speed1', name: '+20% Move Speed', description: 'Increases movement speed by 20%', type: 'generic', 
-              effect: () => this.scene.statsSystem.multiplyStats('moveSpeedMultiplier', 1.2) },
-            { id: 'speed2', name: '+30% Move Speed', description: 'Increases movement speed by 30%', type: 'generic', 
+            { id: 'speed', name: '+30% Move Speed', description: 'Increases movement speed by 30%', type: 'generic', statType: 'speed',
               effect: () => this.scene.statsSystem.multiplyStats('moveSpeedMultiplier', 1.3) },
             
             // Ability upgrades
-            { id: 'damage1', name: '+30% Ability Damage', description: 'Increases ability damage by 30%', type: 'generic', 
-              effect: () => this.scene.statsSystem.multiplyStats('abilityDamageMultiplier', 1.3) },
-            { id: 'damage2', name: '+50% Ability Damage', description: 'Increases ability damage by 50%', type: 'generic', 
+            { id: 'damage', name: '+50% Ability Damage', description: 'Increases ability damage by 50%', type: 'generic', statType: 'damage',
               effect: () => this.scene.statsSystem.multiplyStats('abilityDamageMultiplier', 1.5) },
-            { id: 'cooldown1', name: '-20% Ability Cooldown', description: 'Reduces ability cooldown by 20%', type: 'generic', 
-              effect: () => this.scene.statsSystem.multiplyStats('abilityCooldownMultiplier', 0.8) },
-            { id: 'cooldown2', name: '-30% Ability Cooldown', description: 'Reduces ability cooldown by 30%', type: 'generic', 
+            { id: 'cooldown', name: '-30% Ability Cooldown', description: 'Reduces ability cooldown by 30%', type: 'generic', statType: 'cooldown',
               effect: () => this.scene.statsSystem.multiplyStats('abilityCooldownMultiplier', 0.7) },
-            { id: 'radius1', name: '+25% Ability Radius', description: 'Increases ability area of effect by 25%', type: 'generic', 
-              effect: () => this.scene.statsSystem.multiplyStats('abilityRadiusMultiplier', 1.25) },
-            { id: 'radius2', name: '+40% Ability Radius', description: 'Increases ability area of effect by 40%', type: 'generic', 
+            { id: 'radius', name: '+40% Ability Radius', description: 'Increases ability area of effect by 40%', type: 'generic', statType: 'radius',
               effect: () => this.scene.statsSystem.multiplyStats('abilityRadiusMultiplier', 1.4) },
             
             // Utility upgrades
-            { id: 'pickup1', name: '+30% Pickup Range', description: 'Increases XP magnetism range by 30%', type: 'generic', 
-              effect: () => this.scene.statsSystem.multiplyStats('pickupRangeMultiplier', 1.3) },
-            { id: 'pickup2', name: '+50% Pickup Range', description: 'Increases XP magnetism range by 50%', type: 'generic', 
+            { id: 'pickup', name: '+50% Pickup Range', description: 'Increases XP magnetism range by 50%', type: 'generic', statType: 'pickup',
               effect: () => this.scene.statsSystem.multiplyStats('pickupRangeMultiplier', 1.5) }
         ];
         
@@ -101,48 +85,47 @@ class UpgradeSystem {
         switch(character.id) {
             case 'shield':
                 return [
-                    { id: 'shield_bash_power', name: 'Shield Slam', description: 'Shield bash damage increased by 100%', type: 'character', 
+                    { id: 'shield_bash_power', name: 'Shield Slam', description: 'Shield bash damage increased by 100%', type: 'character', statType: 'damage',
                       effect: () => this.scene.statsSystem.multiplyStats('abilityDamageMultiplier', 2.0) },
-                    { id: 'shield_bash_speed', name: 'Rapid Bash', description: 'Shield bash triggers 40% faster', type: 'character', 
+                    { id: 'shield_bash_speed', name: 'Rapid Bash', description: 'Shield bash triggers 40% faster', type: 'character', statType: 'cooldown',
                       effect: () => this.scene.statsSystem.multiplyStats('abilityCooldownMultiplier', 0.6) },
-                    { id: 'shield_bash_range', name: 'Shield Sweep', description: 'Shield bash range increased by 50%', type: 'character', 
+                    { id: 'shield_bash_range', name: 'Shield Sweep', description: 'Shield bash range increased by 50%', type: 'character', statType: 'radius',
                       effect: () => this.scene.statsSystem.multiplyStats('abilityRadiusMultiplier', 1.5) },
-                    { id: 'shield_fortress', name: 'Fortress Form', description: '+60 Health and +3 Armor', type: 'character', 
+                    { id: 'shield_fortress', name: 'Fortress Form', description: '+60 Health and +3 Armor', type: 'character', statType: 'unique',
                       effect: () => { 
                           this.scene.statsSystem.addStatBonus('healthBonus', 60);
                           this.scene.statsSystem.addStatBonus('armorBonus', 3);
                       }},
-                    { id: 'shield_regeneration', name: 'Shield Blessing', description: 'Health regeneration doubled', type: 'character', 
+                    { id: 'shield_regeneration', name: 'Shield Blessing', description: 'Health regeneration doubled', type: 'character', statType: 'regen',
                       effect: () => this.scene.statsSystem.multiplyStats('healthRegenMultiplier', 2.0) }
                 ];
                 
             case 'wizard':
                 return [
-                    { id: 'wizard_more_stars', name: 'Meteor Shower', description: '+3 stars per cast', type: 'character', 
+                    { id: 'wizard_more_stars', name: 'Meteor Shower', description: '+3 stars per cast', type: 'character', statType: 'unique',
                       effect: () => this.scene.statsSystem.addStatBonus('projectileCountBonus', 3) },
-                    { id: 'wizard_star_power', name: 'Stellar Power', description: 'Star damage increased by 75%', type: 'character', 
+                    { id: 'wizard_star_power', name: 'Stellar Power', description: 'Star damage increased by 75%', type: 'character', statType: 'damage',
                       effect: () => this.scene.statsSystem.multiplyStats('abilityDamageMultiplier', 1.75) },
-                    { id: 'wizard_star_size', name: 'Greater Impact', description: 'Star explosion radius increased by 50%', type: 'character', 
+                    { id: 'wizard_star_size', name: 'Greater Impact', description: 'Star explosion radius increased by 50%', type: 'character', statType: 'radius',
                       effect: () => this.scene.statsSystem.multiplyStats('abilityRadiusMultiplier', 1.5) },
-
-                    { id: 'wizard_rapid_cast', name: 'Arcane Haste', description: 'Starfall cooldown reduced by 40%', type: 'character', 
+                    { id: 'wizard_rapid_cast', name: 'Arcane Haste', description: 'Starfall cooldown reduced by 40%', type: 'character', statType: 'cooldown',
                       effect: () => this.scene.statsSystem.multiplyStats('abilityCooldownMultiplier', 0.6) }
                 ];
                 
             case 'bat':
                 return [
-                    { id: 'bat_power', name: 'Sharpened Boomerang', description: 'Boomerang damage increased by 100%', type: 'character', 
+                    { id: 'bat_power', name: 'Sharpened Boomerang', description: 'Boomerang damage increased by 100%', type: 'character', statType: 'damage',
                       effect: () => this.scene.statsSystem.multiplyStats('abilityDamageMultiplier', 2.0) },
-                    { id: 'bat_speed', name: 'Quick Throw', description: 'Boomerang cooldown reduced by 40%', type: 'character', 
+                    { id: 'bat_speed', name: 'Quick Throw', description: 'Boomerang cooldown reduced by 40%', type: 'character', statType: 'cooldown',
                       effect: () => this.scene.statsSystem.multiplyStats('abilityCooldownMultiplier', 0.6) },
-                    { id: 'bat_range', name: 'Aerodynamic Design', description: 'Boomerang range increased by 50%', type: 'character', 
+                    { id: 'bat_range', name: 'Aerodynamic Design', description: 'Boomerang range increased by 50%', type: 'character', statType: 'radius',
                       effect: () => this.scene.statsSystem.multiplyStats('abilityRadiusMultiplier', 1.5) },
-                    { id: 'bat_stun', name: 'Stunning Impact', description: 'Stun duration increased to 2 seconds', type: 'character', 
+                    { id: 'bat_stun', name: 'Stunning Impact', description: 'Stun duration increased to 2 seconds', type: 'character', statType: 'unique',
                       effect: () => {
                           // This would extend stun duration in the boomerang system
                           console.log('Stunning Impact upgrade applied - stun duration doubled');
                       }},
-                    { id: 'bat_agility', name: 'Bat Agility', description: '+30% move speed and +25 health', type: 'character', 
+                    { id: 'bat_agility', name: 'Bat Agility', description: '+30% move speed and +25 health', type: 'character', statType: 'unique',
                       effect: () => {
                           this.scene.statsSystem.multiplyStats('moveSpeedMultiplier', 1.3);
                           this.scene.statsSystem.addStatBonus('healthBonus', 25);
@@ -155,10 +138,23 @@ class UpgradeSystem {
     }
 
     getUniqueRandomUpgrade(availableUpgrades) {
-        // Filter out upgrades that are already in current selection
-        const unusedUpgrades = availableUpgrades.filter(upgrade => 
-            !this.currentUpgrades.some(selected => selected.id === upgrade.id)
-        );
+        // Get the stat types already selected to prevent duplicates
+        const selectedStatTypes = this.currentUpgrades.map(upgrade => upgrade.statType || 'unknown');
+        
+        // Filter out upgrades that conflict with already selected ones
+        const unusedUpgrades = availableUpgrades.filter(upgrade => {
+            // Always allow 'unique' stat types (they don't conflict with anything)
+            if (upgrade.statType === 'unique') {
+                // But still prevent exact ID duplicates
+                return !this.currentUpgrades.some(selected => selected.id === upgrade.id);
+            }
+            
+            // For non-unique upgrades, prevent both ID and stat type duplicates
+            const idConflict = this.currentUpgrades.some(selected => selected.id === upgrade.id);
+            const statTypeConflict = selectedStatTypes.includes(upgrade.statType);
+            
+            return !idConflict && !statTypeConflict;
+        });
         
         if (unusedUpgrades.length === 0) {
             return null; // No more unique upgrades available
