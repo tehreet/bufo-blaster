@@ -102,8 +102,8 @@ class UpgradeSystem {
                 
             case 'wizard':
                 return [
-                    { id: 'wizard_more_stars', name: 'Meteor Shower', description: '+3 stars per cast', type: 'character', statType: 'unique',
-                      effect: () => this.scene.statsSystem.addStatBonus('projectileCountBonus', 3) },
+                    { id: 'wizard_more_stars', name: 'Meteor Shower', description: '+1 star per cast', type: 'character', statType: 'unique',
+                      effect: () => this.scene.statsSystem.addStatBonus('projectileCountBonus', 1) },
                     { id: 'wizard_star_power', name: 'Stellar Power', description: 'Star damage increased by 18.75%', type: 'character', statType: 'damage',
                       effect: () => this.scene.statsSystem.multiplyStats('abilityDamageMultiplier', 1.1875) },
                     { id: 'wizard_star_size', name: 'Greater Impact', description: 'Star explosion radius increased by 50%', type: 'character', statType: 'radius',
