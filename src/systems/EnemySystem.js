@@ -763,63 +763,45 @@ class EnemySystem {
             collectedXP += orb.xpValue;
             orbsCollected++;
             
-            // Store original position for safe tween animation
+            // Store original position and properties for animation
             const startX = orb.x;
             const startY = orb.y;
+            const orbColor = orb.fillColor || 0x00ff00;
+            const orbRadius = orb.radius || 8;
             
-            // Remove orb from physics and groups immediately to prevent further collisions
-            if (orb.body) {
-                // Remove from physics world entirely to prevent any collision issues
-                try {
+            // Remove original orb immediately - no more physics or rendering issues
+            try {
+                if (orb.body) {
                     this.scene.matter.world.remove(orb.body);
-                    orb.body = null;
-                } catch (error) {
-                    console.log('Error removing orb from physics:', error);
                 }
+                this.scene.xpOrbs.remove(orb);
+                orb.destroy();
+            } catch (error) {
+                console.log('Error removing orb:', error);
             }
-            this.scene.xpOrbs.remove(orb); // Remove from group
             
-            // Create a visual-only tween object for animation
-            const orbAnimation = {
-                x: startX,
-                y: startY,
-                scaleX: 1,
-                scaleY: 1,
-                alpha: 1
-            };
+            // Create a new visual-only element for animation (no physics)
+            const animationOrb = this.scene.add.circle(startX, startY, orbRadius, orbColor);
+            animationOrb.setAlpha(1);
             
-            // Update the actual orb's position during tween to follow animation
+            // Animate the visual element toward player
             this.scene.tweens.add({
-                targets: orbAnimation,
+                targets: animationOrb,
                 x: player.x,
                 y: player.y,
                 scaleX: 0.1,
                 scaleY: 0.1,
                 alpha: 0.5,
                 duration: 300,
-                onUpdate: () => {
-                    // Only update if orb still exists
-                    if (orb && orb.active && orb.scene) {
-                        try {
-                            orb.x = orbAnimation.x;
-                            orb.y = orbAnimation.y;
-                            orb.scaleX = orbAnimation.scaleX;
-                            orb.scaleY = orbAnimation.scaleY;
-                            orb.alpha = orbAnimation.alpha;
-                        } catch (error) {
-                            // Orb was destroyed, stop updating
-                            console.log('Orb destroyed during animation');
-                        }
-                    }
-                },
+                ease: 'Power2',
                 onComplete: () => {
-                    // Clean up the orb safely
+                    // Clean up the animation element
                     try {
-                        if (orb && orb.active && orb.scene) {
-                            orb.destroy();
+                        if (animationOrb && animationOrb.active) {
+                            animationOrb.destroy();
                         }
                     } catch (error) {
-                        console.log('Orb already destroyed');
+                        console.log('Animation orb already destroyed');
                     }
                 }
             });
