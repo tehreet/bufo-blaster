@@ -12,6 +12,7 @@ import AssetManager from '../utils/AssetManager.js';
 import AudioManager from '../utils/AudioManager.js';
 import DebugUtils from '../utils/DebugUtils.js';
 import AssetConfig from '../utils/AssetConfig.js';
+import Logger from '../utils/Logger.js';
 
 class GameScene extends Phaser.Scene {
     constructor() {
@@ -34,27 +35,27 @@ class GameScene extends Phaser.Scene {
             const pngAssets = AssetConfig.getPNGAssetsForPreload();
             pngAssets.forEach(asset => {
                 this.load.image(asset.key, asset.path);
-                console.log(`Loading PNG asset: ${asset.key} from ${asset.path}`);
             });
+            Logger.asset(`Queued ${pngAssets.length} PNG assets for loading`);
             
             // Load audio assets using centralized configuration
             const audioAssets = AssetConfig.getAudioAssetsForPreload();
             audioAssets.forEach(asset => {
                 this.load.audio(asset.key, asset.path);
-                console.log(`Loading audio asset: ${asset.key} from ${asset.path}`);
             });
+            Logger.asset(`Queued ${audioAssets.length} audio assets for loading`);
             
-            console.log('All assets queued for loading using centralized configuration');
+            Logger.asset('All assets queued for loading using centralized configuration');
             
         } catch (error) {
-            console.error('Error setting up asset loading:', error);
+            Logger.assetError('Error setting up asset loading:', error);
             // Fallback to basic assets if configuration fails
             this.loadFallbackAssets();
         }
     }
     
     loadFallbackAssets() {
-        console.warn('Loading fallback assets due to configuration error');
+        Logger.assetWarn('Loading fallback assets due to configuration error');
         
         // Essential assets for basic functionality
         this.load.image('tileset', 'assets/map/single-tile-tileset.png');
@@ -124,7 +125,12 @@ class GameScene extends Phaser.Scene {
         this.showStatsDebug = false;
         this.statsDebugUI = null;
         
-        console.log('All game systems initialized');
+        Logger.system('All game systems initialized');
+        
+        // Show logging instructions in console for development
+        if (typeof window !== 'undefined' && window.location.hostname === 'localhost') {
+            Logger.logInstructions();
+        }
     }
 
     update() {
@@ -140,16 +146,8 @@ class GameScene extends Phaser.Scene {
             this.statusEffectSystem.update();
             this.debugUtils.update();
             this.uiSystem.updateUI();
-        } else {
-            // Debug: Log why update is not running
-            const reasons = [];
-            if (!this.gameStarted) reasons.push('game not started');
-            if (this.isPaused) reasons.push('game paused');
-            if (this.upgradeSystem.upgradeActive) reasons.push('upgrade active');
-            if (reasons.length > 0 && Math.random() < 0.01) { // Only log 1% of the time to avoid spam
-                console.log('Game update blocked:', reasons.join(', '));
-            }
         }
+        // Removed excessive update blocking logs - use F2 for debug info instead
         
         // Always update upgrade system for input handling
         this.upgradeSystem.handleGamepadUpgradeInput();

@@ -62,7 +62,6 @@ class UISystem {
             if (!hasAnimatedOverlay) {
                 // No animated version available or failed to load, show static sprite
                 charSprite.setAlpha(1);
-                console.log(`Using static sprite for character: ${character.sprite}`);
             }
             
             // Character name (moved down to accommodate larger sprite)
@@ -203,7 +202,6 @@ class UISystem {
         if (!hasAnimatedOverlay) {
             // No animated version available or failed to load, show static sprite
             this.scene.player.setAlpha(1);
-            console.log(`Using static sprite for player character: ${selectedCharacter.sprite}`);
         }
         
         // Add Matter.js physics to player (much smaller collision radius to match visual sprite)
@@ -229,11 +227,11 @@ class UISystem {
     }
 
     generateMap(mapWidth, mapHeight) {
-        // Load the pre-generated grass/dirt map
-        this.scene.map = this.scene.make.tilemap({ key: 'level1' });
+        // Load the pre-generated grass/dirt map using correct asset keys
+        this.scene.map = this.scene.make.tilemap({ key: 'single-tile-level' });
         
-        // Add the tileset
-        const tileset = this.scene.map.addTilesetImage('single-tile', 'tileset');
+        // Add the tileset using correct asset key
+        const tileset = this.scene.map.addTilesetImage('single-tile', 'single-tile-tileset');
         
         // Create the layer from the pre-generated map data
         const backgroundLayer = this.scene.map.createLayer('Ground', tileset);
@@ -242,7 +240,7 @@ class UISystem {
         this.scene.map.widthInPixels = this.scene.map.widthInPixels;
         this.scene.map.heightInPixels = this.scene.map.heightInPixels;
         
-        console.log(`Loaded single-tile background map: ${this.scene.map.width}x${this.scene.map.height} tiles (${this.scene.map.widthInPixels}x${this.scene.map.heightInPixels} pixels)`);
+        console.info(`[ASSET] Loaded tilemap: ${this.scene.map.width}x${this.scene.map.height} tiles (${this.scene.map.widthInPixels}x${this.scene.map.heightInPixels} pixels)`);
     }
 
     setupPhysicsCollisions() {
@@ -442,7 +440,6 @@ class UISystem {
         }
         
         this.showPauseUI();
-        console.log('Game paused');
     }
 
     resumeGame() {
@@ -455,7 +452,6 @@ class UISystem {
         }
         
         this.hidePauseUI();
-        console.log('Game resumed');
     }
 
     showPauseUI() {
@@ -506,7 +502,6 @@ class UISystem {
     }
 
     gameOver() {
-        console.log('Game Over!');
         
         // Stop game systems
         this.scene.gameStarted = false;
@@ -638,7 +633,6 @@ class UISystem {
     }
 
     restartGame() {
-        console.log('Restarting game...');
         
         // Clean up all systems and timers
         if (this.scene.enemySpawnTimer) {

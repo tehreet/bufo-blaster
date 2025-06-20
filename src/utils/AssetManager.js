@@ -1,6 +1,7 @@
 // Asset Manager - Handles animated GIF overlays and asset management
 
 import AssetConfig from './AssetConfig.js';
+import Logger from './Logger.js';
 
 class AssetManager {
     constructor(scene) {
@@ -20,13 +21,13 @@ class AssetManager {
         // Check if we already failed to load this asset
         const assetKey = `${assetType}_${assetId}`;
         if (this.failedAssets.has(assetKey)) {
-            console.warn(`Skipping already failed asset: ${assetKey}`);
+            Logger.assetWarn(`Skipping already failed asset: ${assetKey}`);
             return false;
         }
         
         // Check if asset is currently loading
         if (this.loadingAssets.has(assetKey)) {
-            console.warn(`Asset already loading: ${assetKey}`);
+            Logger.assetWarn(`Asset already loading: ${assetKey}`);
             return false;
         }
         
@@ -36,13 +37,13 @@ class AssetManager {
             const asset = assetConfig[assetType][assetId];
             
             if (!asset) {
-                console.warn(`Asset configuration not found: ${assetType}.${assetId}`);
+                Logger.assetWarn(`Asset configuration not found: ${assetType}.${assetId}`);
                 return false;
             }
             
             // Check if this asset has a GIF version
             if (!asset.gif) {
-                console.log(`No animated version available for: ${assetId}, using static PNG`);
+                Logger.asset(`No animated version available for: ${assetId}, using static PNG`);
                 // Show the static PNG sprite
                 if (gameObject.setAlpha) {
                     gameObject.setAlpha(1);
@@ -71,7 +72,7 @@ class AssetManager {
             
             // Success handler
             overlay.onload = () => {
-                console.log(`Successfully loaded animated overlay: ${assetPath}`);
+                Logger.asset(`Successfully loaded animated overlay: ${assetId}`);
                 this.loadingAssets.delete(assetKey);
                 
                 // Hide the static sprite since we have the animated overlay
@@ -82,7 +83,7 @@ class AssetManager {
             
             // Error handling with fallback
             overlay.onerror = () => {
-                console.warn(`Failed to load animated overlay: ${assetPath}`);
+                Logger.assetWarn(`Failed to load animated overlay: ${assetPath}`);
                 this.loadingAssets.delete(assetKey);
                 this.failedAssets.add(assetKey);
                 
@@ -93,7 +94,7 @@ class AssetManager {
                 this.animatedOverlays.delete(gameObject);
                 
                 // Fallback to static sprite
-                console.log(`Falling back to static sprite for: ${assetId}`);
+                Logger.asset(`Falling back to static sprite for: ${assetId}`);
                 if (gameObject.setAlpha) {
                     gameObject.setAlpha(1);
                 }
@@ -115,11 +116,11 @@ class AssetManager {
                 assetType: assetType
             });
             
-            console.log(`Created animated overlay for ${assetId} (${assetType})`);
+            Logger.asset(`Created animated overlay for ${assetId} (${assetType})`);
             return true;
             
         } catch (error) {
-            console.error('Error creating animated overlay:', error);
+            Logger.assetError('Error creating animated overlay:', error);
             this.loadingAssets.delete(assetKey);
             this.failedAssets.add(assetKey);
             
@@ -224,7 +225,7 @@ class AssetManager {
     }
 
     cleanupAllOverlays() {
-        console.log(`Cleaning up ${this.animatedOverlays.size} animated overlays`);
+        Logger.asset(`Cleaning up ${this.animatedOverlays.size} animated overlays`);
         
         this.animatedOverlays.forEach((overlay, gameObject) => {
             if (overlay.element) {
@@ -301,7 +302,7 @@ class AssetManager {
     retryFailedAsset(assetKey) {
         if (this.failedAssets.has(assetKey)) {
             this.failedAssets.delete(assetKey);
-            console.log(`Cleared failed status for asset: ${assetKey}`);
+            Logger.asset(`Cleared failed status for asset: ${assetKey}`);
             return true;
         }
         return false;
@@ -311,7 +312,7 @@ class AssetManager {
     clearFailedAssets() {
         const count = this.failedAssets.size;
         this.failedAssets.clear();
-        console.log(`Cleared ${count} failed asset entries`);
+        Logger.asset(`Cleared ${count} failed asset entries`);
     }
 }
 

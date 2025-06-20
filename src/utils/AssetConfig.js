@@ -74,11 +74,11 @@ class AssetConfig {
                 }
             },
             
-            // Map assets
+            // Map assets (keys must match what the game expects)
             map: {
                 'single-tile-tileset': 'assets/map/single-tile-tileset.png',
                 'single-tile-level': 'assets/map/single-tile-level.json',
-                'grass-dirt-tileset': 'assets/map/grass-dirt-tileset.png',
+                'grass-dirt-tileset': 'assets/map/grass-dirt-tileset.png', 
                 'grass-dirt-level': 'assets/map/grass-dirt-level.json',
                 'custom-tileset': 'assets/map/custom-tileset.png',
                 'custom-level': 'assets/map/custom-level.json'
