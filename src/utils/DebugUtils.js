@@ -62,21 +62,34 @@ class DebugUtils {
             return; // Don't create during upgrade screens or if already exists
         }
         
-        // Background panel
-        const panel = this.scene.add.rectangle(150, 250, 280, 450, 0x000000, 0.8);
-        panel.setStrokeStyle(2, 0x00ff00);
-        panel.setScrollFactor(0).setDepth(2000);
+        // Position below the main stats panel (which is at 20,20 with size 200x140)
+        const debugPanelX = 20;
+        const debugPanelY = 180; // Start below main stats panel (20 + 140 + 20 margin)
+        const debugPanelWidth = 200; // Same width as main stats panel
+        const debugPanelHeight = 300; // Enough height for all debug info
         
-        // Title
-        const title = this.scene.add.text(150, 50, 'STATS DEBUG', {
-            fontSize: '16px',
-            color: '#00ff00',
+        // Background panel - positioned to align with main stats panel
+        const panel = this.scene.add.rectangle(
+            debugPanelX + debugPanelWidth/2, 
+            debugPanelY + debugPanelHeight/2, 
+            debugPanelWidth, 
+            debugPanelHeight, 
+            0x000000, 
+            0.7
+        );
+        panel.setStrokeStyle(2, 0x666666); // Match main stats panel border
+        panel.setScrollFactor(0).setDepth(1000);
+        
+        // Title - positioned at top of debug panel
+        const title = this.scene.add.text(debugPanelX + debugPanelWidth/2, debugPanelY + 15, 'DEBUG (F2)', {
+            fontSize: '12px',
+            color: '#ffff00',
             fontWeight: 'bold'
-        }).setOrigin(0.5, 0.5).setScrollFactor(0).setDepth(2001);
+        }).setOrigin(0.5, 0.5).setScrollFactor(0).setDepth(1001);
         
-        // Stats container
-        const statsContainer = this.scene.add.container(150, 250);
-        statsContainer.setScrollFactor(0).setDepth(2001);
+        // Stats container - positioned relative to panel
+        const statsContainer = this.scene.add.container(debugPanelX + 10, debugPanelY + 35);
+        statsContainer.setScrollFactor(0).setDepth(1001);
         
         this.statsDebugUI = {
             panel: panel,
@@ -111,17 +124,17 @@ class DebugUtils {
         const textStyle = {
             fontSize: '10px',
             color: '#ffffff',
-            wordWrap: { width: 260 }
+            wordWrap: { width: 180 }
         };
         
         const headerStyle = {
-            fontSize: '11px',
+            fontSize: '10px',
             color: '#ffff00',
             fontWeight: 'bold'
         };
         
-        let yOffset = -200;
-        const lineHeight = 12;
+        let yOffset = 0; // Start from top of container
+        const lineHeight = 11;
         
         // Helper function to add text
         const addText = (text, style = textStyle) => {
@@ -132,53 +145,68 @@ class DebugUtils {
             yOffset += lineHeight;
         };
         
-        // Progression
-        addText('=== PROGRESSION ===', headerStyle);
-        addText(`Level: ${progression.level}`);
+        // Character & Level
+        addText('CHAR & LEVEL', headerStyle);
+        addText(`${progression.character.name} L${progression.level}`);
         addText(`XP: ${progression.xp}/${progression.xpToNextLevel}`);
-        addText(`Character: ${progression.character.name}`);
-        yOffset += 5;
+        yOffset += 3;
         
         // Core Stats
-        addText('=== CORE STATS ===', headerStyle);
-        addText(`Health: ${Math.round(playerStats.health)}/${playerStats.maxHealth}`);
+        addText('CORE STATS', headerStyle);
+        addText(`HP: ${Math.round(playerStats.health)}/${playerStats.maxHealth}`);
         addText(`Armor: ${playerStats.armor}`);
-        addText(`Health Regen: ${playerStats.healthRegen.toFixed(1)}/sec`);
-        addText(`Move Speed: ${playerStats.moveSpeed.toFixed(1)}`);
-        yOffset += 5;
+        addText(`Regen: ${playerStats.healthRegen.toFixed(1)}/sec`);
+        addText(`Speed: ${playerStats.moveSpeed.toFixed(1)}`);
+        yOffset += 3;
         
         // Ability Stats
-        addText('=== ABILITIES ===', headerStyle);
-        addText(`Damage: ${playerStats.abilityDamage.toFixed(2)}`);
+        addText('ABILITIES', headerStyle);
+        addText(`Damage: ${playerStats.abilityDamage.toFixed(1)}`);
         addText(`Cooldown: ${Math.round(playerStats.abilityCooldown)}ms`);
         addText(`Radius: ${Math.round(playerStats.abilityRadius)}`);
-        addText(`Projectiles: ${playerStats.projectileCount}`);
-        addText(`Pickup Range: ${Math.round(playerStats.pickupRange)}`);
-        yOffset += 5;
+        addText(`Count: ${playerStats.projectileCount}`);
+        addText(`Pickup: ${Math.round(playerStats.pickupRange)}`);
+        yOffset += 3;
         
-        // Multipliers
-        addText('=== MULTIPLIERS ===', headerStyle);
-        addText(`Damage: ${modifiers.abilityDamageMultiplier.toFixed(2)}x`);
-        addText(`Cooldown: ${modifiers.abilityCooldownMultiplier.toFixed(2)}x`);
-        addText(`Move Speed: ${modifiers.moveSpeedMultiplier.toFixed(2)}x`);
-        addText(`Radius: ${modifiers.abilityRadiusMultiplier.toFixed(2)}x`);
-        addText(`Pickup: ${modifiers.pickupRangeMultiplier.toFixed(2)}x`);
-        addText(`Pickup: +${modifiers.pickupRangeBonus}`);
+        // Multipliers (compact format)
+        addText('MULTIPLIERS', headerStyle);
+        addText(`Dmg: ${modifiers.abilityDamageMultiplier.toFixed(2)}x`);
+        addText(`CD: ${modifiers.abilityCooldownMultiplier.toFixed(2)}x`);
+        addText(`Spd: ${modifiers.moveSpeedMultiplier.toFixed(2)}x`);
+        addText(`Rad: ${modifiers.abilityRadiusMultiplier.toFixed(2)}x`);
+        addText(`Pick: ${modifiers.pickupRangeMultiplier.toFixed(2)}x`);
+        yOffset += 3;
         
-        // Bonuses
-        addText('=== BONUSES ===', headerStyle);
-        addText(`Health: +${modifiers.healthBonus}`);
-        addText(`Armor: +${modifiers.armorBonus}`);
-        addText(`Regen: +${modifiers.healthRegenBonus.toFixed(1)}`);
-        addText(`Damage: +${modifiers.abilityDamageBonus.toFixed(1)}`);
-        addText(`Radius: +${modifiers.abilityRadiusBonus}`);
-        addText(`Pickup: +${modifiers.pickupRangeBonus}`);
+        // Bonuses (compact format)
+        addText('BONUSES', headerStyle);
+        addText(`HP: +${modifiers.healthBonus}`);
+        addText(`Arm: +${modifiers.armorBonus}`);
+        addText(`Reg: +${modifiers.healthRegenBonus.toFixed(1)}`);
+        addText(`Dmg: +${modifiers.abilityDamageBonus.toFixed(1)}`);
+        addText(`Rad: +${modifiers.abilityRadiusBonus}`);
+        addText(`Pick: +${modifiers.pickupRangeBonus}`);
         
         // Status indicators
         if (progression.invincible) {
-            yOffset += 5;
-            addText('=== STATUS ===', headerStyle);
+            yOffset += 3;
+            addText('STATUS', headerStyle);
             addText('INVINCIBLE', { fontSize: '10px', color: '#ff0000', fontWeight: 'bold' });
+        }
+        
+        if (progression.isPoisoned) {
+            if (!progression.invincible) {
+                yOffset += 3;
+                addText('STATUS', headerStyle);
+            }
+            addText('POISONED', { fontSize: '10px', color: '#00ff40', fontWeight: 'bold' });
+        }
+        
+        if (progression.isBleeding) {
+            if (!progression.invincible && !progression.isPoisoned) {
+                yOffset += 3;
+                addText('STATUS', headerStyle);
+            }
+            addText('BLEEDING', { fontSize: '10px', color: '#ff0000', fontWeight: 'bold' });
         }
     }
 
