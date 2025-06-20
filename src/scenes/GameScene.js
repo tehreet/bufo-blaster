@@ -33,6 +33,7 @@ class GameScene extends Phaser.Scene {
         this.load.image('bufo-pog', 'assets/enemies/bufo-pog.png');
         this.load.image('bufo-enraged', 'assets/enemies/bufo-enraged.png');
         this.load.image('bufo-mob', 'assets/enemies/bufo-mob.png');
+        this.load.image('bufo-vampire', 'assets/enemies/bufo-vampire.png');
         
         // Load sound effects (from original game)
         this.load.audio('shoot', 'assets/sfx/shoot.mp3');

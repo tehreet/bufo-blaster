@@ -21,10 +21,10 @@ class StatusEffectSystem {
         this.effectConfigs.set('poison', {
             text: 'POISONED',
             fontSize: '16px',
-            color: '#ff0040',
-            backgroundColor: '#440000',
+            color: '#00ff40', // Changed back to green
+            backgroundColor: '#004400', // Changed back to dark green
             padding: { x: 8, y: 4 },
-            pulseColor: '#ff4466',
+            pulseColor: '#44ff66', // Changed back to bright green
             pulseSpeed: 400,
             priority: 1 // Higher priority effects show closer to player
         });
@@ -71,6 +71,17 @@ class StatusEffectSystem {
             pulseColor: '#66FFFF',
             pulseSpeed: 1000,
             priority: 2
+        });
+        
+        this.effectConfigs.set('bleed', {
+            text: 'BLEEDING',
+            fontSize: '14px',
+            color: '#FF0000', // Bright red for blood
+            backgroundColor: '#440000', // Dark red background
+            padding: { x: 6, y: 3 },
+            pulseColor: '#FF3333', // Bright red pulse
+            pulseSpeed: 300, // Fast pulse for urgency
+            priority: 1 // High priority like poison
         });
         
         // Add more status effect configs as needed...

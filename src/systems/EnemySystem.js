@@ -10,6 +10,12 @@ class EnemySystem {
         this.poisonDamage = 6; // 6 damage per tick (was 2)
         this.poisonTickInterval = 800; // 0.8 seconds between damage ticks (was 1.0)
         
+        // Bleed system tracking - Vampire Bufo bleed effect
+        this.bleedTimer = null;
+        this.bleedDuration = 8000; // 8 seconds of bleeding
+        this.bleedDamage = 4; // 4 damage per tick (moderate damage)
+        this.bleedTickInterval = 1000; // 1 second between damage ticks
+        
         // XP Magnet Orb system - MUCH MORE RARE
         this.lastMagnetOrbLevel = 0; // Track last level where magnet orb was spawned
         this.magnetOrbKillChance = 0.005; // 0.5% chance per enemy kill (was 1.5% - reduced by 75%)
@@ -73,6 +79,20 @@ class EnemySystem {
                 hitboxRadius: 6, // 48px * 12.5% = 6px (matches player ratio)
                 xpValue: 30,
                 weight: 5 // Very rare but very tough
+            },
+            {
+                id: 'vampire',
+                name: 'Vampire Bufo',
+                sprite: 'bufo-vampire',
+                health: 5, // High health but not as tanky as mob bufo
+                speed: 100, // Very fast as requested
+                displaySize: 45,
+                hitboxRadius: 5, // 45px * 12.5% ≈ 5.6px, rounded to 5px
+                xpValue: 35, // High XP value due to special abilities
+                weight: 8, // Rarer than basic enemies but not as rare as mob bufo
+                specialEffect: 'bleed', // Causes bleed on contact
+                contactDamage: 12, // Moderate damage
+                healthRegen: 1.0 // High health regeneration (double the normal regen)
             }
         ];
     }
@@ -151,6 +171,10 @@ class EnemySystem {
         // Special enemy properties
         if (enemyType.specialEffect === 'regen') {
             enemy.healthRegen = 0.5; // Health per second
+            enemy.lastRegenTime = 0;
+        } else if (enemyType.healthRegen) {
+            // Vampire bufo and other enemies with custom health regen
+            enemy.healthRegen = enemyType.healthRegen;
             enemy.lastRegenTime = 0;
         }
         
@@ -279,6 +303,10 @@ class EnemySystem {
         // Special enemy properties
         if (enemyType.specialEffect === 'regen') {
             enemy.healthRegen = 0.5; // Health per second
+            enemy.lastRegenTime = 0;
+        } else if (enemyType.healthRegen) {
+            // Vampire bufo and other enemies with custom health regen
+            enemy.healthRegen = enemyType.healthRegen;
             enemy.lastRegenTime = 0;
         }
         
@@ -412,6 +440,8 @@ class EnemySystem {
         // Special effects based on enemy type
         if (enemy.enemyType.specialEffect === 'poison') {
             this.applyPoisonEffect();
+        } else if (enemy.enemyType.specialEffect === 'bleed') {
+            this.applyBleedEffect();
         }
         
         // Knockback effect
@@ -547,7 +577,7 @@ class EnemySystem {
                     enemy.health = Math.min(enemy.maxHealth, enemy.health + enemy.healthRegen);
                     
                     // Visual feedback for regeneration
-                    const healEffect = this.scene.add.text(enemy.x, enemy.y - 20, '+0.5', {
+                    const healEffect = this.scene.add.text(enemy.x, enemy.y - 20, `+${enemy.healthRegen}`, {
                         fontSize: '12px',
                         color: '#00ff00'
                     }).setOrigin(0.5, 0.5);
@@ -624,6 +654,68 @@ class EnemySystem {
         }
         
         console.log('Poison effect cleared.');
+    }
+    
+    applyBleedEffect() {
+        // Clear any existing bleed timer
+        if (this.bleedTimer) {
+            this.bleedTimer.remove();
+        }
+        
+        // Mark player as bleeding
+        this.scene.statsSystem.getPlayerProgression().isBleeding = true;
+        
+        // Add visual indicator using StatusEffectSystem
+        if (this.scene.statusEffectSystem) {
+            // Remove any existing bleed effects first
+            this.scene.statusEffectSystem.removeStatusEffectsByType('bleed');
+            
+            // Add new bleed effect with duration
+            this.bleedEffectId = this.scene.statusEffectSystem.addStatusEffect('bleed', this.bleedDuration);
+        }
+        
+        console.log('Player is bleeding! Taking damage over time.');
+        
+        // Start bleed damage timer
+        let bleedTicks = Math.floor(this.bleedDuration / this.bleedTickInterval);
+        this.bleedTimer = this.scene.time.addEvent({
+            delay: this.bleedTickInterval,
+            callback: () => {
+                if (this.scene.statsSystem.getPlayerProgression().health > 0) {
+                    this.scene.statsSystem.takeDamage(this.bleedDamage);
+                    console.log(`Bleed damage: ${this.bleedDamage}`);
+                }
+                
+                bleedTicks--;
+                if (bleedTicks <= 0) {
+                    this.clearBleedEffect();
+                }
+            },
+            repeat: bleedTicks - 1
+        });
+    }
+    
+    clearBleedEffect() {
+        // Clear bleed state
+        this.scene.statsSystem.getPlayerProgression().isBleeding = false;
+        
+        if (this.bleedTimer) {
+            this.bleedTimer.remove();
+            this.bleedTimer = null;
+        }
+        
+        // Remove bleed visual effect using StatusEffectSystem
+        if (this.scene.statusEffectSystem) {
+            if (this.bleedEffectId) {
+                this.scene.statusEffectSystem.removeStatusEffect(this.bleedEffectId);
+                this.bleedEffectId = null;
+            } else {
+                // Fallback: remove all bleed effects
+                this.scene.statusEffectSystem.removeStatusEffectsByType('bleed');
+            }
+        }
+        
+        console.log('Bleed effect cleared.');
     }
     
     showPoisonEffect() {
