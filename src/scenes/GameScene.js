@@ -11,6 +11,7 @@ import InputManager from '../utils/InputManager.js';
 import AssetManager from '../utils/AssetManager.js';
 import AudioManager from '../utils/AudioManager.js';
 import DebugUtils from '../utils/DebugUtils.js';
+import AssetConfig from '../utils/AssetConfig.js';
 
 class GameScene extends Phaser.Scene {
     constructor() {
@@ -18,29 +19,58 @@ class GameScene extends Phaser.Scene {
     }
 
     preload() {
-        // Load single-tile tilemap assets (Slice 65.png only)
+        try {
+            // Load tilemap assets using centralized configuration
+            const mapAssets = AssetConfig.getMapAssetsForPreload();
+            mapAssets.forEach(asset => {
+                if (asset.path.endsWith('.json')) {
+                    this.load.tilemapTiledJSON(asset.key, asset.path);
+                } else if (asset.path.endsWith('.png')) {
+                    this.load.image(asset.key, asset.path);
+                }
+            });
+            
+            // Load PNG sprites for physics collision (both characters and enemies)
+            const pngAssets = AssetConfig.getPNGAssetsForPreload();
+            pngAssets.forEach(asset => {
+                this.load.image(asset.key, asset.path);
+                console.log(`Loading PNG asset: ${asset.key} from ${asset.path}`);
+            });
+            
+            // Load audio assets using centralized configuration
+            const audioAssets = AssetConfig.getAudioAssetsForPreload();
+            audioAssets.forEach(asset => {
+                this.load.audio(asset.key, asset.path);
+                console.log(`Loading audio asset: ${asset.key} from ${asset.path}`);
+            });
+            
+            console.log('All assets queued for loading using centralized configuration');
+            
+        } catch (error) {
+            console.error('Error setting up asset loading:', error);
+            // Fallback to basic assets if configuration fails
+            this.loadFallbackAssets();
+        }
+    }
+    
+    loadFallbackAssets() {
+        console.warn('Loading fallback assets due to configuration error');
+        
+        // Essential assets for basic functionality
         this.load.image('tileset', 'assets/map/single-tile-tileset.png');
         this.load.tilemapTiledJSON('level1', 'assets/map/single-tile-level.json');
         
-        // Load character sprites (static for collision, we'll overlay GIFs for animation)
+        // Essential character sprites
         this.load.image('shield-bufo', 'assets/characters/shield-bufo.png');
         this.load.image('bufo-magician', 'assets/characters/bufo-magician.png');
         this.load.image('bat-bufo', 'assets/characters/bat-bufo.png');
         
-        // Load enemy sprites
+        // Essential enemy sprites
         this.load.image('bufo-covid', 'assets/enemies/bufo-covid.png');
         this.load.image('bufo-clown', 'assets/enemies/bufo-clown.png');
         this.load.image('bufo-pog', 'assets/enemies/bufo-pog.png');
-        this.load.image('bufo-enraged', 'assets/enemies/bufo-enraged.png');
-        this.load.image('bufo-mob', 'assets/enemies/bufo-mob.png');
-        this.load.image('bufo-vampire', 'assets/enemies/bufo-vampire.png');
-        this.load.image('bufo-chicken', 'assets/characters/bufo-chicken.png');
         
-        // Load sound effects (from original game)
-        this.load.audio('shoot', 'assets/sfx/shoot.mp3');
-        this.load.audio('enemyDie', 'assets/sfx/enemy_die.mp3');
-        this.load.audio('pickup', 'assets/sfx/pickup.mp3');
-        this.load.audio('playerHit', 'assets/sfx/player_hit.mp3');
+        // Essential audio
         this.load.audio('musicLoop', 'assets/sfx/music_loop.mp3');
     }
 

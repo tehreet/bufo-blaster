@@ -162,11 +162,20 @@ class EnemySystem {
         const clampedX = Phaser.Math.Clamp(spawnX, 0, this.scene.map.widthInPixels);
         const clampedY = Phaser.Math.Clamp(spawnY, 0, this.scene.map.heightInPixels);
         
-        // Create enemy with sprite
+        // Create enemy with sprite using centralized asset management
         const enemy = this.scene.add.image(clampedX, clampedY, enemyType.sprite);
-        enemy.setDisplaySize(enemyType.displaySize, enemyType.displaySize); // Visual size
         
-        // All enemies now use PNG sprites - no GIF overlays needed
+        // Get display size from asset configuration, fallback to enemyType.displaySize
+        const displaySize = this.scene.assetManager.getDisplaySize ? 
+            this.scene.assetManager.getDisplaySize(enemyType.sprite, 'enemies') : enemyType.displaySize;
+        enemy.setDisplaySize(displaySize, displaySize);
+        
+        // Try to create animated overlay if available, otherwise use static sprite
+        const hasAnimatedOverlay = this.scene.assetManager.createAnimatedOverlay(enemy, enemyType.sprite, 'enemies');
+        if (!hasAnimatedOverlay) {
+            // Ensure static sprite is visible if no animated overlay
+            enemy.setAlpha(1);
+        }
         
         // Add Matter.js physics with explicit configuration
         this.scene.matter.add.gameObject(enemy, {
@@ -293,11 +302,20 @@ class EnemySystem {
         const clampedX = Phaser.Math.Clamp(spawnX, 0, this.scene.map.widthInPixels);
         const clampedY = Phaser.Math.Clamp(spawnY, 0, this.scene.map.heightInPixels);
         
-        // Create enemy with sprite
+        // Create enemy with sprite using centralized asset management
         const enemy = this.scene.add.image(clampedX, clampedY, enemyType.sprite);
-        enemy.setDisplaySize(enemyType.displaySize, enemyType.displaySize);
         
-        // All enemies now use PNG sprites - no GIF overlays needed
+        // Get display size from asset configuration, fallback to enemyType.displaySize
+        const displaySize = this.scene.assetManager.getDisplaySize ? 
+            this.scene.assetManager.getDisplaySize(enemyType.sprite, 'enemies') : enemyType.displaySize;
+        enemy.setDisplaySize(displaySize, displaySize);
+        
+        // Try to create animated overlay if available, otherwise use static sprite
+        const hasAnimatedOverlay = this.scene.assetManager.createAnimatedOverlay(enemy, enemyType.sprite, 'enemies');
+        if (!hasAnimatedOverlay) {
+            // Ensure static sprite is visible if no animated overlay
+            enemy.setAlpha(1);
+        }
         
         // Add Matter.js physics
         this.scene.matter.add.gameObject(enemy, {

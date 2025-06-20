@@ -1,19 +1,62 @@
 // Asset Manager - Handles animated GIF overlays and asset management
 
+import AssetConfig from './AssetConfig.js';
+
 class AssetManager {
     constructor(scene) {
         this.scene = scene;
         this.animatedOverlays = new Map();
         this.overlaysHidden = false;
+        this.failedAssets = new Set(); // Track failed GIF loads
+        this.loadingAssets = new Set(); // Track currently loading assets
     }
 
-    createAnimatedOverlay(gameObject, assetPath, width, height) {
-        if (!gameObject || !assetPath) {
+    createAnimatedOverlay(gameObject, assetId, assetType = 'characters') {
+        if (!gameObject || !assetId) {
             console.warn('Invalid parameters for createAnimatedOverlay');
-            return;
+            return false;
+        }
+        
+        // Check if we already failed to load this asset
+        const assetKey = `${assetType}_${assetId}`;
+        if (this.failedAssets.has(assetKey)) {
+            console.warn(`Skipping already failed asset: ${assetKey}`);
+            return false;
+        }
+        
+        // Check if asset is currently loading
+        if (this.loadingAssets.has(assetKey)) {
+            console.warn(`Asset already loading: ${assetKey}`);
+            return false;
         }
         
         try {
+            // Get asset configuration
+            const assetConfig = AssetConfig.getAssetConfig();
+            const asset = assetConfig[assetType][assetId];
+            
+            if (!asset) {
+                console.warn(`Asset configuration not found: ${assetType}.${assetId}`);
+                return false;
+            }
+            
+            // Check if this asset has a GIF version
+            if (!asset.gif) {
+                console.log(`No animated version available for: ${assetId}, using static PNG`);
+                // Show the static PNG sprite
+                if (gameObject.setAlpha) {
+                    gameObject.setAlpha(1);
+                }
+                return false;
+            }
+            
+            const assetPath = asset.gif;
+            const width = asset.displaySize;
+            const height = asset.displaySize;
+            
+            // Mark as loading
+            this.loadingAssets.add(assetKey);
+            
             // Create overlay element
             const overlay = document.createElement('img');
             overlay.src = assetPath;
@@ -24,14 +67,36 @@ class AssetManager {
             overlay.style.height = height + 'px';
             overlay.style.imageRendering = 'pixelated'; // Maintain pixel art appearance
             overlay.style.userSelect = 'none';
+            overlay.style.display = 'block';
             
-            // Error handling
+            // Success handler
+            overlay.onload = () => {
+                console.log(`Successfully loaded animated overlay: ${assetPath}`);
+                this.loadingAssets.delete(assetKey);
+                
+                // Hide the static sprite since we have the animated overlay
+                if (gameObject.setAlpha) {
+                    gameObject.setAlpha(0);
+                }
+            };
+            
+            // Error handling with fallback
             overlay.onerror = () => {
                 console.warn(`Failed to load animated overlay: ${assetPath}`);
+                this.loadingAssets.delete(assetKey);
+                this.failedAssets.add(assetKey);
+                
+                // Clean up the failed overlay
                 if (overlay.parentNode) {
                     overlay.parentNode.removeChild(overlay);
                 }
                 this.animatedOverlays.delete(gameObject);
+                
+                // Fallback to static sprite
+                console.log(`Falling back to static sprite for: ${assetId}`);
+                if (gameObject.setAlpha) {
+                    gameObject.setAlpha(1);
+                }
             };
             
             // Position overlay
@@ -45,12 +110,24 @@ class AssetManager {
                 element: overlay,
                 width: width,
                 height: height,
-                gameObject: gameObject
+                gameObject: gameObject,
+                assetId: assetId,
+                assetType: assetType
             });
             
-            console.log(`Created animated overlay for ${assetPath}`);
+            console.log(`Created animated overlay for ${assetId} (${assetType})`);
+            return true;
+            
         } catch (error) {
             console.error('Error creating animated overlay:', error);
+            this.loadingAssets.delete(assetKey);
+            this.failedAssets.add(assetKey);
+            
+            // Fallback to static sprite
+            if (gameObject.setAlpha) {
+                gameObject.setAlpha(1);
+            }
+            return false;
         }
     }
 
@@ -195,6 +272,46 @@ class AssetManager {
 
     isOverlayActive(gameObject) {
         return this.animatedOverlays.has(gameObject);
+    }
+    
+    // Helper methods for accessing AssetConfig data
+    getDisplaySize(assetId, assetType = 'characters') {
+        return AssetConfig.getDisplaySize(assetId, assetType);
+    }
+    
+    getPreviewSize(characterId) {
+        return AssetConfig.getPreviewSize(characterId);
+    }
+    
+    hasAnimatedVersion(assetId, assetType = 'characters') {
+        return AssetConfig.hasAnimatedVersion(assetId, assetType);
+    }
+    
+    // Get debug information about asset loading
+    getAssetLoadingStatus() {
+        return {
+            activeOverlays: this.animatedOverlays.size,
+            failedAssets: Array.from(this.failedAssets),
+            loadingAssets: Array.from(this.loadingAssets),
+            overlaysHidden: this.overlaysHidden
+        };
+    }
+    
+    // Retry failed assets (useful for debugging)
+    retryFailedAsset(assetKey) {
+        if (this.failedAssets.has(assetKey)) {
+            this.failedAssets.delete(assetKey);
+            console.log(`Cleared failed status for asset: ${assetKey}`);
+            return true;
+        }
+        return false;
+    }
+    
+    // Clear all failed asset tracking (for retries)
+    clearFailedAssets() {
+        const count = this.failedAssets.size;
+        this.failedAssets.clear();
+        console.log(`Cleared ${count} failed asset entries`);
     }
 }
 

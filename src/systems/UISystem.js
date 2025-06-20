@@ -51,17 +51,18 @@ class UISystem {
             
             // Character sprite
             const charSprite = this.scene.add.image(cardX + cardWidth/2, cardY + 80, character.sprite);
-            // Make character previews 2x larger too (120px instead of 60px) for consistency
-            const previewSize = 120;
+            // Get the configured preview size
+            const previewSize = this.scene.assetManager.getPreviewSize ? 
+                this.scene.assetManager.getPreviewSize(character.sprite) : 120;
             charSprite.setDisplaySize(previewSize, previewSize);
             
-                                // Only create GIF overlay for characters that use GIF sprites
-            if (character.sprite !== 'bufo-magician' && character.sprite !== 'shield-bufo' && character.sprite !== 'bat-bufo') {
-                charSprite.setAlpha(0); // Hide static sprite, use animated overlay
-                this.scene.assetManager.createAnimatedOverlay(charSprite, `assets/characters/${character.sprite}.gif`, previewSize, previewSize);
-            } else {
-                // For PNG characters, show the static sprite
+            // Try to create animated overlay using centralized asset management
+            const hasAnimatedOverlay = this.scene.assetManager.createAnimatedOverlay(charSprite, character.sprite, 'characters');
+            
+            if (!hasAnimatedOverlay) {
+                // No animated version available or failed to load, show static sprite
                 charSprite.setAlpha(1);
+                console.log(`Using static sprite for character: ${character.sprite}`);
             }
             
             // Character name (moved down to accommodate larger sprite)
@@ -186,20 +187,23 @@ class UISystem {
         const playerStartX = mapWidth / 2;
         const playerStartY = mapHeight / 2;
         
-        this.scene.player = this.scene.add.image(playerStartX, playerStartY, this.scene.characterSystem.getSelectedCharacter().sprite);
-        // Make main character Bufos 2x larger (64px instead of 32px)
-        this.scene.player.setDisplaySize(64, 64);
-        
         const selectedCharacter = this.scene.characterSystem.getSelectedCharacter();
+        this.scene.player = this.scene.add.image(playerStartX, playerStartY, selectedCharacter.sprite);
         
-        // Only create GIF overlay for characters that use GIF sprites
-        if (selectedCharacter.sprite !== 'bufo-magician' && selectedCharacter.sprite !== 'shield-bufo' && selectedCharacter.sprite !== 'bat-bufo') {
-            this.scene.player.setAlpha(0); // Hide static sprite, use animated overlay
-            this.scene.assetManager.createAnimatedOverlay(this.scene.player, 
-                `assets/characters/${selectedCharacter.sprite}.gif`, 64, 64);
-        } else {
-            // For PNG characters, show the static sprite
+        // Get the configured display size for this character
+        const displaySize = this.scene.assetManager.getDisplaySize ? 
+            this.scene.assetManager.getDisplaySize(selectedCharacter.sprite, 'characters') : 64;
+        this.scene.player.setDisplaySize(displaySize, displaySize);
+        
+        // Try to create animated overlay using centralized asset management
+        const hasAnimatedOverlay = this.scene.assetManager.createAnimatedOverlay(
+            this.scene.player, selectedCharacter.sprite, 'characters'
+        );
+        
+        if (!hasAnimatedOverlay) {
+            // No animated version available or failed to load, show static sprite
             this.scene.player.setAlpha(1);
+            console.log(`Using static sprite for player character: ${selectedCharacter.sprite}`);
         }
         
         // Add Matter.js physics to player (much smaller collision radius to match visual sprite)

@@ -238,6 +238,10 @@ class DebugUtils {
             this.toggleMusic();
         }
         
+        if (Phaser.Input.Keyboard.JustDown(this.assetStatusKey)) {
+            this.showAssetLoadingStatus();
+        }
+        
         // Update debug UIs if they exist and all systems are initialized
         if (this.showStatsDebug && 
             this.statsDebugUI && 
@@ -315,6 +319,55 @@ class DebugUtils {
         console.log(`Music toggled: ${isEnabled ? 'ON' : 'OFF'}`);
     }
 
+    showAssetLoadingStatus() {
+        if (!this.scene.assetManager) {
+            console.log('Asset manager not available');
+            return;
+        }
+        
+        const status = this.scene.assetManager.getAssetLoadingStatus();
+        
+        // Show a detailed notification about asset loading status
+        const statusText = [
+            'ASSET LOADING STATUS:',
+            `Active Overlays: ${status.activeOverlays}`,
+            `Failed Assets: ${status.failedAssets.length}`,
+            `Loading Assets: ${status.loadingAssets.length}`,
+            `Overlays Hidden: ${status.overlaysHidden ? 'Yes' : 'No'}`
+        ];
+        
+        if (status.failedAssets.length > 0) {
+            statusText.push('', 'Failed Assets:');
+            status.failedAssets.forEach(asset => statusText.push(`- ${asset}`));
+        }
+        
+        if (status.loadingAssets.length > 0) {
+            statusText.push('', 'Currently Loading:');
+            status.loadingAssets.forEach(asset => statusText.push(`- ${asset}`));
+        }
+        
+        const notification = this.scene.add.text(700, 200, statusText.join('\n'), {
+            fontSize: '14px',
+            color: '#FFFFFF',
+            fontWeight: 'bold',
+            backgroundColor: '#000000',
+            padding: { x: 12, y: 8 },
+            align: 'left'
+        }).setOrigin(0.5, 0.5).setScrollFactor(0).setDepth(2000);
+        
+        // Auto-remove notification after 5 seconds
+        this.scene.time.delayedCall(5000, () => {
+            this.scene.tweens.add({
+                targets: notification,
+                alpha: 0,
+                duration: 1000,
+                onComplete: () => notification.destroy()
+            });
+        });
+        
+        console.log('Asset Loading Status:', status);
+    }
+
     // Create debug visualization for new game objects
     createHitboxDebug(gameObject, radius, color = 0xff0000) {
         if (!gameObject) return;
@@ -363,6 +416,9 @@ class DebugUtils {
         
         // F4 - Toggle music
         this.musicToggleKey = this.scene.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.F4);
+        
+        // F5 - Show asset loading status
+        this.assetStatusKey = this.scene.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.F5);
     }
 }
 
