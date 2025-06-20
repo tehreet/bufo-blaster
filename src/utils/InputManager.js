@@ -17,6 +17,9 @@ class InputManager {
         this.selectedCharacterIndex = 0;
         this.characterCards = [];
         
+        // Character direction state
+        this.lastFacingDirection = null; // Track current facing direction to prevent unnecessary flips
+        
         this.setupInput();
     }
 
@@ -308,6 +311,9 @@ class InputManager {
             }
         }
         
+        // Handle character direction based on horizontal movement
+        this.updateCharacterDirection(velocityX);
+        
         // Apply movement with boundary constraints
         if (this.scene.player && this.scene.player.body) {
             // Calculate the new position
@@ -341,6 +347,46 @@ class InputManager {
                 x: constrainedVelX,
                 y: constrainedVelY
             });
+        }
+    }
+
+    updateCharacterDirection(velocityX) {
+        // Only update direction if there's significant horizontal movement
+        const movementThreshold = 0.1; // Reduced threshold for more responsive direction changes
+        
+        if (Math.abs(velocityX) > movementThreshold) {
+            const shouldFaceLeft = velocityX < 0;
+            
+            // Only update if direction has actually changed to prevent unnecessary operations
+            if (this.lastFacingDirection !== shouldFaceLeft) {
+                this.lastFacingDirection = shouldFaceLeft;
+                
+                // Apply flipping to the main player sprite
+                if (this.scene.player) {
+                    this.scene.player.setFlipX(shouldFaceLeft);
+                }
+                
+                // Also apply flipping to any animated overlay (for GIF characters)
+                const selectedCharacter = this.scene.characterSystem.getSelectedCharacter();
+                if (selectedCharacter && this.scene.assetManager && this.scene.assetManager.animatedOverlays) {
+                    // Find the overlay for this player
+                    const playerOverlay = this.scene.assetManager.animatedOverlays.get(this.scene.player);
+                    
+                    if (playerOverlay && playerOverlay.element) {
+                        // Apply CSS transform to flip the GIF overlay
+                        const currentTransform = playerOverlay.element.style.transform || '';
+                        const baseTransform = currentTransform.replace(/scaleX\([^)]*\)\s*/g, '');
+                        
+                        if (shouldFaceLeft) {
+                            playerOverlay.element.style.transform = `scaleX(-1) ${baseTransform}`.trim();
+                        } else {
+                            playerOverlay.element.style.transform = baseTransform.trim();
+                        }
+                    }
+                }
+                
+                console.log(`Character now facing: ${shouldFaceLeft ? 'LEFT' : 'RIGHT'}`);
+            }
         }
     }
 

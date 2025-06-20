@@ -209,6 +209,9 @@ class UISystem {
         // Add debug hitbox visualization for player (updated radius)
         this.scene.player.hitboxDebug = this.scene.debugUtils.createHitboxDebug(this.scene.player, 8, 0x00ff00);
         
+        // Initialize character facing direction (default to facing right)
+        this.scene.inputManager.lastFacingDirection = false; // false = facing right, true = facing left
+        
         // Setup camera to follow player
         this.scene.cameras.main.startFollow(this.scene.player);
         this.scene.cameras.main.setBounds(0, 0, mapWidth, mapHeight);
@@ -676,6 +679,9 @@ class UISystem {
         this.scene.inputManager.upgradeCardClicked = false;
         this.scene.inputManager.selectedCharacterIndex = 0;
         this.scene.inputManager.characterCards = [];
+        
+        // Reset character direction state
+        this.scene.inputManager.lastFacingDirection = null;
         
         // Go back to character selection
         this.showCharacterSelection();
