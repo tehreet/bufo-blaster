@@ -319,8 +319,9 @@ class UISystem {
         healthBarBg.setScrollFactor(0).setDepth(1001);
         this.gameUIElements.push(healthBarBg);
         
-        // Health bar foreground
-        const healthBar = this.scene.add.rectangle(healthBarX + healthBarWidth/2, healthBarY + healthBarHeight/2, healthBarWidth, healthBarHeight, 0x00ff00);
+        // Health bar foreground (anchored to left side for proper scaling)
+        const healthBar = this.scene.add.rectangle(healthBarX, healthBarY + healthBarHeight/2, healthBarWidth, healthBarHeight, 0x00ff00);
+        healthBar.setOrigin(0, 0.5); // Anchor to left side instead of center
         healthBar.setScrollFactor(0).setDepth(1002);
         this.gameUIElements.push(healthBar);
         
@@ -383,8 +384,8 @@ class UISystem {
         const progression = this.scene.statsSystem.getPlayerProgression();
         
         if (stats && this.healthBar && this.healthText) {
-            // Update health bar
-            const healthPercent = stats.health / stats.maxHealth;
+            // Update health bar (standard behavior - decreases from right side)
+            const healthPercent = Math.max(0, stats.health / stats.maxHealth);
             this.healthBar.scaleX = healthPercent;
             this.healthText.setText(`${Math.round(stats.health)}/${stats.maxHealth}`);
         }
