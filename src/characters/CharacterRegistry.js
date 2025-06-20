@@ -35,7 +35,7 @@ const CHARACTER_DATA = {
             moveSpeed: 3.5 // Slightly slower due to heavy shield
         },
         // Physics
-        hitboxRadius: 10 // Larger hitbox for shield-carrying character
+        hitboxRadius: 6 // Smaller hitbox to match actual sprite content
     },
     WIZARD_BUFO: {
         id: 'wizard',
@@ -64,7 +64,7 @@ const CHARACTER_DATA = {
             moveSpeed: 5
         },
         // Physics
-        hitboxRadius: 8 // Standard hitbox for caster
+        hitboxRadius: 5 // Small hitbox to match actual sprite content
     },
     BAT_BUFO: {
         id: 'bat',
@@ -93,7 +93,7 @@ const CHARACTER_DATA = {
             moveSpeed: 5.5 // Fastest character to compensate for low tankiness
         },
         // Physics
-        hitboxRadius: 7 // Smaller hitbox for agile character
+        hitboxRadius: 4 // Very small hitbox for agile character
     },
     JUICE_BUFO: {
         id: 'juice',
@@ -122,7 +122,7 @@ const CHARACTER_DATA = {
             moveSpeed: 4.2 // Moderate speed
         },
         // Physics
-        hitboxRadius: 8 // Standard hitbox size
+        hitboxRadius: 5 // Small hitbox to match actual sprite content
     }
 };
 
