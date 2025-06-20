@@ -4,16 +4,16 @@ class EnemySystem {
     constructor(scene) {
         this.scene = scene;
         
-        // Poison system tracking - MUCH STRONGER POISON
+        // Poison system tracking - Nerfed for balance
         this.poisonTimer = null;
-        this.poisonDuration = 10000; // 10 seconds of poison (was 5)
-        this.poisonDamage = 6; // 6 damage per tick (was 2)
+        this.poisonDuration = 5000; // 5 seconds of poison (reduced from 10 - 50% nerf)
+        this.poisonDamage = 4; // 4 damage per tick (reduced from 6 - 35% nerf)
         this.poisonTickInterval = 800; // 0.8 seconds between damage ticks (was 1.0)
         
-        // Bleed system tracking - Vampire Bufo bleed effect
+        // Bleed system tracking - Vampire Bufo bleed effect (nerfed)
         this.bleedTimer = null;
-        this.bleedDuration = 8000; // 8 seconds of bleeding
-        this.bleedDamage = 4; // 4 damage per tick (moderate damage)
+        this.bleedDuration = 4000; // 4 seconds of bleeding (reduced from 8 - 50% nerf)
+        this.bleedDamage = 3; // 3 damage per tick (reduced from 4 - 25% nerf, close to 35%)
         this.bleedTickInterval = 1000; // 1 second between damage ticks
         
         // XP Magnet Orb system - MUCH MORE RARE
