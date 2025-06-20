@@ -6,6 +6,7 @@ import StatsSystem from '../systems/StatsSystem.js';
 import EnemySystem from '../systems/EnemySystem.js';
 import UpgradeSystem from '../systems/UpgradeSystem.js';
 import UISystem from '../systems/UISystem.js';
+import StatusEffectSystem from '../systems/StatusEffectSystem.js';
 import InputManager from '../utils/InputManager.js';
 import AssetManager from '../utils/AssetManager.js';
 import DebugUtils from '../utils/DebugUtils.js';
@@ -73,6 +74,7 @@ class GameScene extends Phaser.Scene {
         this.enemySystem = new EnemySystem(this);
         this.upgradeSystem = new UpgradeSystem(this);
         this.uiSystem = new UISystem(this);
+        this.statusEffectSystem = new StatusEffectSystem(this);
         
         // Utility systems
         this.inputManager = new InputManager(this);
@@ -98,6 +100,7 @@ class GameScene extends Phaser.Scene {
             this.statsSystem.update();
             this.enemySystem.update();
             this.characterSystem.updateCharacterAbilities();
+            this.statusEffectSystem.update();
             this.debugUtils.update();
             this.uiSystem.updateUI();
         } else {

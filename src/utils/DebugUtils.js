@@ -6,6 +6,9 @@ class DebugUtils {
         this.showHitboxes = false;
         this.showStatsDebug = false;
         this.statsDebugUI = null;
+        
+        // Setup debug keys
+        this.setupDebugKeys();
     }
 
     toggleHitboxDebug() {
@@ -190,6 +193,19 @@ class DebugUtils {
     }
 
     update() {
+        // Handle debug key presses
+        if (Phaser.Input.Keyboard.JustDown(this.hitboxDebugKey)) {
+            this.toggleHitboxDebug();
+        }
+        
+        if (Phaser.Input.Keyboard.JustDown(this.statsDebugKey)) {
+            this.toggleStatsDebug();
+        }
+        
+        if (Phaser.Input.Keyboard.JustDown(this.statusEffectTestKey)) {
+            this.testStatusEffects();
+        }
+        
         // Update debug UIs if they exist and all systems are initialized
         if (this.showStatsDebug && 
             this.statsDebugUI && 
@@ -198,6 +214,42 @@ class DebugUtils {
             !this.scene.upgradeSystem.isPaused) {
             this.updateStatsDebugUI();
         }
+    }
+
+    testStatusEffects() {
+        if (!this.scene.statusEffectSystem || !this.scene.player) {
+            console.log('Status effect system not available or player not found');
+            return;
+        }
+        
+        console.log('Testing status effects...');
+        
+        // Add multiple status effects to demonstrate the system
+        this.scene.statusEffectSystem.addStatusEffect('poison', 8000);
+        this.scene.statusEffectSystem.addStatusEffect('stunned', 3000);
+        this.scene.statusEffectSystem.addStatusEffect('slowed', 6000);
+        
+        // Show a notification
+        const notification = this.scene.add.text(700, 100, 'Status Effects Test!\n(F3 pressed)', {
+            fontSize: '16px',
+            color: '#FFD700',
+            fontWeight: 'bold',
+            backgroundColor: '#000000',
+            padding: { x: 8, y: 4 },
+            align: 'center'
+        }).setOrigin(0.5, 0.5).setScrollFactor(0).setDepth(2000);
+        
+        // Auto-remove notification after 2 seconds
+        this.scene.time.delayedCall(2000, () => {
+            this.scene.tweens.add({
+                targets: notification,
+                alpha: 0,
+                duration: 500,
+                onComplete: () => notification.destroy()
+            });
+        });
+        
+        console.log('Added poison (8s), stunned (3s), and slowed (6s) status effects');
     }
 
     // Create debug visualization for new game objects
@@ -234,6 +286,17 @@ class DebugUtils {
             showStatsDebug: this.showStatsDebug,
             hasStatsUI: !!this.statsDebugUI
         };
+    }
+
+    setupDebugKeys() {
+        // F1 - Toggle hitbox debug
+        this.hitboxDebugKey = this.scene.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.F1);
+        
+        // F2 - Toggle stats debug
+        this.statsDebugKey = this.scene.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.F2);
+        
+        // F3 - Test status effects (for development)
+        this.statusEffectTestKey = this.scene.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.F3);
     }
 }
 

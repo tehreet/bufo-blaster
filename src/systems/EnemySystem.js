@@ -573,8 +573,14 @@ class EnemySystem {
         // Mark player as poisoned
         this.scene.statsSystem.getPlayerProgression().isPoisoned = true;
         
-        // Visual indicator for poison
-        this.showPoisonEffect();
+        // Add visual indicator using StatusEffectSystem
+        if (this.scene.statusEffectSystem) {
+            // Remove any existing poison effects first
+            this.scene.statusEffectSystem.removeStatusEffectsByType('poison');
+            
+            // Add new poison effect with duration
+            this.poisonEffectId = this.scene.statusEffectSystem.addStatusEffect('poison', this.poisonDuration);
+        }
         
         console.log('Player poisoned! Regen stopped, taking damage over time.');
         
@@ -606,39 +612,28 @@ class EnemySystem {
             this.poisonTimer = null;
         }
         
-        // Hide poison visual effect
-        this.hidePoisonEffect();
+        // Remove poison visual effect using StatusEffectSystem
+        if (this.scene.statusEffectSystem) {
+            if (this.poisonEffectId) {
+                this.scene.statusEffectSystem.removeStatusEffect(this.poisonEffectId);
+                this.poisonEffectId = null;
+            } else {
+                // Fallback: remove all poison effects
+                this.scene.statusEffectSystem.removeStatusEffectsByType('poison');
+            }
+        }
         
         console.log('Poison effect cleared.');
     }
     
     showPoisonEffect() {
-        // Create poison visual indicator
-        if (!this.poisonIndicator) {
-            this.poisonIndicator = this.scene.add.text(50, 120, 'POISONED', {
-                fontSize: '16px',
-                color: '#00ff00',
-                backgroundColor: '#004400',
-                padding: { x: 8, y: 4 }
-            }).setScrollFactor(0).setDepth(1000);
-            
-            // Pulsing effect
-            this.scene.tweens.add({
-                targets: this.poisonIndicator,
-                alpha: 0.3,
-                duration: 500,
-                yoyo: true,
-                repeat: -1
-            });
-        }
+        // Legacy method - now handled by applyPoisonEffect
+        console.log('showPoisonEffect called - now handled by StatusEffectSystem');
     }
     
     hidePoisonEffect() {
-        if (this.poisonIndicator) {
-            this.scene.tweens.killTweensOf(this.poisonIndicator);
-            this.poisonIndicator.destroy();
-            this.poisonIndicator = null;
-        }
+        // Legacy method - now handled by clearPoisonEffect
+        console.log('hidePoisonEffect called - now handled by StatusEffectSystem');
     }
 
     checkMagnetOrbSpawn(x, y) {

@@ -524,6 +524,11 @@ class UISystem {
             this.scene.enemySystem.cleanupAllMagnetOrbs();
         }
         
+        // Clean up status effects
+        if (this.scene.statusEffectSystem) {
+            this.scene.statusEffectSystem.cleanup();
+        }
+        
         // Clean up animated overlays
         this.scene.assetManager.cleanupAllOverlays();
         
@@ -628,6 +633,11 @@ class UISystem {
             this.scene.enemySystem.hidePoisonEffect();
             this.scene.enemySystem.poisonTimer = null;
             this.scene.enemySystem.cleanupAllMagnetOrbs();
+        }
+        
+        // Clean up status effects
+        if (this.scene.statusEffectSystem) {
+            this.scene.statusEffectSystem.cleanup();
         }
         
         // Clean up animated overlays
