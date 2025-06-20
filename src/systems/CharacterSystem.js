@@ -480,37 +480,49 @@ class CharacterSystem {
                 continue;
             }
             
-            // Remove old starfall projectiles (extended lifespan but added shorter failsafe below)
-            if (currentTime - star.birthTime > star.lifespan) {
-                console.log('Star expired due to age');
+            // Calculate elapsed time
+            const fallTime = currentTime - star.birthTime;
+            
+            // MANDATORY cleanup after 5 seconds (no exceptions)
+            if (fallTime > 5000) {
+                console.log('Star force-expired after 5 seconds - triggering explosion at current position');
+                this.applyStarfallAOE(star.x, star.y, star.damage);
+                star.hasImpacted = true;
                 star.destroy();
                 continue;
             }
 
-            // Check for impact with target area - more robust detection
+            // Check for impact with target area - INCREASED detection radius
             const distanceToTarget = Phaser.Math.Distance.Between(
                 star.x, star.y, star.targetX, star.targetY
             );
             
-            // Check if star has moved past its target (overshooting)
-            const targetReached = distanceToTarget < 40; // Increased radius for better detection
+            // More generous target detection
+            const targetReached = distanceToTarget < 60; // Increased from 40 to 60
             
             // Multiple ground detection methods for reliability
-            const mapHeight = this.scene.map.heightInPixels || 2400; // Fallback height
-            const hitGround = star.y > mapHeight - 100; // More generous ground detection
-            const hitScreenBottom = star.y > this.scene.cameras.main.height + this.scene.cameras.main.scrollY;
+            const mapHeight = this.scene.map.heightInPixels || 2400;
+            const hitGround = star.y > mapHeight - 150; // More generous ground detection (was 100)
+            const hitScreenBottom = star.y > this.scene.cameras.main.height + this.scene.cameras.main.scrollY + 50;
             
-            // Also check if star has been falling for too long (failsafe)
-            const fallTime = currentTime - star.birthTime;
-            const tooOld = fallTime > 3000; // 3 seconds max flight time
+            // Check if star has very low velocity (stuck/stopped)
+            const isStuck = star.body && Math.abs(star.body.velocity.x) < 0.5 && Math.abs(star.body.velocity.y) < 0.5;
             
-            if (targetReached || hitGround || hitScreenBottom || tooOld) {
+            // Shorter timeout for faster cleanup
+            const tooOld = fallTime > 2500; // Reduced from 3000 to 2500ms
+            
+            // Check if star went off-screen (outside map boundaries)
+            const offScreen = star.x < -200 || star.x > mapHeight + 200 || star.y < -200 || star.y > mapHeight + 200;
+            
+            // MORE aggressive cleanup conditions
+            if (targetReached || hitGround || hitScreenBottom || tooOld || isStuck || offScreen) {
                 // Star should explode - trigger AOE explosion
                 this.applyStarfallAOE(star.x, star.y, star.damage);
                 star.hasImpacted = true;
                 star.destroy();
                 
-                console.log(`Star exploded: target=${targetReached}, ground=${hitGround}, screen=${hitScreenBottom}, old=${tooOld}`);
+                console.log(`Star exploded: target=${targetReached}, ground=${hitGround}, screen=${hitScreenBottom}, old=${tooOld}, stuck=${isStuck}, offScreen=${offScreen}`);
+                console.log(`Star details: pos=(${star.x.toFixed(1)}, ${star.y.toFixed(1)}), target=(${star.targetX.toFixed(1)}, ${star.targetY.toFixed(1)}), distance=${distanceToTarget.toFixed(1)}, age=${fallTime}ms`);
             }
         }
     }
@@ -649,6 +661,39 @@ class CharacterSystem {
                 console.log('Enemy stun expired');
             }
         });
+    }
+
+    starfallHitEnemy(starfall, enemy) {
+        try {
+            console.log('starfallHitEnemy called - direct collision detected');
+            
+            // Safety checks
+            if (!this.selectedCharacter || this.selectedCharacter.id !== 'wizard') {
+                console.log('Not wizard character, skipping starfall hit');
+                return;
+            }
+            if (!starfall || !enemy || !starfall.active || !enemy.active) {
+                console.log('Invalid starfall or enemy objects');
+                return;
+            }
+            if (starfall.hasImpacted) {
+                console.log('Starfall already impacted, skipping');
+                return;
+            }
+            
+            // Mark starfall as impacted to prevent double explosions
+            starfall.hasImpacted = true;
+            
+            // Trigger immediate AOE explosion at collision point
+            console.log(`Starfall direct hit! Exploding at (${starfall.x.toFixed(1)}, ${starfall.y.toFixed(1)})`);
+            this.applyStarfallAOE(starfall.x, starfall.y, starfall.damage);
+            
+            // Destroy the starfall projectile
+            starfall.destroy();
+            
+        } catch (error) {
+            console.error('Error in starfallHitEnemy:', error);
+        }
     }
 
     boomerangHitEnemy(boomerang, enemy) {

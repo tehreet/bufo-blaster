@@ -290,6 +290,13 @@ class UISystem {
                 } else if (bodyA.label === 'enemy' && bodyB.label === 'boomerang') {
                     this.scene.characterSystem.boomerangHitEnemy(bodyB.gameObject, bodyA.gameObject);
                 }
+                
+                // Starfall hits enemy (for Wizard Bufo character)
+                if (bodyA.label === 'starfall' && bodyB.label === 'enemy') {
+                    this.scene.characterSystem.starfallHitEnemy(bodyA.gameObject, bodyB.gameObject);
+                } else if (bodyA.label === 'enemy' && bodyB.label === 'starfall') {
+                    this.scene.characterSystem.starfallHitEnemy(bodyB.gameObject, bodyA.gameObject);
+                }
             });
         });
     }
