@@ -474,9 +474,39 @@ class CharacterSystem {
         
         for (let i = this.scene.starfallProjectiles.children.entries.length - 1; i >= 0; i--) {
             const star = this.scene.starfallProjectiles.children.entries[i];
-            if (!star || !star.active || star.hasImpacted) {
+            
+            // Enhanced null checks for crash prevention
+            if (!star || !star.active || star.hasImpacted || !star.scene) {
                 // Clean up invalid stars
-                if (star && star.active) star.destroy();
+                try {
+                    if (star && star.active && star.destroy) {
+                        star.destroy();
+                    }
+                } catch (error) {
+                    console.log('Error destroying invalid star:', error);
+                }
+                continue;
+            }
+            
+            // Additional safety checks for position properties
+            if (typeof star.x !== 'number' || typeof star.y !== 'number') {
+                console.log('Star has invalid position, removing:', { x: star.x, y: star.y });
+                try {
+                    star.destroy();
+                } catch (error) {
+                    console.log('Error destroying star with invalid position:', error);
+                }
+                continue;
+            }
+            
+            // Check if star has required properties
+            if (typeof star.birthTime !== 'number' || typeof star.targetX !== 'number' || typeof star.targetY !== 'number') {
+                console.log('Star missing required properties, removing');
+                try {
+                    star.destroy();
+                } catch (error) {
+                    console.log('Error destroying star with missing properties:', error);
+                }
                 continue;
             }
             
@@ -486,43 +516,76 @@ class CharacterSystem {
             // MANDATORY cleanup after 5 seconds (no exceptions)
             if (fallTime > 5000) {
                 console.log('Star force-expired after 5 seconds - triggering explosion at current position');
-                this.applyStarfallAOE(star.x, star.y, star.damage);
+                try {
+                    this.applyStarfallAOE(star.x, star.y, star.damage);
+                } catch (error) {
+                    console.log('Error applying force-expired starfall AOE:', error);
+                }
                 star.hasImpacted = true;
                 star.destroy();
                 continue;
             }
 
             // Check for impact with target area - INCREASED detection radius
-            const distanceToTarget = Phaser.Math.Distance.Between(
-                star.x, star.y, star.targetX, star.targetY
-            );
-            
-            // More generous target detection
-            const targetReached = distanceToTarget < 60; // Increased from 40 to 60
+            let distanceToTarget = Infinity;
+            let targetReached = false;
+            try {
+                distanceToTarget = Phaser.Math.Distance.Between(
+                    star.x, star.y, star.targetX, star.targetY
+                );
+                // More generous target detection
+                targetReached = distanceToTarget < 60; // Increased from 40 to 60
+            } catch (error) {
+                console.log('Error calculating distance to target, treating as not reached:', error);
+                targetReached = false;
+            }
             
             // Multiple ground detection methods for reliability
-            const mapHeight = this.scene.map.heightInPixels || 2400;
-            const hitGround = star.y > mapHeight - 150; // More generous ground detection (was 100)
-            const hitScreenBottom = star.y > this.scene.cameras.main.height + this.scene.cameras.main.scrollY + 50;
+            let hitGround = false;
+            let hitScreenBottom = false;
+            let offScreen = false;
+            try {
+                const mapHeight = this.scene.map.heightInPixels || 2400;
+                hitGround = star.y > mapHeight - 150; // More generous ground detection (was 100)
+                hitScreenBottom = star.y > this.scene.cameras.main.height + this.scene.cameras.main.scrollY + 50;
+                
+                // Check if star went off-screen (outside map boundaries)
+                offScreen = star.x < -200 || star.x > mapHeight + 200 || star.y < -200 || star.y > mapHeight + 200;
+            } catch (error) {
+                console.log('Error checking ground/screen boundaries, treating as off-screen:', error);
+                offScreen = true; // Treat as off-screen if we can't check position
+            }
             
             // Check if star has very low velocity (stuck/stopped)
-            const isStuck = star.body && Math.abs(star.body.velocity.x) < 0.5 && Math.abs(star.body.velocity.y) < 0.5;
+            let isStuck = false;
+            try {
+                isStuck = star.body && star.body.velocity && 
+                         Math.abs(star.body.velocity.x) < 0.5 && Math.abs(star.body.velocity.y) < 0.5;
+            } catch (error) {
+                console.log('Error checking star velocity, treating as stuck:', error);
+                isStuck = true; // Treat as stuck if we can't check velocity
+            }
             
             // Shorter timeout for faster cleanup
             const tooOld = fallTime > 2500; // Reduced from 3000 to 2500ms
             
-            // Check if star went off-screen (outside map boundaries)
-            const offScreen = star.x < -200 || star.x > mapHeight + 200 || star.y < -200 || star.y > mapHeight + 200;
-            
             // MORE aggressive cleanup conditions
             if (targetReached || hitGround || hitScreenBottom || tooOld || isStuck || offScreen) {
                 // Star should explode - trigger AOE explosion
-                this.applyStarfallAOE(star.x, star.y, star.damage);
+                try {
+                    this.applyStarfallAOE(star.x, star.y, star.damage);
+                } catch (error) {
+                    console.log('Error applying starfall AOE:', error);
+                }
                 star.hasImpacted = true;
                 star.destroy();
                 
                 console.log(`Star exploded: target=${targetReached}, ground=${hitGround}, screen=${hitScreenBottom}, old=${tooOld}, stuck=${isStuck}, offScreen=${offScreen}`);
-                console.log(`Star details: pos=(${star.x.toFixed(1)}, ${star.y.toFixed(1)}), target=(${star.targetX.toFixed(1)}, ${star.targetY.toFixed(1)}), distance=${distanceToTarget.toFixed(1)}, age=${fallTime}ms`);
+                try {
+                    console.log(`Star details: pos=(${star.x.toFixed(1)}, ${star.y.toFixed(1)}), target=(${star.targetX.toFixed(1)}, ${star.targetY.toFixed(1)}), distance=${distanceToTarget.toFixed(1)}, age=${fallTime}ms`);
+                } catch (error) {
+                    console.log('Error logging star details - star position may be invalid');
+                }
             }
         }
     }
