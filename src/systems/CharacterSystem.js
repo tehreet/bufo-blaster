@@ -57,7 +57,7 @@ class CharacterSystem {
                     
                     // Utility Stats
                     pickupRange: 100, // Higher pickup range for ranged character
-                    projectileCount: 5, // Number of stars per cast
+                    projectileCount: 3, // Number of stars per cast (reduced from 5)
                     
                     // Movement
                     moveSpeed: 5
