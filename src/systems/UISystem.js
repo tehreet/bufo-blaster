@@ -526,6 +526,15 @@ class UISystem {
     }
 
     showGameOverScreen() {
+        // Calculate final run time
+        let finalRunTime = '0:00';
+        if (this.gameStartTime) {
+            const elapsedMs = Date.now() - this.gameStartTime;
+            const elapsedMinutes = Math.floor(elapsedMs / 60000);
+            const elapsedSeconds = Math.floor((elapsedMs % 60000) / 1000);
+            finalRunTime = `${elapsedMinutes}:${elapsedSeconds.toString().padStart(2, '0')}`;
+        }
+        
         // Semi-transparent overlay that covers the entire screen
         const overlay = this.scene.add.rectangle(0, 0, this.scene.cameras.main.width * 2, this.scene.cameras.main.height * 2, 0x000000, 0.9);
         overlay.setOrigin(0, 0);
@@ -533,7 +542,7 @@ class UISystem {
         overlay.setPosition(-this.scene.cameras.main.width/2, -this.scene.cameras.main.height/2);
         
         // Game Over title
-        const title = this.scene.add.text(700, 250, 'GAME OVER', {
+        const title = this.scene.add.text(700, 200, 'GAME OVER', {
             fontSize: '64px',
             color: '#ff0000',
             fontWeight: 'bold'
@@ -543,10 +552,12 @@ class UISystem {
         if (this.scene.statsSystem) {
             const progression = this.scene.statsSystem.getPlayerProgression();
             
-            const finalStats = this.scene.add.text(700, 400, 
+            const finalStats = this.scene.add.text(700, 350, 
                 `Character: ${progression.character.name}\n` +
                 `Final Level: ${progression.level}\n` +
-                `Total XP: ${progression.xp}`, {
+                `Total XP: ${progression.xp}\n` +
+                `Run Time: ${finalRunTime}\n` +
+                `Enemies Killed: ${this.enemyKillCount}`, {
                 fontSize: '24px',
                 color: '#ffffff',
                 align: 'center'
