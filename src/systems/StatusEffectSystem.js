@@ -5,7 +5,7 @@ class StatusEffectSystem {
         this.scene = scene;
         
         // Track active status effects and their visual elements
-        this.activeEffects = new Map(); // key: effectId, value: { element, config, startTime }
+        this.activeEffects = new Map(); // key: effectId, value: { element, config, startTime, pausedTime }
         this.effectConfigs = new Map(); // key: effectType, value: visual config
         
         // Initialize status effect configurations
@@ -14,6 +14,11 @@ class StatusEffectSystem {
         // Track vertical offset for stacking multiple effects
         this.baseOffsetY = -50; // Base distance above player
         this.stackSpacing = 18; // Vertical spacing between effects
+        
+        // Pause state tracking
+        this.wasPaused = false;
+        this.pauseStartTime = 0;
+        this.totalPausedTime = 0;
     }
     
     initializeStatusEffectConfigs() {
@@ -120,20 +125,17 @@ class StatusEffectSystem {
             config: finalConfig,
             effectType: effectType,
             startTime: this.scene.time.now,
-            duration: duration
+            duration: duration,
+            pausedTime: 0 // Track how long this effect has been paused
         });
         
         // Update positions of all indicators
         this.updateIndicatorPositions();
         
-        // Set automatic removal timer
-        if (duration > 0) {
-            this.scene.time.delayedCall(duration, () => {
-                this.removeStatusEffect(effectId);
-            });
-        }
+        // Note: Automatic removal is now handled in the update() method to respect pause state
+        // The delayedCall timer has been removed as it doesn't pause with the game
         
-        console.log(`Status effect added: ${effectType} (${effectId})`);
+        console.log(`Status effect added: ${effectType} (${effectId}) for ${duration}ms`);
         return effectId;
     }
     
@@ -292,9 +294,54 @@ class StatusEffectSystem {
         });
     }
     
+    // Check if the game is currently paused
+    isGamePaused() {
+        return this.scene.isPaused || 
+               this.scene.upgradeSystem?.upgradeActive || 
+               this.scene.uiSystem?.isPaused;
+    }
+    
     // Update system - called every frame to maintain positioning
     update() {
         if (!this.scene.player || !this.scene.gameStarted) return;
+        
+        const isPaused = this.isGamePaused();
+        
+        // Handle pause state changes
+        if (isPaused && !this.wasPaused) {
+            // Game just paused - record pause start time and pause all tweens
+            this.pauseStartTime = this.scene.time.now;
+            this.wasPaused = true;
+            
+            // Pause all visual effect tweens
+            for (const [effectId, effect] of this.activeEffects) {
+                if (effect.element && effect.element.active) {
+                    this.scene.tweens.pauseAll(effect.element);
+                }
+            }
+            
+            console.log('Status effects paused');
+        } else if (!isPaused && this.wasPaused) {
+            // Game just resumed - calculate paused time and resume tweens
+            const pauseDuration = this.scene.time.now - this.pauseStartTime;
+            this.totalPausedTime += pauseDuration;
+            this.wasPaused = false;
+            
+            // Add the pause duration to each active effect's paused time
+            for (const [effectId, effect] of this.activeEffects) {
+                effect.pausedTime += pauseDuration;
+                
+                // Resume visual effect tweens
+                if (effect.element && effect.element.active) {
+                    this.scene.tweens.resumeAll(effect.element);
+                }
+            }
+            
+            console.log('Status effects resumed after', pauseDuration, 'ms pause');
+        }
+        
+        // Don't update positions or check expiration while paused
+        if (isPaused) return;
         
         // Update positions of all indicators to follow player
         for (const [effectId, effect] of this.activeEffects) {
@@ -321,13 +368,16 @@ class StatusEffectSystem {
             }
         }
         
-        // Clean up expired effects (safety cleanup)
+        // Clean up expired effects (safety cleanup) - adjusted for paused time
         const currentTime = this.scene.time.now;
         const toRemove = [];
         
         for (const [effectId, effect] of this.activeEffects) {
-            if (effect.duration > 0 && currentTime - effect.startTime > effect.duration) {
-                toRemove.push(effectId);
+            if (effect.duration > 0) {
+                const effectiveElapsedTime = (currentTime - effect.startTime) - effect.pausedTime;
+                if (effectiveElapsedTime > effect.duration) {
+                    toRemove.push(effectId);
+                }
             }
         }
         
@@ -350,6 +400,11 @@ class StatusEffectSystem {
         }
         
         this.activeEffects.clear();
+        
+        // Reset pause tracking state
+        this.wasPaused = false;
+        this.pauseStartTime = 0;
+        this.totalPausedTime = 0;
     }
     
     // Add a new status effect type configuration
@@ -362,7 +417,10 @@ class StatusEffectSystem {
     getDebugInfo() {
         return {
             activeEffects: this.activeEffects.size,
-            configuredTypes: Array.from(this.effectConfigs.keys())
+            configuredTypes: Array.from(this.effectConfigs.keys()),
+            isPaused: this.isGamePaused(),
+            wasPaused: this.wasPaused,
+            totalPausedTime: this.totalPausedTime
         };
     }
 }
