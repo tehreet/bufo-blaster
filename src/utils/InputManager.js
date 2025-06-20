@@ -355,7 +355,7 @@ class InputManager {
         const movementThreshold = 0.1; // Reduced threshold for more responsive direction changes
         
         if (Math.abs(velocityX) > movementThreshold) {
-            const shouldFaceLeft = velocityX < 0;
+            const shouldFaceLeft = velocityX > 0; // Reversed: flip when moving right instead of left
             
             // Only update if direction has actually changed to prevent unnecessary operations
             if (this.lastFacingDirection !== shouldFaceLeft) {
