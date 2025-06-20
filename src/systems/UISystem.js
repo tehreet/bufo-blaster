@@ -143,6 +143,9 @@ class UISystem {
         // Game state
         this.scene.gameStarted = true;
         
+        // Enable physics for the new game (critical fix for restart bug)
+        this.scene.matter.world.enabled = true;
+        
         // Initialize game systems
         this.initializeGame();
         
@@ -671,9 +674,15 @@ class UISystem {
         if (this.scene.boomerangs) this.scene.boomerangs.clear(true, true);
         if (this.scene.enemyProjectiles) this.scene.enemyProjectiles.clear(true, true);
         
-        // Reset character system
+        // Reset character system and character-specific timers
         this.scene.characterSystem.selectedCharacter = null;
         this.scene.characterSystem.characterSelected = false;
+        
+        // Clear character-specific timer states
+        this.scene.lastStarfallTime = 0;
+        this.scene.starfallCooldown = 0;
+        this.scene.lastBoomerangTime = 0;
+        this.scene.stunnedEnemies = null;
         
         // Reset stats system
         this.scene.statsSystem.playerStats = null;
