@@ -93,6 +93,27 @@ class EnemySystem {
                 specialEffect: 'bleed', // Causes bleed on contact
                 contactDamage: 12, // Moderate damage
                 healthRegen: 1.0 // High health regeneration (double the normal regen)
+            },
+            {
+                id: 'chicken',
+                name: 'Chicken Bufo',
+                sprite: 'bufo-chicken',
+                health: 3, // Moderate health
+                speed: 40, // Slow movement speed - prefers to keep distance
+                displaySize: 42,
+                hitboxRadius: 5, // 42px * 12.5% ≈ 5.25px, rounded to 5px
+                xpValue: 20, // Good XP value for ranged enemy
+                weight: 15, // Moderately common
+                specialEffect: 'ranged', // Shoots projectiles
+                contactDamage: 8, // Low contact damage since it's ranged
+                rangedAttack: {
+                    range: 200, // Preferred attack range
+                    keepDistance: 150, // Minimum distance to maintain from player
+                    projectileSpeed: 120, // Speed of egg projectiles
+                    projectileDamage: 6, // Damage per egg
+                    attackCooldown: 2000, // 2 seconds between attacks
+                    accuracy: 0.8 // 80% accuracy (some spread)
+                }
             }
         ];
     }
@@ -508,16 +529,21 @@ class EnemySystem {
                 return;
             }
             
-            // Normal chase AI - move towards player
-            angle = Phaser.Math.Angle.Between(enemy.x, enemy.y, this.scene.player.x, this.scene.player.y);
-            
-            try {
-                this.scene.matter.body.setVelocity(enemy.body, {
-                    x: Math.cos(angle) * speed,
-                    y: Math.sin(angle) * speed
-                });
-            } catch (error) {
-                console.error('Error setting enemy velocity:', error);
+            // Handle special AI behaviors
+            if (enemy.enemyType.specialEffect === 'ranged') {
+                this.handleRangedEnemyAI(enemy);
+            } else {
+                // Normal chase AI - move towards player
+                angle = Phaser.Math.Angle.Between(enemy.x, enemy.y, this.scene.player.x, this.scene.player.y);
+                
+                try {
+                    this.scene.matter.body.setVelocity(enemy.body, {
+                        x: Math.cos(angle) * speed,
+                        y: Math.sin(angle) * speed
+                    });
+                } catch (error) {
+                    console.error('Error setting enemy velocity:', error);
+                }
             }
             
             // Update debug hitbox position
@@ -1117,10 +1143,192 @@ class EnemySystem {
         console.log(`Cleaned up ${magnetOrbs.length} magnet orbs`);
     }
 
+    handleRangedEnemyAI(enemy) {
+        const distanceToPlayer = Phaser.Math.Distance.Between(enemy.x, enemy.y, this.scene.player.x, this.scene.player.y);
+        const rangedConfig = enemy.enemyType.rangedAttack;
+        let speed = enemy.speed / 50; // Scale down for Matter.js
+        
+        // Initialize attack timer if not set
+        if (!enemy.lastRangedAttack) {
+            enemy.lastRangedAttack = 0;
+        }
+        
+        // Movement behavior based on distance to player
+        if (distanceToPlayer < rangedConfig.keepDistance) {
+            // Too close - move away from player
+            const angle = Phaser.Math.Angle.Between(this.scene.player.x, this.scene.player.y, enemy.x, enemy.y);
+            try {
+                this.scene.matter.body.setVelocity(enemy.body, {
+                    x: Math.cos(angle) * speed,
+                    y: Math.sin(angle) * speed
+                });
+            } catch (error) {
+                console.error('Error setting ranged enemy retreat velocity:', error);
+            }
+        } else if (distanceToPlayer > rangedConfig.range) {
+            // Too far - move closer to player
+            const angle = Phaser.Math.Angle.Between(enemy.x, enemy.y, this.scene.player.x, this.scene.player.y);
+            try {
+                this.scene.matter.body.setVelocity(enemy.body, {
+                    x: Math.cos(angle) * speed * 0.5, // Move slower when approaching
+                    y: Math.sin(angle) * speed * 0.5
+                });
+            } catch (error) {
+                console.error('Error setting ranged enemy approach velocity:', error);
+            }
+        } else {
+            // In optimal range - stop moving and attack
+            try {
+                this.scene.matter.body.setVelocity(enemy.body, { x: 0, y: 0 });
+            } catch (error) {
+                console.error('Error stopping ranged enemy:', error);
+            }
+            
+            // Check if we can attack
+            const currentTime = this.scene.time.now;
+            if (currentTime - enemy.lastRangedAttack >= rangedConfig.attackCooldown) {
+                this.fireEggProjectile(enemy);
+                enemy.lastRangedAttack = currentTime;
+            }
+        }
+    }
+    
+    fireEggProjectile(enemy) {
+        const rangedConfig = enemy.enemyType.rangedAttack;
+        
+        // Calculate base angle to player
+        let angle = Phaser.Math.Angle.Between(enemy.x, enemy.y, this.scene.player.x, this.scene.player.y);
+        
+        // Add some inaccuracy based on accuracy setting
+        const inaccuracy = (1 - rangedConfig.accuracy) * 0.5; // Convert to radians
+        angle += Phaser.Math.FloatBetween(-inaccuracy, inaccuracy);
+        
+        // Create egg projectile
+        const egg = this.scene.add.circle(enemy.x, enemy.y, 4, 0xFFF8DC); // Cream/eggshell color
+        egg.setStrokeStyle(1, 0xDEB887); // Burlywood border
+        
+        // Add Matter.js physics to projectile
+        this.scene.matter.add.gameObject(egg, {
+            shape: 'circle',
+            isSensor: true, // Don't collide with other objects, only trigger events
+            label: 'enemyProjectile',
+            ignoreGravity: true
+        });
+        
+        // Set projectile properties
+        egg.damage = rangedConfig.projectileDamage;
+        egg.shooter = enemy;
+        egg.creationTime = this.scene.time.now;
+        egg.lifespan = 3000; // 3 seconds before auto-destroy
+        
+        // Set velocity
+        const velocity = {
+            x: Math.cos(angle) * (rangedConfig.projectileSpeed / 50), // Scale for Matter.js
+            y: Math.sin(angle) * (rangedConfig.projectileSpeed / 50)
+        };
+        
+        try {
+            this.scene.matter.body.setVelocity(egg.body, velocity);
+        } catch (error) {
+            console.error('Error setting projectile velocity:', error);
+            egg.destroy();
+            return;
+        }
+        
+        // Add to projectiles group
+        this.scene.enemyProjectiles.add(egg);
+        
+        // Visual feedback on the shooter (muzzle flash effect)
+        const muzzleFlash = this.scene.add.circle(enemy.x, enemy.y, 8, 0xFFFF00, 0.6);
+        this.scene.tweens.add({
+            targets: muzzleFlash,
+            alpha: 0,
+            scale: 2,
+            duration: 150,
+            onComplete: () => muzzleFlash.destroy()
+        });
+        
+        console.log(`Chicken Bufo fired egg projectile at angle ${(angle * 180 / Math.PI).toFixed(1)}°`);
+    }
+    
+    updateEnemyProjectiles() {
+        // Return early if projectiles group doesn't exist
+        if (!this.scene.enemyProjectiles) return;
+        
+        const currentTime = this.scene.time.now;
+        const activeProjectiles = this.scene.enemyProjectiles.children.entries.filter(projectile => 
+            projectile && projectile.active && projectile.scene
+        );
+        
+        activeProjectiles.forEach(projectile => {
+            // Check lifespan
+            if (currentTime - projectile.creationTime >= projectile.lifespan) {
+                this.destroyEnemyProjectile(projectile);
+                return;
+            }
+            
+            // Check bounds
+            const bounds = this.scene.map;
+            if (projectile.x < 0 || projectile.x > bounds.widthInPixels || 
+                projectile.y < 0 || projectile.y > bounds.heightInPixels) {
+                this.destroyEnemyProjectile(projectile);
+                return;
+            }
+        });
+    }
+    
+    destroyEnemyProjectile(projectile) {
+        if (!projectile || !projectile.active) return;
+        
+        // Small destruction effect
+        const destroyEffect = this.scene.add.circle(projectile.x, projectile.y, 6, 0xFFFFFF, 0.8);
+        this.scene.tweens.add({
+            targets: destroyEffect,
+            alpha: 0,
+            scale: 0.1,
+            duration: 200,
+            onComplete: () => {
+                try {
+                    destroyEffect.destroy();
+                } catch (error) {
+                    console.log('Destroy effect already cleaned up');
+                }
+            }
+        });
+        
+        // Remove from group and destroy
+        this.scene.enemyProjectiles.remove(projectile);
+        projectile.destroy();
+    }
+    
+    playerHitByEnemyProjectile(player, projectile) {
+        if (!player || !projectile || !projectile.active || !projectile.scene) return;
+        
+        // Check if player is invincible
+        if (this.scene.statsSystem.getPlayerProgression().invincible) return;
+        
+        // Deal damage to player
+        const damage = projectile.damage || 5;
+        this.scene.statsSystem.takeDamage(damage);
+        
+        // Knockback effect
+        const angle = Phaser.Math.Angle.Between(projectile.shooter?.x || projectile.x, projectile.shooter?.y || projectile.y, player.x, player.y);
+        this.scene.matter.body.setVelocity(player.body, {
+            x: Math.cos(angle) * 3, // Lighter knockback than enemy contact
+            y: Math.sin(angle) * 3
+        });
+        
+        // Destroy the projectile
+        this.destroyEnemyProjectile(projectile);
+        
+        console.log(`Player hit by enemy projectile for ${damage} damage`);
+    }
+
     update() {
         this.updateEnemyAI();
         this.updateXPOrbMagnetism();
         this.updateEnemyRegeneration();
+        this.updateEnemyProjectiles();
         
         // Update magnet orb indicator
         this.updateMagnetOrbIndicator();

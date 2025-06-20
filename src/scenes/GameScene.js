@@ -34,6 +34,7 @@ class GameScene extends Phaser.Scene {
         this.load.image('bufo-enraged', 'assets/enemies/bufo-enraged.png');
         this.load.image('bufo-mob', 'assets/enemies/bufo-mob.png');
         this.load.image('bufo-vampire', 'assets/enemies/bufo-vampire.png');
+        this.load.image('bufo-chicken', 'assets/characters/bufo-chicken.png');
         
         // Load sound effects (from original game)
         this.load.audio('shoot', 'assets/sfx/shoot.mp3');
@@ -61,6 +62,9 @@ class GameScene extends Phaser.Scene {
             SHIELD_BUFO_BASH_COOLDOWN: 800,
             ENEMY_SPAWN_INTERVAL: 1200
         };
+        
+        // Initialize enemy projectiles group
+        this.enemyProjectiles = this.add.group();
         
         // Initialize all systems
         this.initializeSystems();

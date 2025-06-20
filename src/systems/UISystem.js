@@ -304,6 +304,13 @@ class UISystem {
                 } else if (bodyA.label === 'enemy' && bodyB.label === 'starfall') {
                     this.scene.characterSystem.starfallHitEnemy(bodyB.gameObject, bodyA.gameObject);
                 }
+                
+                // Enemy projectile hits player (for Chicken Bufo eggs)
+                if (bodyA.label === 'enemyProjectile' && bodyB.label === 'player') {
+                    this.scene.enemySystem.playerHitByEnemyProjectile(bodyB.gameObject, bodyA.gameObject);
+                } else if (bodyA.label === 'player' && bodyB.label === 'enemyProjectile') {
+                    this.scene.enemySystem.playerHitByEnemyProjectile(bodyA.gameObject, bodyB.gameObject);
+                }
             });
         });
     }
@@ -687,6 +694,7 @@ class UISystem {
         if (this.scene.auraEffects) this.scene.auraEffects.clear(true, true);
         if (this.scene.starfallProjectiles) this.scene.starfallProjectiles.clear(true, true);
         if (this.scene.boomerangs) this.scene.boomerangs.clear(true, true);
+        if (this.scene.enemyProjectiles) this.scene.enemyProjectiles.clear(true, true);
         
         // Reset character system
         this.scene.characterSystem.selectedCharacter = null;
