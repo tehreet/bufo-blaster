@@ -4,6 +4,7 @@
 import ShieldBufo from './ShieldBufo.js';
 import WizardBufo from './WizardBufo.js';
 import BatBufo from './BatBufo.js';
+import JuiceBufo from './JuiceBufo.js';
 
 // Character definitions with comprehensive base stats
 const CHARACTER_DATA = {
@@ -87,6 +88,33 @@ const CHARACTER_DATA = {
             // Movement (agile)
             moveSpeed: 5.5 // Fastest character to compensate for low tankiness
         }
+    },
+    JUICE_BUFO: {
+        id: 'juice',
+        name: 'Juice Bufo',
+        description: 'Area controller with slowing juice puddles',
+        abilityName: 'Juice Barrage',
+        abilityDescription: 'Throws juice boxes that create slowing puddles',
+        color: 0xFF6B35, // Orange color to match juice theme
+        sprite: 'juice-bufo',
+        baseStats: {
+            // Core Stats
+            health: 120, // Moderate health
+            armor: 1, // Light armor
+            healthRegen: 0.5, // Some regeneration
+            
+            // Ability Stats
+            abilityDamage: 1.8, // Moderate damage (puddles do additional DOT)
+            abilityCooldown: 2000, // 2 seconds between juice throws
+            abilityRadius: 60, // Puddle radius
+            
+            // Utility Stats
+            pickupRange: 85, // Good pickup range
+            projectileCount: 2, // Starts with 2 juice boxes
+            
+            // Movement
+            moveSpeed: 4.2 // Moderate speed
+        }
     }
 };
 
@@ -94,7 +122,8 @@ const CHARACTER_DATA = {
 const CHARACTER_CLASSES = {
     'shield': ShieldBufo,
     'wizard': WizardBufo,
-    'bat': BatBufo
+    'bat': BatBufo,
+    'juice': JuiceBufo
 };
 
 class CharacterRegistry {
