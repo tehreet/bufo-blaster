@@ -120,7 +120,7 @@ const ENEMY_DATA = {
         rangedAttack: {
             range: 400,
             keepDistance: 300,
-            projectileSpeed: 120,
+            projectileSpeed: 300,
             projectileDamage: 12,
             attackCooldown: 2000,
             accuracy: 0.8

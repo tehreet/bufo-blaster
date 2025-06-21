@@ -101,33 +101,32 @@ class MeltdownBufo extends BaseEnemy {
         const progress = elapsed / this.meltdownTime;
         this.agitationLevel = progress;
         
-        // Visual feedback based on how close to explosion
+        // Visual feedback based on how close to explosion - MUCH MORE OBVIOUS
         if (this.gameObject.setTint) {
-            if (progress < 0.5) {
-                // First half - warning phase
-                const color = Phaser.Display.Color.Interpolate.ColorWithColor(
-                    { r: 255, g: 170, b: 170 },
-                    { r: 255, g: 68, b: 68 },
-                    Math.floor(progress * 100),
-                    100
-                );
-                this.gameObject.setTint(Phaser.Display.Color.GetColor(color.r, color.g, color.b));
+            if (progress < 0.33) {
+                // First third - bright orange warning
+                this.gameObject.setTint(0xFF8800);
+            } else if (progress < 0.66) {
+                // Second third - bright red danger (flashing)
+                const flash = Math.sin(elapsed * 0.01) > 0 ? 0xFF2200 : 0xFF6600;
+                this.gameObject.setTint(flash);
             } else {
-                // Second half - critical phase
-                const color = Phaser.Display.Color.Interpolate.ColorWithColor(
-                    { r: 255, g: 68, b: 68 },
-                    { r: 255, g: 0, b: 0 },
-                    Math.floor((progress - 0.5) * 200),
-                    100
-                );
-                this.gameObject.setTint(Phaser.Display.Color.GetColor(color.r, color.g, color.b));
+                // Final third - rapid flashing bright red/white
+                const rapidFlash = Math.sin(elapsed * 0.02) > 0 ? 0xFF0000 : 0xFFFFFF;
+                this.gameObject.setTint(rapidFlash);
             }
         }
         
-        // Scale grows as explosion approaches
-        const scale = 0.9 + (progress * 0.3); // Grows from 0.9 to 1.2
+        // Scale grows dramatically as explosion approaches
+        const scale = 0.8 + (progress * 0.6); // Grows from 0.8 to 1.4 (more dramatic)
         if (this.gameObject.setScale) {
             this.gameObject.setScale(scale);
+        }
+        
+        // Screen shake effect in final second
+        if (remaining < 1000 && this.scene.cameras) {
+            const shakeIntensity = (1000 - remaining) / 1000 * 3; // 0 to 3 intensity
+            this.scene.cameras.main.shake(50, shakeIntensity);
         }
         
         // Faster particle generation as countdown progresses
@@ -224,8 +223,11 @@ class MeltdownBufo extends BaseEnemy {
         // Deal damage to player if in range
         this.dealExplosionDamage();
         
-        // Destroy self
-        this.die();
+        // Clean up and destroy (don't call die() to avoid recursion)
+        this.cleanup();
+        if (this.gameObject && this.gameObject.destroy) {
+            this.gameObject.destroy();
+        }
     }
     
     createExplosionVisual() {
@@ -361,30 +363,17 @@ class MeltdownBufo extends BaseEnemy {
         }
     }
     
-    // Override death to prevent normal death if explosion is imminent
+    // Override death to ALWAYS explode
     die() {
-        // If triggered but haven't exploded yet, force explosion
-        if (this.isTriggered && this.gameObject && this.gameObject.health > 0) {
+        // MeltdownBufo ALWAYS explodes on death, regardless of trigger state
+        if (this.gameObject && typeof this.gameObject.x === 'number' && typeof this.gameObject.y === 'number') {
             this.explode();
-            return;
-        }
-        
-        // Create special death effect if not from explosion
-        if (!this.isTriggered && this.gameObject && 
-            typeof this.gameObject.x === 'number' && typeof this.gameObject.y === 'number') {
-            this.createVisualEffect(this.gameObject.x, this.gameObject.y, {
-                radius: 30,
-                color: 0x888888,
-                alpha: 0.5,
-                duration: 400,
-                endScale: 2
-            });
-        }
-        
-        // Cleanup and destroy
-        this.cleanup();
-        if (this.gameObject && this.gameObject.destroy) {
-            this.gameObject.destroy();
+        } else {
+            // Fallback cleanup if position is invalid
+            this.cleanup();
+            if (this.gameObject && this.gameObject.destroy) {
+                this.gameObject.destroy();
+            }
         }
     }
     

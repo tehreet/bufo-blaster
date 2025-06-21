@@ -61,6 +61,7 @@ class UISystem {
         this.scene.enemies = this.scene.add.group();
         this.scene.xpOrbs = this.scene.add.group();
         this.scene.auraEffects = this.scene.add.group();
+        this.scene.enemyProjectiles = this.scene.add.group();
         
         // Start enemy spawning
         this.scene.enemySystem.startEnemySpawning(); 
