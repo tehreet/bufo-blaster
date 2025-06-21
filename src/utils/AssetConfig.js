@@ -73,6 +73,16 @@ class AssetConfig {
                     png: 'assets/enemies/bufo-chicken.png',
                     gif: null, // PNG only
                     displaySize: 42
+                },
+                'bufo-ghost': {
+                    png: 'assets/enemies/bufo-ghost.png',
+                    gif: null, // PNG only
+                    displaySize: 44
+                },
+                'bufo-meltdown': {
+                    png: 'assets/enemies/bufo-meltdown.png',
+                    gif: null, // PNG only
+                    displaySize: 40
                 }
                 // Note: bufo-dancing.gif and bufo-eyes.gif exist in assets but are not used by any enemy types
             },

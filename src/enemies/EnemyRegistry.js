@@ -5,6 +5,8 @@ import BaseEnemy from './BaseEnemy.js';
 import ChickenBufo from './ChickenBufo.js';
 import TeethBufo from './TeethBufo.js';
 import HazmatBufo from './HazmatBufo.js';
+import GhostBufo from './GhostBufo.js';
+import MeltdownBufo from './MeltdownBufo.js';
 
 // Enemy definitions with comprehensive base stats
 const ENEMY_DATA = {
@@ -122,18 +124,50 @@ const ENEMY_DATA = {
             attackCooldown: 2000,
             accuracy: 0.8
         }
+    },
+    GHOST_BUFO: {
+        id: 'ghost',
+        name: 'Ghost Bufo',
+        sprite: 'bufo-ghost',
+        specialEffect: 'reflection',
+        weight: 8, // Uncommon but not too rare
+        baseStats: {
+            health: 4,
+            speed: 50, // Slower than most enemies
+            displaySize: 44,
+            hitboxRadius: 3,
+            xpValue: 40, // Higher XP due to reflection mechanic
+            contactDamage: 8 // Lower contact damage since it reflects
+        }
+    },
+    MELTDOWN_BUFO: {
+        id: 'meltdown',
+        name: 'Meltdown Bufo',
+        sprite: 'bufo-meltdown',
+        specialEffect: 'explosion',
+        weight: 3, // Rare spawn - very dangerous
+        baseStats: {
+            health: 2, // Low health, but dangerous
+            speed: 120, // Very fast
+            displaySize: 40,
+            hitboxRadius: 3,
+            xpValue: 60, // High XP reward for the danger
+            contactDamage: 5 // Low contact damage - the explosion is the threat
+        }
     }
 };
 
 // Map enemy IDs to their class implementations
 const ENEMY_CLASSES = {
-    'hazmat': HazmatBufo,  // Specialized: Poison aura and effects
-    'clown': BaseEnemy,    // Basic enemy - no special abilities needed
-    'pog': BaseEnemy,      // Basic enemy - just fast and weak
-    'teeth': TeethBufo,    // Specialized: Health regeneration and berserker mode
-    'mob': BaseEnemy,      // Basic enemy - just tough
-    'vampire': BaseEnemy,  // TODO: Will become VampireBufo class (bleed effects)
-    'chicken': ChickenBufo // Specialized: Ranged attacks
+    'hazmat': HazmatBufo,    // Specialized: Poison aura and effects
+    'clown': BaseEnemy,      // Basic enemy - no special abilities needed
+    'pog': BaseEnemy,        // Basic enemy - just fast and weak
+    'teeth': TeethBufo,      // Specialized: Health regeneration and berserker mode
+    'mob': BaseEnemy,        // Basic enemy - just tough
+    'vampire': BaseEnemy,    // TODO: Will become VampireBufo class (bleed effects)
+    'chicken': ChickenBufo,  // Specialized: Ranged attacks
+    'ghost': GhostBufo,      // Specialized: Damage reflection mechanics
+    'meltdown': MeltdownBufo // Specialized: Explosion timer mechanics
 };
 
 class EnemyRegistry {
