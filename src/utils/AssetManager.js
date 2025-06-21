@@ -18,6 +18,12 @@ class AssetManager {
             return false;
         }
         
+        // Validate game object has required properties
+        if (!gameObject.x || !gameObject.y || typeof gameObject.setAlpha !== 'function') {
+            Logger.warn(Logger.Categories.ASSET, `Invalid game object for overlay: missing position or setAlpha method`);
+            return false;
+        }
+        
         // Check if we already failed to load this asset
         const assetKey = `${assetType}_${assetId}`;
         if (this.failedAssets.has(assetKey)) {
@@ -32,43 +38,55 @@ class AssetManager {
         }
         
         try {
-            // Get asset configuration
+            // Get asset configuration with validation
             const assetConfig = AssetConfig.getAssetConfig();
-            const asset = assetConfig[assetType][assetId];
+            if (!assetConfig || !assetConfig[assetType]) {
+                Logger.assetWarn(`Asset configuration not found for type: ${assetType}`);
+                this.showStaticSprite(gameObject);
+                return false;
+            }
             
+            const asset = assetConfig[assetType][assetId];
             if (!asset) {
                 Logger.assetWarn(`Asset configuration not found: ${assetType}.${assetId}`);
+                this.showStaticSprite(gameObject);
                 return false;
             }
             
             // Check if this asset has a GIF version
             if (!asset.gif) {
                 Logger.asset(`No animated version available for: ${assetId}, using static PNG`);
-                // Show the static PNG sprite
-                if (gameObject.setAlpha) {
-                    gameObject.setAlpha(1);
-                }
+                this.showStaticSprite(gameObject);
                 return false;
             }
             
+            // Validate asset path
             const assetPath = asset.gif;
+            if (!assetPath || typeof assetPath !== 'string') {
+                Logger.assetWarn(`Invalid asset path for ${assetId}: ${assetPath}`);
+                this.showStaticSprite(gameObject);
+                return false;
+            }
+            
+            // Validate display size
             const width = asset.displaySize;
             const height = asset.displaySize;
+            if (!width || !height || width <= 0 || height <= 0) {
+                Logger.assetWarn(`Invalid display size for ${assetId}: ${width}x${height}`);
+                this.showStaticSprite(gameObject);
+                return false;
+            }
             
             // Mark as loading
             this.loadingAssets.add(assetKey);
             
-            // Create overlay element
-            const overlay = document.createElement('img');
-            overlay.src = assetPath;
-            overlay.style.position = 'absolute';
-            overlay.style.pointerEvents = 'none';
-            overlay.style.zIndex = '1000';
-            overlay.style.width = width + 'px';
-            overlay.style.height = height + 'px';
-            overlay.style.imageRendering = 'pixelated'; // Maintain pixel art appearance
-            overlay.style.userSelect = 'none';
-            overlay.style.display = 'block';
+            // Create overlay element with validation
+            const overlay = this.createOverlayElement(assetPath, width, height);
+            if (!overlay) {
+                this.loadingAssets.delete(assetKey);
+                this.showStaticSprite(gameObject);
+                return false;
+            }
             
             // Success handler
             overlay.onload = () => {
@@ -76,35 +94,26 @@ class AssetManager {
                 this.loadingAssets.delete(assetKey);
                 
                 // Hide the static sprite since we have the animated overlay
-                if (gameObject.setAlpha) {
-                    gameObject.setAlpha(0);
-                }
+                this.hideStaticSprite(gameObject);
             };
             
             // Error handling with fallback
             overlay.onerror = () => {
                 Logger.assetWarn(`Failed to load animated overlay: ${assetPath}`);
-                this.loadingAssets.delete(assetKey);
-                this.failedAssets.add(assetKey);
-                
-                // Clean up the failed overlay
-                if (overlay.parentNode) {
-                    overlay.parentNode.removeChild(overlay);
-                }
-                this.animatedOverlays.delete(gameObject);
-                
-                // Fallback to static sprite
-                Logger.asset(`Falling back to static sprite for: ${assetId}`);
-                if (gameObject.setAlpha) {
-                    gameObject.setAlpha(1);
-                }
+                this.handleOverlayLoadError(assetKey, overlay, gameObject, assetId);
             };
             
             // Position overlay
             this.updateOverlayPosition(gameObject, overlay, width, height);
             
-            // Add to DOM
-            document.body.appendChild(overlay);
+            // Add to DOM with error handling
+            try {
+                document.body.appendChild(overlay);
+            } catch (domError) {
+                Logger.assetError('Failed to add overlay to DOM:', domError);
+                this.handleOverlayLoadError(assetKey, overlay, gameObject, assetId);
+                return false;
+            }
             
             // Store reference
             this.animatedOverlays.set(gameObject, {
@@ -123,12 +132,63 @@ class AssetManager {
             Logger.assetError('Error creating animated overlay:', error);
             this.loadingAssets.delete(assetKey);
             this.failedAssets.add(assetKey);
-            
-            // Fallback to static sprite
-            if (gameObject.setAlpha) {
-                gameObject.setAlpha(1);
-            }
+            this.showStaticSprite(gameObject);
             return false;
+        }
+    }
+    
+    // Helper method to create overlay element with validation
+    createOverlayElement(assetPath, width, height) {
+        try {
+            const overlay = document.createElement('img');
+            overlay.src = assetPath;
+            overlay.style.position = 'absolute';
+            overlay.style.pointerEvents = 'none';
+            overlay.style.zIndex = '1000';
+            overlay.style.width = width + 'px';
+            overlay.style.height = height + 'px';
+            overlay.style.imageRendering = 'pixelated';
+            overlay.style.userSelect = 'none';
+            overlay.style.display = 'block';
+            return overlay;
+        } catch (error) {
+            Logger.assetError('Failed to create overlay element:', error);
+            return null;
+        }
+    }
+    
+    // Helper method to handle overlay load errors
+    handleOverlayLoadError(assetKey, overlay, gameObject, assetId) {
+        this.loadingAssets.delete(assetKey);
+        this.failedAssets.add(assetKey);
+        
+        // Clean up the failed overlay
+        try {
+            if (overlay && overlay.parentNode) {
+                overlay.parentNode.removeChild(overlay);
+            }
+        } catch (error) {
+            Logger.assetError('Failed to remove failed overlay:', error);
+        }
+        
+        this.animatedOverlays.delete(gameObject);
+        
+        // Fallback to static sprite
+        Logger.asset(`Falling back to static sprite for: ${assetId}`);
+        this.showStaticSprite(gameObject);
+    }
+    
+    // Helper method to show static sprite
+    showStaticSprite(gameObject) {
+        if (gameObject && typeof gameObject.setAlpha === 'function') {
+            gameObject.setAlpha(1);
+        }
+    }
+    
+    // Helper method to hide static sprite
+    hideStaticSprite(gameObject) {
+        if (gameObject && typeof gameObject.setAlpha === 'function') {
+            gameObject.setAlpha(0);
         }
     }
 

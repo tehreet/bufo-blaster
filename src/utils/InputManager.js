@@ -320,8 +320,10 @@ class InputManager {
         if (velocityX !== 0 && velocityY !== 0) {
             // Diagonal movement: normalize the vector to maintain consistent speed
             const magnitude = Math.sqrt(velocityX * velocityX + velocityY * velocityY);
-            velocityX = velocityX / magnitude;
-            velocityY = velocityY / magnitude;
+            if (magnitude > 0) { // Prevent division by zero
+                velocityX = velocityX / magnitude;
+                velocityY = velocityY / magnitude;
+            }
         }
         
         // Apply speed scaling after normalization

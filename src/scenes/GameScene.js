@@ -13,6 +13,7 @@ import AudioManager from '../utils/AudioManager.js';
 import DebugUtils from '../utils/DebugUtils.js';
 import AssetConfig from '../utils/AssetConfig.js';
 import Logger from '../utils/Logger.js';
+import ConfigValidator from '../utils/ConfigValidator.js';
 
 class GameScene extends Phaser.Scene {
     constructor() {
@@ -118,6 +119,17 @@ class GameScene extends Phaser.Scene {
         this.upgradeSystem = new UpgradeSystem(this);
         this.uiSystem = new UISystem(this);
         this.statusEffectSystem = new StatusEffectSystem(this);
+        
+        // Validate all configurations early to catch issues
+        try {
+            ConfigValidator.validateAllConfigurations(
+                this.characterSystem.getCharacters ? this.characterSystem : null,
+                this.enemySystem.enemyRegistry,
+                AssetConfig.getAssetConfig ? AssetConfig.getAssetConfig() : null
+            );
+        } catch (error) {
+            Logger.error(Logger.Categories.SYSTEM, 'Configuration validation failed:', error);
+        }
         
         // Legacy properties for compatibility (some systems still reference these directly)
         this.gamepadState = this.inputManager.getGamepadState();

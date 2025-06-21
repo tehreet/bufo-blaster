@@ -122,13 +122,44 @@ class UpgradeSystem {
 
     // Method called by HTMLUIManager when an upgrade is selected
     selectUpgradeFromHTML(upgrade) {
-        // Apply the upgrade effect
-        upgrade.effect();
-        this.scene.statsSystem.refreshPlayerStats();
+        // Validate upgrade before applying
+        if (!upgrade) {
+            Logger.error(Logger.Categories.SYSTEM, 'Cannot select upgrade: upgrade is null or undefined');
+            return;
+        }
         
-        // Setup character abilities again (in case projectile count changed, etc.)
-        this.scene.characterSystem.setupCharacterAbilities();
+        if (!upgrade.effect || typeof upgrade.effect !== 'function') {
+            Logger.error(Logger.Categories.SYSTEM, `Cannot select upgrade "${upgrade.name}": effect is not a function`);
+            return;
+        }
         
+        try {
+            // Apply the upgrade effect with error handling
+            upgrade.effect();
+            Logger.upgrade(`Applied upgrade: ${upgrade.name}`);
+            
+            // Refresh player stats to ensure they're properly updated
+            if (this.scene.statsSystem && typeof this.scene.statsSystem.refreshPlayerStats === 'function') {
+                this.scene.statsSystem.refreshPlayerStats();
+            } else {
+                Logger.warn(Logger.Categories.SYSTEM, 'Stats system not available for refresh after upgrade');
+            }
+            
+            // Setup character abilities again (in case projectile count changed, etc.)
+            if (this.scene.characterSystem && typeof this.scene.characterSystem.setupCharacterAbilities === 'function') {
+                this.scene.characterSystem.setupCharacterAbilities();
+            } else {
+                Logger.warn(Logger.Categories.SYSTEM, 'Character system not available for ability setup after upgrade');
+            }
+            
+        } catch (error) {
+            Logger.error(Logger.Categories.SYSTEM, `Failed to apply upgrade "${upgrade.name}":`, error);
+            
+            // Try to continue the game even if the upgrade failed
+            Logger.warn(Logger.Categories.SYSTEM, 'Continuing game despite upgrade failure');
+        }
+        
+        // Always close the upgrade UI, even if the upgrade failed
         this.closeUpgradeUI();
     }
     

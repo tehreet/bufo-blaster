@@ -405,6 +405,11 @@ class EnemySystem {
         // Return early if enemies group doesn't exist yet
         if (!this.scene.enemies || !this.scene.player) return;
         
+        // Cache player position for performance - accessed once instead of in every loop iteration
+        const playerX = this.scene.player.x;
+        const playerY = this.scene.player.y;
+        const playerBody = this.scene.player.body;
+        
         // Update enemy AI and abilities using the new enemy instance system
         const enemies = this.scene.enemies.children.entries;
         
@@ -415,11 +420,12 @@ class EnemySystem {
             if (!enemy || !enemy.active || !enemy.body || !enemy.scene || 
                 typeof enemy.x !== 'number' || typeof enemy.y !== 'number') continue;
             
-            // Delegate to enemy instance if available
+            // Pass cached player position to enemy instance for better performance
             if (enemy.enemyInstance) {
                 try {
-                    // Update enemy AI
+                    // Update enemy AI with cached player position
                     if (typeof enemy.enemyInstance.updateAI === 'function') {
+                        enemy.enemyInstance.cachedPlayerPos = { x: playerX, y: playerY, body: playerBody };
                         enemy.enemyInstance.updateAI();
                     }
                     
@@ -432,7 +438,7 @@ class EnemySystem {
                 }
             } else {
                 // Fallback: use basic chase AI for enemies without instances
-                this.basicChaseAI(enemy);
+                this.basicChaseAI(enemy, playerX, playerY);
             }
             
             // Update debug hitbox position with comprehensive safety checks
@@ -459,8 +465,12 @@ class EnemySystem {
         }
     }
     
-    // Fallback basic AI for enemies without instances
-    basicChaseAI(enemy) {
+    // Updated fallback basic AI to accept cached player position
+    basicChaseAI(enemy, playerX = null, playerY = null) {
+        // Use cached position if provided, otherwise fall back to direct access
+        const targetX = playerX !== null ? playerX : this.scene.player.x;
+        const targetY = playerY !== null ? playerY : this.scene.player.y;
+        
         // Check if enemy is being knocked back
         if (enemy.knockbackTime && this.scene.time.now < enemy.knockbackTime) {
             return; // Don't apply AI movement during knockback
@@ -471,8 +481,8 @@ class EnemySystem {
             return; // Stunned enemies don't move
         }
         
-        const dx = this.scene.player.x - enemy.x;
-        const dy = this.scene.player.y - enemy.y;
+        const dx = targetX - enemy.x;
+        const dy = targetY - enemy.y;
         const distance = Math.sqrt(dx * dx + dy * dy);
         
         if (distance > 5) { // Avoid jittering when very close
@@ -498,6 +508,7 @@ class EnemySystem {
         // XP Orb magnetism using Matter.js - optimized for loop
         const orbs = this.scene.xpOrbs.children.entries;
         const pickupRange = this.scene.statsSystem.getPlayerStats().pickupRange;
+        const pickupRangeSquared = pickupRange * pickupRange; // Use squared distance for performance
         const playerX = this.scene.player.x;
         const playerY = this.scene.player.y;
         const speed = this.scene.gameConfig.XP_ORB_MAGNET_SPEED / 50; // Scale down for Matter.js
@@ -508,9 +519,15 @@ class EnemySystem {
             // Fast validation checks
             if (!orb || !orb.active || !orb.body || !orb.scene || orb.beingCollected || orb.isMagnetOrb) continue;
             
-            const distance = Phaser.Math.Distance.Between(playerX, playerY, orb.x, orb.y);
-            if (distance < pickupRange) {
-                const angle = Phaser.Math.Angle.Between(orb.x, orb.y, playerX, playerY);
+            // Use squared distance comparison to avoid expensive sqrt operation
+            const dx = playerX - orb.x;
+            const dy = playerY - orb.y;
+            const distanceSquared = dx * dx + dy * dy;
+            
+            if (distanceSquared < pickupRangeSquared) {
+                // Only calculate the actual distance and angle when we need to apply magnetism
+                const distance = Math.sqrt(distanceSquared);
+                const angle = Math.atan2(dy, dx);
                 
                 try {
                     this.scene.matter.body.setVelocity(orb.body, {
@@ -994,14 +1011,24 @@ class EnemySystem {
                 this.scene.tweens.killTweensOf(magnetOrb.glowEffect);
                 magnetOrb.glowEffect.destroy();
             }
+            
+            // Clear reference to current magnet orb
+            if (this.currentMagnetOrb === magnetOrb) {
+                this.currentMagnetOrb = null;
+            }
+            
+            // Hide indicator since magnet orb is gone
+            this.hideMagnetOrbIndicator();
+            
+            // Remove from physics world and group
+            if (magnetOrb.body) {
+                this.scene.matter.world.remove(magnetOrb.body);
+            }
+            this.scene.xpOrbs.remove(magnetOrb);
             magnetOrb.destroy();
-                        } catch (error) {
-                    Logger.error(Logger.Categories.SYSTEM, 'Error cleaning up magnet orb:', error);
-                }
-        
-        // Hide indicator when orb is collected
-        this.currentMagnetOrb = null;
-        this.hideMagnetOrbIndicator();
+        } catch (error) {
+            Logger.error(Logger.Categories.SYSTEM, 'Error cleaning up magnet orb:', error);
+        }
     }
     
     cleanupAllMagnetOrbs() {
