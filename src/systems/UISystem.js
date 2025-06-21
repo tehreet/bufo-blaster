@@ -481,9 +481,16 @@ class UISystem {
     
     // Handle gamepad input for HTML UI
     handleGamepadInput() {
-        if (this.scene.inputManager && this.scene.inputManager.getGamepadState) {
-            const gamepadState = this.scene.inputManager.getGamepadState();
-            this.htmlUI.handleGamepadInput(gamepadState);
+        // Let HTMLUIManager handle its own input checking
+        this.htmlUI.handleGamepadInput();
+    }
+    
+    // Add pause toggle method
+    togglePause() {
+        if (this.isPaused) {
+            this.resumeGame();
+        } else {
+            this.pauseGame();
         }
     }
     

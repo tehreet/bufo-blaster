@@ -13,6 +13,7 @@ class HTMLUIManager {
         this.inputManager = scene.inputManager;
         this.lastInputTime = 0;
         this.currentScreen = 'character-selection';
+        this.inputManagerWarningShown = false; // Flag to prevent spam logging
         
         // Gamepad input debouncing
         this.gamepadInputCooldown = 0;
@@ -187,6 +188,9 @@ class HTMLUIManager {
         // Hide character selection immediately and start game
         this.hideOverlay(this.characterSelectionOverlay);
         
+        // Update current screen
+        this.currentScreen = 'game';
+        
         // Start game after a short delay to ensure overlay is hidden
         setTimeout(() => {
             this.scene.uiSystem.startGame();
@@ -245,6 +249,7 @@ class HTMLUIManager {
     
     showPauseMenu() {
         Logger.ui('Showing pause menu');
+        this.currentScreen = 'pause';
         // Create pause menu HTML if it doesn't exist
         if (!this.pauseOverlay.innerHTML.trim()) {
             this.pauseOverlay.innerHTML = `
@@ -285,6 +290,7 @@ class HTMLUIManager {
     
     hidePauseMenu() {
         Logger.ui('Hiding pause menu');
+        this.currentScreen = 'game';
         this.hideOverlay(this.pauseOverlay);
     }
     
@@ -292,6 +298,7 @@ class HTMLUIManager {
     
     showGameOverScreen(stats = {}) {
         Logger.ui('Showing game over screen');
+        this.currentScreen = 'game-over';
         const gameOverHTML = `
             <div class="character-selection">
                 <div class="container has-text-centered">
@@ -352,15 +359,19 @@ class HTMLUIManager {
     
     hideGameOverScreen() {
         Logger.ui('Hiding game over screen');
+        this.currentScreen = 'character-selection';
         this.hideOverlay(this.gameOverOverlay);
     }
     
     // =================== GAMEPAD SUPPORT ===================
     
     handleGamepadInput() {
-        // Safety check for InputManager
+        // Safety check for InputManager with spam prevention
         if (!this.inputManager) {
-            Logger.warn(Logger.Categories.INPUT, 'InputManager not available for gamepad input');
+            if (!this.inputManagerWarningShown) {
+                Logger.warn(Logger.Categories.INPUT, 'InputManager not available for gamepad input');
+                this.inputManagerWarningShown = true;
+            }
             return;
         }
         
@@ -411,6 +422,30 @@ class HTMLUIManager {
                 this.updateCharacterSelection();
                 Logger.input(`Character selection moved to index ${this.selectedCharacterIndex}`);
             }
+        }
+    }
+    
+    // Add methods for pause/resume that are called by gamepad input
+    pauseGame() {
+        Logger.ui('Pausing game via HTMLUIManager');
+        if (this.scene.uiSystem && typeof this.scene.uiSystem.pauseGame === 'function') {
+            this.scene.uiSystem.pauseGame();
+        }
+    }
+    
+    resumeGame() {
+        Logger.ui('Resuming game via HTMLUIManager');
+        if (this.scene.uiSystem && typeof this.scene.uiSystem.resumeGame === 'function') {
+            this.scene.uiSystem.resumeGame();
+        }
+    }
+    
+    returnToMenu() {
+        Logger.ui('Returning to menu via HTMLUIManager');
+        this.showCharacterSelection();
+        // Reset game state if needed
+        if (this.scene.uiSystem && typeof this.scene.uiSystem.restartGame === 'function') {
+            this.scene.uiSystem.restartGame();
         }
     }
     

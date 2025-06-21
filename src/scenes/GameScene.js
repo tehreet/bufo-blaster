@@ -105,19 +105,19 @@ class GameScene extends Phaser.Scene {
     }
 
     initializeSystems() {
-        // Core systems
+        // Utility systems first (needed by other systems)
+        this.inputManager = new InputManager(this);
+        this.assetManager = new AssetManager(this);
+        this.audioManager = new AudioManager(this);
+        this.debugUtils = new DebugUtils(this);
+        
+        // Core systems (now that utilities are available)
         this.characterSystem = new CharacterSystem(this);
         this.statsSystem = new StatsSystem(this);
         this.enemySystem = new EnemySystem(this);
         this.upgradeSystem = new UpgradeSystem(this);
         this.uiSystem = new UISystem(this);
         this.statusEffectSystem = new StatusEffectSystem(this);
-        
-        // Utility systems
-        this.inputManager = new InputManager(this);
-        this.assetManager = new AssetManager(this);
-        this.audioManager = new AudioManager(this);
-        this.debugUtils = new DebugUtils(this);
         
         // Legacy properties for compatibility (some systems still reference these directly)
         this.gamepadState = this.inputManager.getGamepadState();
