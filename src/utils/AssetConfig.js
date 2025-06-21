@@ -28,6 +28,12 @@ class AssetConfig {
                     gif: null, // PNG only character
                     displaySize: 64,
                     previewSize: 120
+                },
+                'duck-bufo': {
+                    png: 'assets/characters/duck-bufo.png',
+                    gif: null, // PNG only character
+                    displaySize: 64,
+                    previewSize: 120
                 }
             },
             

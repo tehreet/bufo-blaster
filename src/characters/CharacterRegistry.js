@@ -5,6 +5,7 @@ import ShieldBufo from './ShieldBufo.js';
 import WizardBufo from './WizardBufo.js';
 import BatBufo from './BatBufo.js';
 import JuiceBufo from './JuiceBufo.js';
+import DuckBufo from './DuckBufo.js';
 
 // Character definitions with comprehensive base stats
 const CHARACTER_DATA = {
@@ -123,6 +124,35 @@ const CHARACTER_DATA = {
         },
         // Physics
         hitboxRadius: 5 // Small hitbox to match actual sprite content
+    },
+    DUCK_BUFO: {
+        id: 'duck',
+        name: 'Duck Bufo',
+        description: 'Summons explosive rubber ducks that seek enemies',
+        abilityName: 'Rubber Duck Army',
+        abilityDescription: 'Spawns rubber ducks that walk to enemies and explode',
+        color: 0xFFD700, // Golden yellow color for duck theme
+        sprite: 'duck-bufo',
+        baseStats: {
+            // Core Stats
+            health: 110, // Moderate health (minion master style)
+            armor: 1, // Light armor
+            healthRegen: 0.3, // Some regeneration
+            
+            // Ability Stats
+            abilityDamage: 2.0, // Base explosion damage per duck
+            abilityCooldown: 3000, // 3 seconds between duck summons
+            abilityRadius: 50, // Base explosion radius
+            
+            // Utility Stats
+            pickupRange: 90, // Good pickup range
+            projectileCount: 3, // Base number of ducks active at once
+            
+            // Movement
+            moveSpeed: 4.2 // Moderate speed
+        },
+        // Physics
+        hitboxRadius: 6 // Slightly larger hitbox for minion master
     }
 };
 
@@ -131,7 +161,8 @@ const CHARACTER_CLASSES = {
     'shield': ShieldBufo,
     'wizard': WizardBufo,
     'bat': BatBufo,
-    'juice': JuiceBufo
+    'juice': JuiceBufo,
+    'duck': DuckBufo
 };
 
 class CharacterRegistry {
