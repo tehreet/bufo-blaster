@@ -22,6 +22,9 @@ class DuckBufo extends BaseCharacter {
         
         // Create ability groups for ducks
         this.createAbilityGroup('rubberDucks');
+        
+        // Initialize stunned enemies tracking for Thermonuclear Duck upgrade
+        this.setAbilityState('stunnedEnemies', new Set());
     }
 
     // Called every frame to handle duck summoning
@@ -44,6 +47,9 @@ class DuckBufo extends BaseCharacter {
         
         // Update existing ducks
         this.updateDucks();
+        
+        // Update stunned enemies from Thermonuclear Duck upgrade
+        this.updateStunnedEnemies();
     }
 
     // Summon a new rubber duck
@@ -136,6 +142,24 @@ class DuckBufo extends BaseCharacter {
             } catch (error) {
                 Logger.error('Duck update error:', error);
                 if (duck && duck.destroy) duck.destroy();
+            }
+        }
+    }
+
+    // Update stunned enemies (remove stun effect when expired)
+    updateStunnedEnemies() {
+        const stunnedEnemies = this.getAbilityState('stunnedEnemies');
+        if (!stunnedEnemies) return;
+        
+        const currentTime = this.scene.time.now;
+        // Use Set iterator for better performance with Set.delete()
+        for (const enemy of stunnedEnemies) {
+            if (!enemy || !enemy.active || !enemy.scene || currentTime > enemy.stunEndTime) {
+                // Remove stun effect
+                if (enemy.clearTint) {
+                    enemy.clearTint();
+                }
+                stunnedEnemies.delete(enemy);
             }
         }
     }
@@ -302,6 +326,27 @@ class DuckBufo extends BaseCharacter {
                 } catch (knockbackError) {
                     // Silent knockback error handling
                 }
+                
+                // Apply stun effect if Thermonuclear Duck upgrade is active
+                if (this.duckStunEnabled) {
+                    try {
+                        const currentTime = this.scene.time.now;
+                        enemy.stunEndTime = currentTime + 2000; // 2 second stun
+                        
+                        // Add to stunned enemies tracking set
+                        const stunnedEnemies = this.getAbilityState('stunnedEnemies');
+                        if (stunnedEnemies) {
+                            stunnedEnemies.add(enemy);
+                        }
+                        
+                        // Visual stun effect (orange tint for duck stun)
+                        if (enemy.setTint && typeof enemy.setTint === 'function') {
+                            enemy.setTint(0xFF8C00);
+                        }
+                    } catch (stunError) {
+                        // Silent stun error handling
+                    }
+                }
             }
             
             // Create explosion visual effect using stored position
@@ -371,57 +416,56 @@ class DuckBufo extends BaseCharacter {
     // Get character-specific upgrades
     getUpgrades() {
         return [
-            {
-                name: 'Duck Swarm',
-                description: 'Summon +3 more ducks at once',
-                type: 'projectileCount',
-                value: 3, // Increased from 2
-                rarity: 'common'
+            { 
+                id: 'duck_swarm', 
+                name: 'Duck Swarm', 
+                description: 'Summon +3 more ducks at once', 
+                type: 'character', 
+                statType: 'projectiles',
+                effect: () => this.scene.statsSystem.addStatBonus('projectileCountBonus', 3) 
             },
-            {
-                name: 'Quack Speed',
-                description: 'Ducks move 60% faster',
-                type: 'moveSpeed', 
-                value: 2.52, // 60% of base 4.2 (increased from 40%)
-                rarity: 'common'
+            { 
+                id: 'quack_speed', 
+                name: 'Quack Speed', 
+                description: 'Ducks move 60% faster', 
+                type: 'character', 
+                statType: 'speed',
+                effect: () => this.scene.statsSystem.addStatBonus('moveSpeedBonus', 2.52) 
             },
-            {
-                name: 'Explosive Payload',
-                description: 'Duck explosions have +80% larger radius',
-                type: 'abilityRadius',
-                value: 56, // 80% of base 70 (increased from 60%)
-                rarity: 'uncommon'
+            { 
+                id: 'explosive_payload', 
+                name: 'Explosive Payload', 
+                description: 'Duck explosions have +80% larger radius', 
+                type: 'character', 
+                statType: 'radius',
+                effect: () => this.scene.statsSystem.addStatBonus('abilityRadiusBonus', 56) 
             },
-            {
-                name: 'Duck Commander',
-                description: 'Summon ducks 60% faster + 60 health',
-                type: 'compound',
-                effects: [
-                    { type: 'abilityCooldown', value: -1500 }, // -60% of base 2500ms (increased from 50%)
-                    { type: 'health', value: 60 } // Increased from 40
-                ],
-                rarity: 'rare'
+            { 
+                id: 'duck_commander', 
+                name: 'Duck Commander', 
+                description: 'Summon ducks 60% faster + 60 health', 
+                type: 'character', 
+                statType: 'compound',
+                effect: () => {
+                    this.scene.statsSystem.addStatBonus('abilityCooldownBonus', -1500);
+                    this.scene.statsSystem.addStatBonus('healthBonus', 60);
+                }
             },
-            {
-                name: 'Thermonuclear Duck',
-                description: 'Explosions deal 100% more damage + stun enemies',
-                type: 'compound',
-                effects: [
-                    { type: 'abilityDamage', value: 3.0 }, // 100% more than base 3.0 (increased from 75%)
-                    { type: 'special', value: 'duck_stun' }
-                ],
-                rarity: 'epic'
+            { 
+                id: 'thermonuclear_duck', 
+                name: 'Thermonuclear Duck', 
+                description: 'Explosions deal 100% more damage + stun enemies', 
+                type: 'character', 
+                statType: 'compound',
+                effect: () => {
+                    this.scene.statsSystem.addStatBonus('abilityDamageBonus', 3.0);
+                    this.duckStunEnabled = true;
+                }
             }
         ];
     }
 
-    // Handle special upgrade effects
-    applySpecialUpgrade(type, value) {
-        if (type === 'duck_stun') {
-            // Modify explodeDuck to apply stun effect
-            this.duckStunEnabled = true;
-        }
-    }
+
 
     // Get collision handlers for rubber ducks
     getCollisionHandlers() {
@@ -435,6 +479,17 @@ class DuckBufo extends BaseCharacter {
 
     // Clean up when character is deselected or game restarts
     cleanup() {
+        // Clear stunned enemies before calling parent cleanup
+        const stunnedEnemies = this.getAbilityState('stunnedEnemies');
+        if (stunnedEnemies) {
+            for (const enemy of stunnedEnemies) {
+                if (enemy && enemy.clearTint) {
+                    enemy.clearTint();
+                }
+            }
+            stunnedEnemies.clear();
+        }
+        
         const ducksGroup = this.getAbilityGroup('rubberDucks');
         if (ducksGroup) {
             ducksGroup.clear(true, true);
@@ -442,6 +497,9 @@ class DuckBufo extends BaseCharacter {
         
         this.nextDuckSummon = 0;
         this.duckStunEnabled = false;
+        
+        // Call parent cleanup
+        super.cleanup();
     }
 }
 
