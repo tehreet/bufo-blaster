@@ -23,6 +23,11 @@ class GhostBufo extends BaseEnemy {
     }
     
     setupGhostlyEffects() {
+        // Safety check: ensure gameObject and scene still exist
+        if (!this.gameObject || !this.scene || this.gameObject.active === false) {
+            return;
+        }
+        
         // Create ethereal aura effect
         this.createVisualEffect(this.gameObject.x, this.gameObject.y, {
             radius: 25,
@@ -32,12 +37,14 @@ class GhostBufo extends BaseEnemy {
             endScale: 1.5
         });
         
-        // Schedule next aura effect
-        this.createAbilityTimer('ghostAura', {
-            delay: 3000,
-            callback: () => this.setupGhostlyEffects(),
-            loop: false
-        });
+        // Schedule next aura effect only if still active
+        if (this.gameObject && this.gameObject.active && this.scene) {
+            this.createAbilityTimer('ghostAura', {
+                delay: 3000,
+                callback: () => this.setupGhostlyEffects(),
+                loop: false
+            });
+        }
     }
     
     updateAbilities() {
@@ -46,6 +53,11 @@ class GhostBufo extends BaseEnemy {
     }
     
     updateGhostlyPhasing() {
+        // Safety check: ensure gameObject still exists and is active
+        if (!this.gameObject || this.gameObject.active === false) {
+            return;
+        }
+        
         this.phaseTimer += 0.05;
         
         // Gentle alpha oscillation for ghostly effect
@@ -129,36 +141,51 @@ class GhostBufo extends BaseEnemy {
     }
     
     createReflectionEffect() {
+        // Safety check: ensure gameObject and scene still exist
+        if (!this.gameObject || !this.scene || this.gameObject.active === false) {
+            return;
+        }
+        
         // Flash effect when reflecting damage
-        this.gameObject.setTint(0xFFFFFF);
-        this.scene.time.delayedCall(100, () => {
-            if (this.gameObject.active && this.scene) {
-                this.gameObject.setTint(0xBBBBFF);
-            }
-        });
+        if (this.gameObject.setTint) {
+            this.gameObject.setTint(0xFFFFFF);
+        }
+        
+        if (this.scene.time) {
+            this.scene.time.delayedCall(100, () => {
+                if (this.gameObject && this.gameObject.active && this.scene && this.gameObject.setTint) {
+                    this.gameObject.setTint(0xBBBBFF);
+                }
+            });
+        }
         
         // Particle-like effect
         for (let i = 0; i < 3; i++) {
-            this.scene.time.delayedCall(i * 50, () => {
-                if (this.gameObject.active && this.scene) {
-                    this.createVisualEffect(
-                        this.gameObject.x + (Math.random() - 0.5) * 30,
-                        this.gameObject.y + (Math.random() - 0.5) * 30,
-                        {
-                            radius: 8,
-                            color: 0x9999FF,
-                            alpha: 0.8,
-                            duration: 300,
-                            endScale: 2
-                        }
-                    );
-                }
-            });
+            if (this.scene.time) {
+                this.scene.time.delayedCall(i * 50, () => {
+                    if (this.gameObject && this.gameObject.active && this.scene) {
+                        this.createVisualEffect(
+                            this.gameObject.x + (Math.random() - 0.5) * 30,
+                            this.gameObject.y + (Math.random() - 0.5) * 30,
+                            {
+                                radius: 8,
+                                color: 0x9999FF,
+                                alpha: 0.8,
+                                duration: 300,
+                                endScale: 2
+                            }
+                        );
+                    }
+                });
+            }
         }
     }
     
     createReflectionBeam() {
-        if (!this.scene.player) return;
+        // Safety checks: ensure all required objects exist
+        if (!this.scene || !this.scene.player || !this.gameObject || !this.scene.add) {
+            return;
+        }
         
         // Create temporary beam visual
         const beam = this.scene.add.line(
@@ -174,17 +201,30 @@ class GhostBufo extends BaseEnemy {
         }
         
         // Fade out beam
-        this.scene.tweens.add({
-            targets: beam,
-            alpha: 0,
-            duration: 200,
-            onComplete: () => beam.destroy()
-        });
+        if (this.scene.tweens) {
+            this.scene.tweens.add({
+                targets: beam,
+                alpha: 0,
+                duration: 200,
+                onComplete: () => {
+                    if (beam && beam.destroy) {
+                        beam.destroy();
+                    }
+                }
+            });
+        }
     }
     
     onReflectionExhausted() {
+        // Safety check: ensure gameObject still exists
+        if (!this.gameObject || this.gameObject.active === false) {
+            return;
+        }
+        
         // Ghost becomes more vulnerable when reflection power is used up
-        this.gameObject.setTint(0xFFBBBB); // Reddish tint to show vulnerability
+        if (this.gameObject.setTint) {
+            this.gameObject.setTint(0xFFBBBB); // Reddish tint to show vulnerability
+        }
         this.ghostlyAlpha = 0.9; // Less transparent
         
         // Visual feedback
@@ -223,6 +263,11 @@ class GhostBufo extends BaseEnemy {
     
     // Helper method to create visual effects
     createVisualEffect(x, y, config) {
+        // Safety check: ensure scene still exists
+        if (!this.scene || !this.scene.add) {
+            return null;
+        }
+        
         const effect = this.scene.add.circle(x, y, config.radius || 20, config.color || 0xffffff, config.alpha || 0.5);
         if (config.stroke) {
             effect.setStrokeStyle(config.stroke.width || 2, config.stroke.color || 0xffffff);
@@ -233,13 +278,19 @@ class GhostBufo extends BaseEnemy {
         }
 
         // Animate the effect
-        this.scene.tweens.add({
-            targets: effect,
-            alpha: 0,
-            scale: config.endScale || 2,
-            duration: config.duration || 500,
-            onComplete: () => effect.destroy()
-        });
+        if (this.scene.tweens) {
+            this.scene.tweens.add({
+                targets: effect,
+                alpha: 0,
+                scale: config.endScale || 2,
+                duration: config.duration || 500,
+                onComplete: () => {
+                    if (effect && effect.destroy) {
+                        effect.destroy();
+                    }
+                }
+            });
+        }
 
         return effect;
     }

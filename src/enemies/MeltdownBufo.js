@@ -39,27 +39,32 @@ class MeltdownBufo extends BaseEnemy {
     }
     
     createStressParticles() {
-        if (!this.gameObject.active || !this.scene) return;
+        // Safety check: ensure gameObject and scene still exist
+        if (!this.gameObject || !this.scene || this.gameObject.active === false) {
+            return;
+        }
         
         // Create small particle effect to show instability
         const particleCount = this.isTriggered ? 5 : 2;
         
         for (let i = 0; i < particleCount; i++) {
-            this.scene.time.delayedCall(i * 100, () => {
-                if (this.gameObject.active && this.scene) {
-                    this.createVisualEffect(
-                        this.gameObject.x + (Math.random() - 0.5) * 25,
-                        this.gameObject.y + (Math.random() - 0.5) * 25,
-                        {
-                            radius: 4,
-                            color: this.isTriggered ? 0xFF4444 : 0xFF8888,
-                            alpha: 0.6,
-                            duration: 400,
-                            endScale: 2
-                        }
-                    );
-                }
-            });
+            if (this.scene.time) {
+                this.scene.time.delayedCall(i * 100, () => {
+                    if (this.gameObject && this.gameObject.active && this.scene) {
+                        this.createVisualEffect(
+                            this.gameObject.x + (Math.random() - 0.5) * 25,
+                            this.gameObject.y + (Math.random() - 0.5) * 25,
+                            {
+                                radius: 4,
+                                color: this.isTriggered ? 0xFF4444 : 0xFF8888,
+                                alpha: 0.6,
+                                duration: 400,
+                                endScale: 2
+                            }
+                        );
+                    }
+                });
+            }
         }
     }
     
@@ -71,6 +76,11 @@ class MeltdownBufo extends BaseEnemy {
     }
     
     updateMeltdownSequence() {
+        // Safety check: ensure scene and gameObject still exist
+        if (!this.scene || !this.gameObject || this.gameObject.active === false) {
+            return;
+        }
+        
         const currentTime = this.scene.time.now;
         const elapsed = currentTime - this.meltdownStartTime;
         const remaining = this.meltdownTime - elapsed;
@@ -86,29 +96,33 @@ class MeltdownBufo extends BaseEnemy {
         this.agitationLevel = progress;
         
         // Visual feedback based on how close to explosion
-        if (progress < 0.5) {
-            // First half - warning phase
-            const color = Phaser.Display.Color.Interpolate.ColorWithColor(
-                { r: 255, g: 170, b: 170 },
-                { r: 255, g: 68, b: 68 },
-                Math.floor(progress * 100),
-                100
-            );
-            this.gameObject.setTint(Phaser.Display.Color.GetColor(color.r, color.g, color.b));
-        } else {
-            // Second half - critical phase
-            const color = Phaser.Display.Color.Interpolate.ColorWithColor(
-                { r: 255, g: 68, b: 68 },
-                { r: 255, g: 0, b: 0 },
-                Math.floor((progress - 0.5) * 200),
-                100
-            );
-            this.gameObject.setTint(Phaser.Display.Color.GetColor(color.r, color.g, color.b));
+        if (this.gameObject.setTint) {
+            if (progress < 0.5) {
+                // First half - warning phase
+                const color = Phaser.Display.Color.Interpolate.ColorWithColor(
+                    { r: 255, g: 170, b: 170 },
+                    { r: 255, g: 68, b: 68 },
+                    Math.floor(progress * 100),
+                    100
+                );
+                this.gameObject.setTint(Phaser.Display.Color.GetColor(color.r, color.g, color.b));
+            } else {
+                // Second half - critical phase
+                const color = Phaser.Display.Color.Interpolate.ColorWithColor(
+                    { r: 255, g: 68, b: 68 },
+                    { r: 255, g: 0, b: 0 },
+                    Math.floor((progress - 0.5) * 200),
+                    100
+                );
+                this.gameObject.setTint(Phaser.Display.Color.GetColor(color.r, color.g, color.b));
+            }
         }
         
         // Scale grows as explosion approaches
         const scale = 0.9 + (progress * 0.3); // Grows from 0.9 to 1.2
-        this.gameObject.setScale(scale);
+        if (this.gameObject.setScale) {
+            this.gameObject.setScale(scale);
+        }
         
         // Faster particle generation as countdown progresses
         if (progress > 0.7 && currentTime % 200 < 50) { // Every 200ms in final phase
@@ -182,7 +196,10 @@ class MeltdownBufo extends BaseEnemy {
     }
     
     explode() {
-        if (!this.gameObject.active || !this.scene) return;
+        // Safety check: ensure gameObject and scene still exist
+        if (!this.gameObject || !this.scene || this.gameObject.active === false) {
+            return;
+        }
         
         // Create massive explosion visual
         this.createExplosionVisual();
@@ -195,6 +212,11 @@ class MeltdownBufo extends BaseEnemy {
     }
     
     createExplosionVisual() {
+        // Safety check: ensure gameObject and scene still exist
+        if (!this.gameObject || !this.scene) {
+            return;
+        }
+        
         // Main explosion effect
         this.createVisualEffect(this.gameObject.x, this.gameObject.y, {
             radius: this.explosionRadius,
@@ -207,17 +229,19 @@ class MeltdownBufo extends BaseEnemy {
         
         // Secondary explosion rings
         for (let i = 1; i <= 3; i++) {
-            this.scene.time.delayedCall(i * 100, () => {
-                if (this.scene && this.scene.add) {
-                    this.createVisualEffect(this.gameObject.x, this.gameObject.y, {
-                        radius: this.explosionRadius * (0.3 + i * 0.2),
-                        color: 0xFF6600,
-                        alpha: 0.3,
-                        duration: 400,
-                        endScale: 2
-                    });
-                }
-            });
+            if (this.scene.time) {
+                this.scene.time.delayedCall(i * 100, () => {
+                    if (this.scene && this.scene.add && this.gameObject) {
+                        this.createVisualEffect(this.gameObject.x, this.gameObject.y, {
+                            radius: this.explosionRadius * (0.3 + i * 0.2),
+                            color: 0xFF6600,
+                            alpha: 0.3,
+                            duration: 400,
+                            endScale: 2
+                        });
+                    }
+                });
+            }
         }
         
         // Particle explosion
@@ -227,17 +251,19 @@ class MeltdownBufo extends BaseEnemy {
             const particleX = this.gameObject.x + Math.cos(angle) * distance;
             const particleY = this.gameObject.y + Math.sin(angle) * distance;
             
-            this.scene.time.delayedCall(Math.random() * 200, () => {
-                if (this.scene && this.scene.add) {
-                    this.createVisualEffect(particleX, particleY, {
-                        radius: 15,
-                        color: 0xFF8800,
-                        alpha: 0.7,
-                        duration: 600,
-                        endScale: 3
-                    });
-                }
-            });
+            if (this.scene.time) {
+                this.scene.time.delayedCall(Math.random() * 200, () => {
+                    if (this.scene && this.scene.add) {
+                        this.createVisualEffect(particleX, particleY, {
+                            radius: 15,
+                            color: 0xFF8800,
+                            alpha: 0.7,
+                            duration: 600,
+                            endScale: 3
+                        });
+                    }
+                });
+            }
         }
     }
     
@@ -328,6 +354,11 @@ class MeltdownBufo extends BaseEnemy {
     
     // Helper method to create visual effects
     createVisualEffect(x, y, config) {
+        // Safety check: ensure scene still exists
+        if (!this.scene || !this.scene.add) {
+            return null;
+        }
+        
         const effect = this.scene.add.circle(x, y, config.radius || 20, config.color || 0xffffff, config.alpha || 0.5);
         if (config.stroke) {
             effect.setStrokeStyle(config.stroke.width || 2, config.stroke.color || 0xffffff);
@@ -338,13 +369,19 @@ class MeltdownBufo extends BaseEnemy {
         }
 
         // Animate the effect
-        this.scene.tweens.add({
-            targets: effect,
-            alpha: 0,
-            scale: config.endScale || 2,
-            duration: config.duration || 500,
-            onComplete: () => effect.destroy()
-        });
+        if (this.scene.tweens) {
+            this.scene.tweens.add({
+                targets: effect,
+                alpha: 0,
+                scale: config.endScale || 2,
+                duration: config.duration || 500,
+                onComplete: () => {
+                    if (effect && effect.destroy) {
+                        effect.destroy();
+                    }
+                }
+            });
+        }
 
         return effect;
     }
