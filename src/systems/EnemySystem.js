@@ -30,7 +30,7 @@ class EnemySystem {
                 health: 4, // Increased from 2 to 4
                 speed: 90, // Increased from 80 to 90
                 displaySize: 40,
-                hitboxRadius: 5, // 40px * 12.5% = 5px (matches player ratio)
+                hitboxRadius: 3, // Reduced to match player scale (40px sprite)
                 xpValue: 25, // Increased from 15 to 25 due to much stronger poison
                 weight: 25, // Slightly reduced weight (was 30) - more dangerous so less common
                 specialEffect: 'poison' // Causes poison on contact
@@ -42,7 +42,7 @@ class EnemySystem {
                 health: 3,
                 speed: 45,
                 displaySize: 44,
-                hitboxRadius: 5, // 44px * 12.5% = 5.5px, rounded to 5px
+                hitboxRadius: 3, // Reduced to match player scale (44px sprite)
                 xpValue: 15,
                 weight: 25
             },
@@ -53,7 +53,7 @@ class EnemySystem {
                 health: 1,
                 speed: 80,
                 displaySize: 36,
-                hitboxRadius: 4, // 36px * 12.5% = 4.5px, rounded to 4px  
+                hitboxRadius: 2, // Very small hitbox for fast enemy (36px sprite)  
                 xpValue: 8,
                 weight: 35 // Fast but weak
             },
@@ -64,7 +64,7 @@ class EnemySystem {
                 health: 6, // Increased HP
                 speed: 65, // Increased movement speed
                 displaySize: 48,
-                hitboxRadius: 6, // 48px * 12.5% = 6px (matches player ratio)
+                hitboxRadius: 4, // Reduced to match player scale (48px sprite)
                 xpValue: 25, // More valuable
                 weight: 10,
                 specialEffect: 'regen', // Has health regeneration
@@ -77,7 +77,7 @@ class EnemySystem {
                 health: 6,
                 speed: 50,
                 displaySize: 48,
-                hitboxRadius: 6, // 48px * 12.5% = 6px (matches player ratio)
+                hitboxRadius: 4, // Reduced to match player scale (48px sprite)
                 xpValue: 30,
                 weight: 5 // Very rare but very tough
             },
@@ -88,7 +88,7 @@ class EnemySystem {
                 health: 5, // High health but not as tanky as mob bufo
                 speed: 100, // Very fast as requested
                 displaySize: 45,
-                hitboxRadius: 5, // 45px * 12.5% ≈ 5.6px, rounded to 5px
+                hitboxRadius: 3, // Reduced to match player scale (45px sprite)
                 xpValue: 35, // High XP value due to special abilities
                 weight: 8, // Rarer than basic enemies but not as rare as mob bufo
                 specialEffect: 'bleed', // Causes bleed on contact
@@ -102,7 +102,7 @@ class EnemySystem {
                 health: 3, // Moderate health
                 speed: 40, // Slow movement speed - prefers to keep distance
                 displaySize: 42,
-                hitboxRadius: 5, // 42px * 12.5% ≈ 5.25px, rounded to 5px
+                hitboxRadius: 3, // Reduced to match player scale (42px sprite)
                 xpValue: 20, // Good XP value for ranged enemy
                 weight: 15, // Moderately common
                 specialEffect: 'ranged', // Shoots projectiles
