@@ -438,8 +438,8 @@ class HTMLUIManager {
                         <i class="fas fa-pause mr-3"></i>GAME PAUSED
                     </h1>
                     
-                    <div class="box has-background-dark has-text-light mb-6">
-                        <h2 class="title is-4 has-text-light mb-4">Current Run</h2>
+                    <div class="box has-background-dark has-text-white mb-6">
+                        <h2 class="title is-4 has-text-white mb-4">Current Run</h2>
                         <div class="columns is-mobile">
                             <div class="column">
                                 <p class="is-size-6">
@@ -495,7 +495,7 @@ class HTMLUIManager {
                         </button>
                     </div>
                     
-                    <p class="has-text-light mt-6">
+                    <p class="has-text-white mt-6">
                         <i class="fas fa-mouse-pointer mr-2"></i>Click anywhere or press ESC to resume
                         <br>
                         <i class="fas fa-gamepad mr-2"></i>Gamepad: A to resume, Start to resume
@@ -652,8 +652,8 @@ class HTMLUIManager {
                         <i class="fas fa-skull mr-3"></i>GAME OVER
                     </h1>
                     
-                    <div class="box has-background-dark has-text-light mb-6">
-                        <h2 class="title is-4 has-text-light mb-4">Final Stats</h2>
+                    <div class="box has-background-dark has-text-white mb-6">
+                        <h2 class="title is-4 has-text-white mb-4">Final Stats</h2>
                         <div class="columns is-mobile">
                             <div class="column">
                                 <p class="is-size-6">
