@@ -2,6 +2,7 @@
 // Now uses hybrid approach: HTML overlays for menus, Phaser for game UI
 
 import HTMLUIManager from './HTMLUIManager.js';
+import Logger from '../utils/Logger.js';
 
 class UISystem {
     constructor(scene) {
@@ -481,6 +482,14 @@ class UISystem {
     
     // Handle gamepad input for HTML UI
     handleGamepadInput() {
+        Logger.warn(Logger.Categories.INPUT, 'UISystem.handleGamepadInput called');
+        
+        if (!this.htmlUI) {
+            Logger.warn(Logger.Categories.INPUT, 'htmlUI not available in UISystem');
+            return;
+        }
+        
+        Logger.warn(Logger.Categories.INPUT, 'Calling htmlUI.handleGamepadInput');
         // Let HTMLUIManager handle its own input checking
         this.htmlUI.handleGamepadInput();
     }
