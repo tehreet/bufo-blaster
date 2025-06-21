@@ -9,8 +9,7 @@ class UpgradeSystem {
         this.upgradeActive = false;
         this.currentUpgrades = [];
         this.upgradeUIElements = [];
-        this.rerollCount = 1; // Start with 1 reroll per level up, like original
-        this.maxRerolls = 1;
+        this.rerollsUsed = []; // Track which cards have been rerolled (per-card system)
     }
 
     showUpgradeSelection() {
@@ -19,8 +18,8 @@ class UpgradeSystem {
         this.scene.isPaused = true;
         this.scene.matter.world.enabled = false; // Pause physics
         
-        // Reset reroll count for each level up
-        this.rerollCount = this.maxRerolls;
+        // Reset reroll tracking for each level up (each card can be rerolled once)
+        this.rerollsUsed = [false, false, false]; // 3 cards, none rerolled yet
         
         // Hide stats debug UI during upgrade selection
         if (this.scene.showStatsDebug && this.scene.statsDebugUI) {
@@ -30,7 +29,7 @@ class UpgradeSystem {
         this.generateUpgradeChoices();
         
         // Use HTML UI instead of Phaser UI
-        this.scene.uiSystem.htmlUI.showUpgradeSelection(this.currentUpgrades, this.rerollCount);
+        this.scene.uiSystem.htmlUI.showUpgradeSelection(this.currentUpgrades, this.rerollsUsed);
     }
 
     generateUpgradeChoices() {
@@ -140,12 +139,13 @@ class UpgradeSystem {
 
     // Method called by HTMLUIManager when a reroll is requested
     rerollUpgradeFromHTML(upgradeIndex) {
-        if (this.rerollCount <= 0) {
-            Logger.warn(Logger.Categories.SYSTEM, 'No rerolls remaining');
+        if (this.rerollsUsed[upgradeIndex]) {
+            Logger.warn(Logger.Categories.SYSTEM, `Card ${upgradeIndex} already rerolled`);
             return;
         }
         
-        this.rerollCount--;
+        // Mark this card as rerolled
+        this.rerollsUsed[upgradeIndex] = true;
         
         // Get a new upgrade to replace the one at this index
         const availableUpgrades = this.getAvailableUpgrades();
@@ -153,8 +153,8 @@ class UpgradeSystem {
         
         if (newUpgrade) {
             this.currentUpgrades[upgradeIndex] = newUpgrade;
-            // Update the HTML UI with new upgrades
-            this.scene.uiSystem.htmlUI.showUpgradeSelection(this.currentUpgrades, this.rerollCount);
+            // Update only the specific card instead of recreating the whole screen
+            this.scene.uiSystem.htmlUI.updateSingleUpgradeCard(upgradeIndex, newUpgrade, this.rerollsUsed);
         }
     }
     
@@ -164,15 +164,8 @@ class UpgradeSystem {
     }
 
     rerollAllUpgrades() {
-        if (this.rerollCount <= 0) {
-            return;
-        }
-        
-        this.rerollCount--;
-        
-        // Generate completely new upgrade choices
-        this.generateUpgradeChoices();
-        this.createUpgradeUI();
+        // This method is deprecated with per-card reroll system
+        Logger.debug(Logger.Categories.SYSTEM, 'rerollAllUpgrades called but deprecated with per-card reroll system');
     }
 
     closeUpgradeUI() {
@@ -216,7 +209,7 @@ class UpgradeSystem {
 
     handleGamepadUpgradeInput() {
         // This method is no longer used - HTML UI handles gamepad input
-        Logger.debug(Logger.Categories.SYSTEM, 'handleGamepadUpgradeInput called but no longer used (HTML UI handles gamepad input)');
+        // (Removed debug log to prevent console spam)
     }
 }
 

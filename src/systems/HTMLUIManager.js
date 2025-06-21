@@ -12,7 +12,7 @@ class HTMLUIManager {
         // Upgrade selection state
         this.selectedUpgradeIndex = 0;
         this.currentUpgrades = [];
-        this.rerollCount = 0;
+        this.rerollsUsed = [];
         
         // Add InputManager reference
         this.inputManager = scene.inputManager;
@@ -220,11 +220,11 @@ class HTMLUIManager {
     
     // =================== UPGRADE SELECTION ===================
     
-    showUpgradeSelection(upgrades, rerollCount) {
+    showUpgradeSelection(upgrades, rerollsUsed) {
         Logger.info(Logger.Categories.UI, 'Showing upgrade selection screen');
         this.currentScreen = 'upgrade-selection';
         this.currentUpgrades = upgrades;
-        this.rerollCount = rerollCount;
+        this.rerollsUsed = rerollsUsed;
         
         // Generate upgrade cards HTML
         const upgradeGrid = document.getElementById('upgrade-grid');
@@ -265,8 +265,8 @@ class HTMLUIManager {
                         <p class="has-text-light is-size-7">${upgrade.description}</p>
                     </div>
                     
-                    <button class="reroll-btn" data-upgrade-index="${index}" ${this.rerollCount <= 0 ? 'disabled' : ''}>
-                        <i class="fas fa-dice mr-1"></i>Reroll (${this.rerollCount})
+                    <button class="reroll-btn" data-upgrade-index="${index}" ${this.rerollsUsed[index] ? 'disabled' : ''}>
+                        <i class="fas fa-dice mr-1"></i>${this.rerollsUsed[index] ? 'Rerolled' : 'Reroll'}
                     </button>
                 </div>
             `;
@@ -365,8 +365,8 @@ class HTMLUIManager {
     }
     
     rerollUpgrade(upgradeIndex) {
-        if (this.rerollCount <= 0) {
-            Logger.warn(Logger.Categories.UI, 'No rerolls remaining');
+        if (this.rerollsUsed[upgradeIndex]) {
+            Logger.warn(Logger.Categories.UI, `Card ${upgradeIndex} already rerolled`);
             return;
         }
         
@@ -374,6 +374,91 @@ class HTMLUIManager {
         
         // Notify the upgrade system to reroll
         this.scene.upgradeSystem.rerollUpgradeFromHTML(upgradeIndex);
+    }
+    
+    updateSingleUpgradeCard(upgradeIndex, newUpgrade, rerollsUsed) {
+        Logger.info(Logger.Categories.UI, `Updating single upgrade card at index ${upgradeIndex}`);
+        
+        // Update our local state
+        this.currentUpgrades[upgradeIndex] = newUpgrade;
+        this.rerollsUsed = rerollsUsed;
+        
+        // Find the specific card to update
+        const cardToUpdate = document.querySelector(`[data-upgrade-index="${upgradeIndex}"]`);
+        if (!cardToUpdate) {
+            Logger.warn(Logger.Categories.UI, `Card at index ${upgradeIndex} not found, falling back to full refresh`);
+            this.showUpgradeSelection(this.currentUpgrades, this.rerollsUsed);
+            return;
+        }
+        
+        // Generate new HTML for just this card
+        const upgradeIcon = this.getUpgradeIcon(newUpgrade);
+        const isCharacterUpgrade = newUpgrade.type === 'character';
+        
+        const newCardHTML = `
+            <div class="upgrade-type-badge ${newUpgrade.type}">
+                ${newUpgrade.type === 'character' ? 'CHARACTER' : 'GENERIC'}
+            </div>
+            
+            <div class="upgrade-icon">
+                <i class="fas ${upgradeIcon}"></i>
+            </div>
+            
+            <h3 class="title is-5 has-text-white mb-2">${newUpgrade.name}</h3>
+            
+            <div class="upgrade-stats">
+                <p class="has-text-light is-size-7">${newUpgrade.description}</p>
+            </div>
+            
+            <button class="reroll-btn" data-upgrade-index="${upgradeIndex}" ${this.rerollsUsed[upgradeIndex] ? 'disabled' : ''}>
+                <i class="fas fa-dice mr-1"></i>${this.rerollsUsed[upgradeIndex] ? 'Rerolled' : 'Reroll'}
+            </button>
+        `;
+        
+        // Update the card content
+        cardToUpdate.innerHTML = newCardHTML;
+        
+        // Update classes for character upgrade styling
+        cardToUpdate.className = `upgrade-card ${isCharacterUpgrade ? 'character-upgrade' : ''}`;
+        cardToUpdate.setAttribute('data-upgrade-id', newUpgrade.id);
+        
+        // Re-setup click handlers for this card
+        this.setupSingleUpgradeCardHandlers(cardToUpdate, upgradeIndex);
+        
+        // Add a subtle animation to show the card was updated
+        cardToUpdate.style.transform = 'scale(1.05)';
+        cardToUpdate.style.transition = 'transform 0.3s ease';
+        setTimeout(() => {
+            cardToUpdate.style.transform = '';
+        }, 300);
+        
+        Logger.info(Logger.Categories.UI, `Upgrade card ${upgradeIndex} updated successfully`);
+    }
+    
+    setupSingleUpgradeCardHandlers(card, index) {
+        // Click handler for card selection
+        card.addEventListener('click', (event) => {
+            // Don't trigger card selection if reroll button was clicked
+            if (event.target.closest('.reroll-btn')) return;
+            
+            this.selectedUpgradeIndex = index;
+            this.selectUpgrade();
+        });
+        
+        // Hover handler for visual feedback
+        card.addEventListener('mouseenter', () => {
+            this.selectedUpgradeIndex = index;
+            this.updateUpgradeSelection();
+        });
+        
+        // Reroll button handler
+        const rerollButton = card.querySelector('.reroll-btn');
+        if (rerollButton) {
+            rerollButton.addEventListener('click', (event) => {
+                event.stopPropagation(); // Prevent card click
+                this.rerollUpgrade(index);
+            });
+        }
     }
     
     hideUpgradeSelection() {
@@ -680,9 +765,6 @@ class HTMLUIManager {
                         <button class="button is-primary is-large" id="restart-game-btn">
                             <i class="fas fa-redo mr-2"></i>Play Again
                         </button>
-                        <button class="button is-light is-large" id="change-character-btn">
-                            <i class="fas fa-user-edit mr-2"></i>Change Character
-                        </button>
                     </div>
                 </div>
             </div>
@@ -693,11 +775,6 @@ class HTMLUIManager {
         // Setup game over handlers
         document.getElementById('restart-game-btn').addEventListener('click', () => {
             this.scene.uiSystem.restartGame();
-        });
-        
-        document.getElementById('change-character-btn').addEventListener('click', () => {
-            this.hideOverlay(this.gameOverOverlay);
-            this.showCharacterSelection();
         });
         
         this.showOverlay(this.gameOverOverlay);
@@ -712,9 +789,6 @@ class HTMLUIManager {
     // =================== GAMEPAD SUPPORT ===================
     
     handleGamepadInput() {
-        // Add basic debugging to see if this method is called
-        Logger.debug(Logger.Categories.INPUT, 'handleGamepadInput called');
-        
         // Safety check for InputManager with spam prevention
         if (!this.inputManager) {
             if (!this.inputManagerWarningShown) {
@@ -724,28 +798,23 @@ class HTMLUIManager {
             return;
         }
         
-        Logger.debug(Logger.Categories.INPUT, 'InputManager available');
-        
         if (Date.now() - this.lastInputTime < 200) {
-            Logger.debug(Logger.Categories.INPUT, 'Input debounced');
             return; // Debounce
         }
 
         const gamepadState = this.inputManager.getGamepadState();
-        Logger.debug(Logger.Categories.INPUT, `Gamepad state: connected=${gamepadState.connected}, buttons=${gamepadState.buttons?.length}`);
         
         if (!gamepadState.connected) {
-            Logger.debug(Logger.Categories.INPUT, 'Gamepad not connected');
             return;
         }
 
-        // DEBUG: Show all button states that are pressed
+        // Only log button presses when they actually happen (not every frame)
         const pressedButtons = [];
         gamepadState.buttons.forEach((pressed, index) => {
             if (pressed) pressedButtons.push(index);
         });
         if (pressedButtons.length > 0) {
-            Logger.debug(Logger.Categories.INPUT, `Buttons pressed: [${pressedButtons.join(', ')}] on screen: ${this.currentScreen}`);
+            Logger.info(Logger.Categories.INPUT, `Buttons pressed: [${pressedButtons.join(', ')}] on screen: ${this.currentScreen}`);
         }
 
         // A or B button
@@ -789,73 +858,60 @@ class HTMLUIManager {
 
         // D-pad navigation for character selection
         if (this.currentScreen === 'character-selection') {
-            Logger.debug(Logger.Categories.INPUT, `Checking D-pad navigation on character-selection screen`);
             let moved = false;
             
             if (gamepadState.buttons[14]) { // D-pad left
                 const oldIndex = this.selectedCharacterIndex;
                 this.selectedCharacterIndex = Math.max(0, this.selectedCharacterIndex - 1);
                 moved = (oldIndex !== this.selectedCharacterIndex);
-                Logger.info(Logger.Categories.INPUT, `D-pad LEFT pressed, index: ${oldIndex} -> ${this.selectedCharacterIndex}`);
             } else if (gamepadState.buttons[15]) { // D-pad right
                 const oldIndex = this.selectedCharacterIndex;
                 this.selectedCharacterIndex = Math.min(this.charactersArray.length - 1, this.selectedCharacterIndex + 1);
                 moved = (oldIndex !== this.selectedCharacterIndex);
-                Logger.info(Logger.Categories.INPUT, `D-pad RIGHT pressed, index: ${oldIndex} -> ${this.selectedCharacterIndex}`);
             }
             
             if (moved) {
                 this.lastInputTime = Date.now();
-                Logger.info(Logger.Categories.INPUT, `Character selection moved to index ${this.selectedCharacterIndex} (${this.charactersArray[this.selectedCharacterIndex]?.name})`);
                 this.updateCharacterSelection();
             }
         }
         
         // D-pad navigation for upgrade selection
         if (this.currentScreen === 'upgrade-selection') {
-            Logger.debug(Logger.Categories.INPUT, `Checking D-pad navigation on upgrade-selection screen`);
             let moved = false;
             
             if (gamepadState.buttons[14]) { // D-pad left
                 const oldIndex = this.selectedUpgradeIndex;
                 this.selectedUpgradeIndex = Math.max(0, this.selectedUpgradeIndex - 1);
                 moved = (oldIndex !== this.selectedUpgradeIndex);
-                Logger.info(Logger.Categories.INPUT, `D-pad LEFT pressed, upgrade index: ${oldIndex} -> ${this.selectedUpgradeIndex}`);
             } else if (gamepadState.buttons[15]) { // D-pad right
                 const oldIndex = this.selectedUpgradeIndex;
                 this.selectedUpgradeIndex = Math.min(this.currentUpgrades.length - 1, this.selectedUpgradeIndex + 1);
                 moved = (oldIndex !== this.selectedUpgradeIndex);
-                Logger.info(Logger.Categories.INPUT, `D-pad RIGHT pressed, upgrade index: ${oldIndex} -> ${this.selectedUpgradeIndex}`);
             }
             
             if (moved) {
                 this.lastInputTime = Date.now();
-                Logger.info(Logger.Categories.INPUT, `Upgrade selection moved to index ${this.selectedUpgradeIndex} (${this.currentUpgrades[this.selectedUpgradeIndex]?.name})`);
                 this.updateUpgradeSelection();
             }
         }
         
         // D-pad navigation for pause menu
         if (this.currentScreen === 'pause') {
-            Logger.debug(Logger.Categories.INPUT, `Checking D-pad navigation on pause screen`);
             let moved = false;
             
             if (gamepadState.buttons[14] || gamepadState.buttons[12]) { // D-pad left or up
                 const oldIndex = this.selectedPauseOption;
                 this.selectedPauseOption = Math.max(0, this.selectedPauseOption - 1);
                 moved = (oldIndex !== this.selectedPauseOption);
-                Logger.info(Logger.Categories.INPUT, `D-pad LEFT/UP pressed, pause option: ${oldIndex} -> ${this.selectedPauseOption}`);
             } else if (gamepadState.buttons[15] || gamepadState.buttons[13]) { // D-pad right or down
                 const oldIndex = this.selectedPauseOption;
                 this.selectedPauseOption = Math.min(2, this.selectedPauseOption + 1); // 0=Resume, 1=Restart, 2=Change Character
                 moved = (oldIndex !== this.selectedPauseOption);
-                Logger.info(Logger.Categories.INPUT, `D-pad RIGHT/DOWN pressed, pause option: ${oldIndex} -> ${this.selectedPauseOption}`);
             }
             
             if (moved) {
                 this.lastInputTime = Date.now();
-                const optionNames = ['Resume Game', 'Restart Run', 'Change Character'];
-                Logger.info(Logger.Categories.INPUT, `Pause menu selection moved to: ${optionNames[this.selectedPauseOption]}`);
                 this.updatePauseMenuSelection();
             }
         }

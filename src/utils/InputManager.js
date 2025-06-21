@@ -469,14 +469,11 @@ class InputManager {
 
     getGamepadState() {
         const gamepads = navigator.getGamepads();
-        Logger.debug(Logger.Categories.INPUT, `navigator.getGamepads() returned ${gamepads.length} slots`);
         
         // Find the first connected VALID game controller (not headsets, etc.)
         let gamepad = null;
         for (let i = 0; i < gamepads.length; i++) {
             if (gamepads[i] && gamepads[i].connected) {
-                Logger.debug(Logger.Categories.INPUT, `Checking gamepad at index ${i}: ${gamepads[i].id}`);
-                
                 // Use our filtering logic to ensure it's a real game controller
                 if (this.isValidGameController(gamepads[i])) {
                     gamepad = gamepads[i];
@@ -500,7 +497,6 @@ class InputManager {
         }
         
         if (!gamepad) {
-            Logger.debug(Logger.Categories.INPUT, 'No valid game controller found');
             return { connected: false };
         }
 
@@ -516,7 +512,6 @@ class InputManager {
             id: gamepad.id
         };
 
-        Logger.debug(Logger.Categories.INPUT, `Valid gamepad state: ${gamepad.buttons.length} buttons, ${gamepad.axes.length} axes, id: ${gamepad.id}`);
         return state;
     }
 

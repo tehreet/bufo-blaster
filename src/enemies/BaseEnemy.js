@@ -517,6 +517,11 @@ class BaseEnemy {
 
     // Enhanced cleanup method
     cleanup() {
+        // Immediately remove from enemies group to prevent update loop access
+        if (this.scene && this.scene.enemies && this.gameObject) {
+            this.scene.enemies.remove(this.gameObject);
+        }
+        
         // Remove all timers
         for (const [name, timer] of this.abilityTimers) {
             if (timer) {

@@ -411,8 +411,9 @@ class EnemySystem {
         for (let i = 0, len = enemies.length; i < len; i++) {
             const enemy = enemies[i];
             
-            // Fast validation checks
-            if (!enemy || !enemy.active || !enemy.body || !enemy.scene) continue;
+            // Fast validation checks - ensure enemy and position properties are valid
+            if (!enemy || !enemy.active || !enemy.body || !enemy.scene || 
+                typeof enemy.x !== 'number' || typeof enemy.y !== 'number') continue;
             
             // Delegate to enemy instance if available
             if (enemy.enemyInstance) {
@@ -434,14 +435,27 @@ class EnemySystem {
                 this.basicChaseAI(enemy);
             }
             
-            // Update debug hitbox position
-            if (enemy.hitboxDebug) {
-                enemy.hitboxDebug.x = enemy.x;
-                enemy.hitboxDebug.y = enemy.y;
+            // Update debug hitbox position with comprehensive safety checks
+            if (enemy.hitboxDebug && enemy.active && enemy.scene && 
+                typeof enemy.x === 'number' && typeof enemy.y === 'number' &&
+                enemy.body && enemy.body.position) {
+                try {
+                    enemy.hitboxDebug.x = enemy.x;
+                    enemy.hitboxDebug.y = enemy.y;
+                } catch (error) {
+                    Logger.error('Error updating enemy hitbox position:', error);
+                }
             }
             
-            // Update animated overlay position
-            this.scene.assetManager.updateAnimatedOverlay(enemy);
+            // Update animated overlay position with comprehensive safety check
+            if (enemy.active && enemy.scene && enemy.body && enemy.body.position &&
+                typeof enemy.x === 'number' && typeof enemy.y === 'number') {
+                try {
+                    this.scene.assetManager.updateAnimatedOverlay(enemy);
+                } catch (error) {
+                    Logger.error('Error updating animated overlay:', error);
+                }
+            }
         }
     }
     

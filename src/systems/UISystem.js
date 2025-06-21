@@ -482,14 +482,11 @@ class UISystem {
     
     // Handle gamepad input for HTML UI
     handleGamepadInput() {
-        Logger.debug(Logger.Categories.INPUT, 'UISystem.handleGamepadInput called');
-        
         if (!this.htmlUI) {
             Logger.warn(Logger.Categories.INPUT, 'htmlUI not available in UISystem');
             return;
         }
         
-        Logger.debug(Logger.Categories.INPUT, 'Calling htmlUI.handleGamepadInput');
         // Let HTMLUIManager handle its own input checking
         this.htmlUI.handleGamepadInput();
     }

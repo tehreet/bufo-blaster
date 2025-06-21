@@ -144,11 +144,6 @@ class MeltdownBufo extends BaseEnemy {
         const dy = playerY - this.gameObject.y;
         const distance = Math.sqrt(dx * dx + dy * dy);
         
-        // Check for contact trigger
-        if (distance < 30 && !this.isTriggered) {
-            this.triggerMeltdown();
-        }
-        
         // Fast, aggressive movement toward player
         const moveSpeed = this.isTriggered ? 
             this.gameObject.speed * 0.5 : // Slower when triggered (focusing on explosion)
@@ -164,6 +159,17 @@ class MeltdownBufo extends BaseEnemy {
                 // Handle velocity setting errors silently
             }
         }
+    }
+    
+    // Override collision behavior to trigger meltdown when player touches this enemy
+    onContactWithPlayer(player) {
+        // Trigger meltdown on first contact (if not already triggered)
+        if (!this.isTriggered) {
+            this.triggerMeltdown();
+        }
+        
+        // Call parent contact behavior for damage and knockback
+        super.onContactWithPlayer(player);
     }
     
     triggerMeltdown() {
@@ -199,14 +205,22 @@ class MeltdownBufo extends BaseEnemy {
             return;
         }
         
+        // IMMEDIATELY mark as inactive to prevent race conditions with update loops
+        this.gameObject.active = false;
+        
         // Create massive explosion visual
         this.createExplosionVisual();
         
         // Deal damage to player if in range
         this.dealExplosionDamage();
         
-        // Destroy self
-        this.die();
+        // Kill through EnemySystem to ensure proper XP drop and cleanup
+        if (this.scene.enemySystem && this.scene.enemySystem.killEnemy) {
+            this.scene.enemySystem.killEnemy(this.gameObject);
+        } else {
+            // Fallback to direct death if EnemySystem not available
+            this.die();
+        }
     }
     
     createExplosionVisual() {
@@ -303,6 +317,11 @@ class MeltdownBufo extends BaseEnemy {
     
     // Override takeDamage to potentially trigger meltdown when damaged
     takeDamage(damage) {
+        // Safety check: ensure gameObject still exists
+        if (!this.gameObject || this.gameObject.active === false) {
+            return;
+        }
+        
         // Take damage on game object
         this.gameObject.health -= damage;
         
@@ -313,20 +332,59 @@ class MeltdownBufo extends BaseEnemy {
         
         // Check if should die
         if (this.gameObject.health <= 0) {
-            this.die();
+            // IMMEDIATELY mark as inactive to prevent race conditions
+            this.gameObject.active = false;
+            
+            // Kill through EnemySystem to ensure proper XP drop and cleanup
+            if (this.scene.enemySystem && this.scene.enemySystem.killEnemy) {
+                this.scene.enemySystem.killEnemy(this.gameObject);
+            } else {
+                // Fallback to direct death if EnemySystem not available
+                this.die();
+            }
         }
     }
     
     // Override death - simplified and safe
     die() {
         // Safety check first
-        if (!this.gameObject || this.gameObject.active === false) {
+        if (!this.gameObject) {
             return;
         }
         
-        // Create simple death effect
-        if (typeof this.gameObject.x === 'number' && typeof this.gameObject.y === 'number') {
-            const deathEffect = this.scene.add.circle(this.gameObject.x, this.gameObject.y, 30, 0x888888, 0.5);
+        // Store position for death effect before destroying gameObject
+        const deathX = this.gameObject.x;
+        const deathY = this.gameObject.y;
+        
+        // IMMEDIATELY mark as inactive to prevent race conditions with update loops
+        this.gameObject.active = false;
+        
+        // Remove physics body first to prevent further collisions
+        if (this.gameObject.body && this.scene.matter) {
+            try {
+                this.scene.matter.world.remove(this.gameObject.body);
+            } catch (error) {
+                // Physics body already removed
+            }
+        }
+        
+        // Immediately remove from enemies group to prevent update loop access
+        if (this.scene.enemies && this.gameObject) {
+            this.scene.enemies.remove(this.gameObject);
+        }
+        
+        // Clean shutdown first (this removes timers and other references)
+        this.cleanup();
+        
+        // DESTROY the visual gameObject immediately
+        if (this.gameObject && this.gameObject.destroy) {
+            this.gameObject.destroy();
+            this.gameObject = null; // Clear reference
+        }
+        
+        // Create death effect AFTER destroying the gameObject
+        if (typeof deathX === 'number' && typeof deathY === 'number') {
+            const deathEffect = this.scene.add.circle(deathX, deathY, 30, 0x888888, 0.5);
             if (this.scene.auraEffects) {
                 this.scene.auraEffects.add(deathEffect);
             }
@@ -342,12 +400,6 @@ class MeltdownBufo extends BaseEnemy {
                     }
                 }
             });
-        }
-        
-        // Clean shutdown
-        this.cleanup();
-        if (this.gameObject && this.gameObject.destroy) {
-            this.gameObject.destroy();
         }
     }
     
