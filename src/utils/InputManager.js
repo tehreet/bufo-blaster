@@ -465,9 +465,20 @@ class InputManager {
 
     getGamepadState() {
         const gamepads = navigator.getGamepads();
-        const gamepad = gamepads[0]; // First gamepad
+        Logger.warn(Logger.Categories.INPUT, `navigator.getGamepads() returned ${gamepads.length} slots`);
+        
+        // Find the first connected gamepad
+        let gamepad = null;
+        for (let i = 0; i < gamepads.length; i++) {
+            if (gamepads[i] && gamepads[i].connected) {
+                gamepad = gamepads[i];
+                Logger.warn(Logger.Categories.INPUT, `Found connected gamepad at index ${i}: ${gamepad.id}`);
+                break;
+            }
+        }
         
         if (!gamepad) {
+            Logger.warn(Logger.Categories.INPUT, 'No connected gamepad found');
             return { connected: false };
         }
 
@@ -479,10 +490,11 @@ class InputManager {
         const state = {
             connected: true,
             buttons: buttonStates,
-            axes: Array.from(gamepad.axes)
+            axes: Array.from(gamepad.axes),
+            id: gamepad.id
         };
 
-        Logger.input(`Gamepad state: ${gamepad.buttons.length} buttons, ${gamepad.axes.length} axes`);
+        Logger.warn(Logger.Categories.INPUT, `Gamepad state: ${gamepad.buttons.length} buttons, ${gamepad.axes.length} axes, id: ${gamepad.id}`);
         return state;
     }
 
