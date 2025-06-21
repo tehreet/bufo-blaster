@@ -8,10 +8,10 @@ class DuckBufo extends BaseCharacter {
         
         // Duck summoning state
         this.nextDuckSummon = 0;
-        this.maxDucks = 3; // Base number of ducks
-        this.duckSpeed = 80; // Base duck movement speed (increased for better visibility)
-        this.explosionRadius = 50; // Base explosion radius
-        this.explosionDamage = 2; // Base explosion damage
+        this.maxDucks = 4; // Base number of ducks (increased from 3)
+        this.duckSpeed = 100; // Base duck movement speed (increased from 80)
+        this.explosionRadius = 70; // Base explosion radius (increased from 50)
+        this.explosionDamage = 3; // Base explosion damage (increased from 2)
         this.duckHealth = 3; // Base duck health
     }
 
@@ -87,6 +87,11 @@ class DuckBufo extends BaseCharacter {
             duck.birthTime = this.scene.time.now;
             duck.isExploding = false;
             
+            // Random wandering properties
+            duck.wanderAngle = Phaser.Math.FloatBetween(0, Math.PI * 2);
+            duck.wanderChangeTime = this.scene.time.now + Phaser.Math.Between(1000, 3000);
+            duck.isWandering = false;
+            
             // Add to ducks group
             const ducksGroup = this.getAbilityGroup('rubberDucks');
             if (ducksGroup) {
@@ -144,7 +149,7 @@ class DuckBufo extends BaseCharacter {
         
         // Find nearest enemy manually to ensure it works
         let nearestEnemy = null;
-        let closestDistance = 300; // Max search distance
+        let closestDistance = 400; // Max search distance (increased from 300)
         
         if (this.scene.enemies && this.scene.enemies.children) {
             const enemies = this.scene.enemies.children.entries;
@@ -166,6 +171,7 @@ class DuckBufo extends BaseCharacter {
         
         if (nearestEnemy) {
             duck.targetEnemy = nearestEnemy;
+            duck.isWandering = false;
             
             // Move towards target enemy  
             const angle = Phaser.Math.Angle.Between(duck.x, duck.y, nearestEnemy.x, nearestEnemy.y);
@@ -181,10 +187,24 @@ class DuckBufo extends BaseCharacter {
                 Logger.error('Duck movement error:', error);
             }
         } else {
-            // No enemy found, stop moving
+            // No enemy found, wander randomly
+            duck.isWandering = true;
+            
+            // Change wander direction periodically
+            const currentTime = this.scene.time.now;
+            if (currentTime >= duck.wanderChangeTime) {
+                duck.wanderAngle = Phaser.Math.FloatBetween(0, Math.PI * 2);
+                duck.wanderChangeTime = currentTime + Phaser.Math.Between(1500, 4000); // 1.5-4 seconds
+            }
+            
+            // Move in wander direction at reduced speed
+            const wanderSpeed = (duck.speed / 50) * 0.4; // 40% of normal speed for wandering
+            const velocityX = Math.cos(duck.wanderAngle) * wanderSpeed;
+            const velocityY = Math.sin(duck.wanderAngle) * wanderSpeed;
+            
             try {
                 if (duck.body && this.scene.matter && this.scene.matter.body) {
-                    this.scene.matter.body.setVelocity(duck.body, { x: 0, y: 0 });
+                    this.scene.matter.body.setVelocity(duck.body, { x: velocityX, y: velocityY });
                 }
             } catch (error) {
                 // Silent error handling
@@ -304,7 +324,7 @@ class DuckBufo extends BaseCharacter {
 
     // Calculate max ducks based on player stats
     getMaxDucks(playerStats) {
-        return Math.floor(this.maxDucks + (playerStats.projectileCount - 2)); // projectileCount upgrades add more ducks
+        return Math.floor(this.maxDucks + (playerStats.projectileCount - 4)); // projectileCount upgrades add more ducks (updated base from 2 to 4)
     }
 
     // Calculate duck speed based on player stats
@@ -332,41 +352,41 @@ class DuckBufo extends BaseCharacter {
         return [
             {
                 name: 'Duck Swarm',
-                description: 'Summon +2 more ducks at once',
+                description: 'Summon +3 more ducks at once',
                 type: 'projectileCount',
-                value: 2,
+                value: 3, // Increased from 2
                 rarity: 'common'
             },
             {
                 name: 'Quack Speed',
-                description: 'Ducks move 40% faster',
+                description: 'Ducks move 60% faster',
                 type: 'moveSpeed', 
-                value: 1.68, // 40% of base 4.2
+                value: 2.52, // 60% of base 4.2 (increased from 40%)
                 rarity: 'common'
             },
             {
                 name: 'Explosive Payload',
-                description: 'Duck explosions have +60% larger radius',
+                description: 'Duck explosions have +80% larger radius',
                 type: 'abilityRadius',
-                value: 36, // 60% of base 60
+                value: 56, // 80% of base 70 (increased from 60%)
                 rarity: 'uncommon'
             },
             {
                 name: 'Duck Commander',
-                description: 'Summon ducks 50% faster + 40 health',
+                description: 'Summon ducks 60% faster + 60 health',
                 type: 'compound',
                 effects: [
-                    { type: 'abilityCooldown', value: -1000 }, // -50% of base 2000ms
-                    { type: 'health', value: 40 }
+                    { type: 'abilityCooldown', value: -1500 }, // -60% of base 2500ms (increased from 50%)
+                    { type: 'health', value: 60 } // Increased from 40
                 ],
                 rarity: 'rare'
             },
             {
                 name: 'Thermonuclear Duck',
-                description: 'Explosions deal 75% more damage + stun enemies',
+                description: 'Explosions deal 100% more damage + stun enemies',
                 type: 'compound',
                 effects: [
-                    { type: 'abilityDamage', value: 1.35 }, // 75% of base 1.8
+                    { type: 'abilityDamage', value: 3.0 }, // 100% more than base 3.0 (increased from 75%)
                     { type: 'special', value: 'duck_stun' }
                 ],
                 rarity: 'epic'

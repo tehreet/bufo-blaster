@@ -140,13 +140,13 @@ const CHARACTER_DATA = {
             healthRegen: 0.3, // Some regeneration
             
             // Ability Stats
-            abilityDamage: 2.0, // Base explosion damage per duck
-            abilityCooldown: 3000, // 3 seconds between duck summons
-            abilityRadius: 50, // Base explosion radius
+            abilityDamage: 3.0, // Base explosion damage per duck (buffed from 2.0)
+            abilityCooldown: 2500, // 2.5 seconds between duck summons (buffed from 3000)
+            abilityRadius: 70, // Base explosion radius (buffed from 50)
             
             // Utility Stats
             pickupRange: 90, // Good pickup range
-            projectileCount: 3, // Base number of ducks active at once
+            projectileCount: 4, // Base number of ducks active at once (buffed from 3)
             
             // Movement
             moveSpeed: 4.2 // Moderate speed
