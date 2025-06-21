@@ -9,10 +9,19 @@ class DuckBufo extends BaseCharacter {
         // Duck summoning state
         this.nextDuckSummon = 0;
         this.maxDucks = 3; // Base number of ducks
-        this.duckSpeed = 2; // Base duck movement speed
+        this.duckSpeed = 80; // Base duck movement speed (increased for better visibility)
         this.explosionRadius = 50; // Base explosion radius
         this.explosionDamage = 2; // Base explosion damage
         this.duckHealth = 3; // Base duck health
+    }
+
+    // Called once when character is selected/initialized
+    setupAbility() {
+        // Initialize duck summoning timer
+        this.nextDuckSummon = this.scene.time.now + 1000; // Start summoning after 1 second
+        
+        // Create ability groups for ducks
+        this.ensureAbilityGroup('rubberDucks');
     }
 
     // Called every frame to handle duck summoning
@@ -45,26 +54,15 @@ class DuckBufo extends BaseCharacter {
             
             const playerStats = this.getPlayerStats();
             
-            // Spawn duck near player with slight offset
-            const offsetX = Phaser.Math.Between(-30, 30);
-            const offsetY = Phaser.Math.Between(-30, 30);
-            const duckX = player.x + offsetX;
-            const duckY = player.y + offsetY;
+            // Spawn duck further from player (50-100px radius)
+            const spawnAngle = Phaser.Math.FloatBetween(0, Math.PI * 2);
+            const spawnDistance = Phaser.Math.Between(50, 100);
+            const duckX = player.x + Math.cos(spawnAngle) * spawnDistance;
+            const duckY = player.y + Math.sin(spawnAngle) * spawnDistance;
             
-            // Create rubber duck visual (yellow circle with orange beak)
-            const duck = this.scene.add.container(duckX, duckY);
-            
-            // Duck body (yellow circle)
-            const body = this.scene.add.circle(0, 0, 12, 0xFFD700);
-            body.setStrokeStyle(2, 0xFFA500);
-            
-            // Duck beak (orange triangle)
-            const beak = this.scene.add.triangle(8, -2, 0, 0, 6, -3, 6, 3, 0xFF8C00);
-            
-            // Duck eye (small black dot)
-            const eye = this.scene.add.circle(3, -4, 2, 0x000000);
-            
-            duck.add([body, beak, eye]);
+            // Create simple rubber duck visual (yellow circle with stroke)
+            const duck = this.scene.add.circle(duckX, duckY, 12, 0xFFD700);
+            duck.setStrokeStyle(3, 0xFF8C00); // Orange border to make it look more duck-like
             
             // Add physics to duck
             this.scene.matter.add.gameObject(duck, {
@@ -143,10 +141,10 @@ class DuckBufo extends BaseCharacter {
         if (nearestEnemy) {
             duck.targetEnemy = nearestEnemy;
             
-            // Move towards target enemy
+            // Move towards target enemy  
             const angle = Phaser.Math.Angle.Between(duck.x, duck.y, nearestEnemy.x, nearestEnemy.y);
-            const velocityX = Math.cos(angle) * duck.speed;
-            const velocityY = Math.sin(angle) * duck.speed;
+            const velocityX = Math.cos(angle) * (duck.speed / 50); // Scale down for Matter.js
+            const velocityY = Math.sin(angle) * (duck.speed / 50); // Scale down for Matter.js
             
             try {
                 this.scene.matter.body.setVelocity(duck.body, { x: velocityX, y: velocityY });
@@ -250,11 +248,10 @@ class DuckBufo extends BaseCharacter {
             duck.health -= 1;
             
             // Visual damage effect (red tint)
-            const body = duck.list ? duck.list[0] : null;
-            if (body && body.setTint) {
-                body.setTint(0xFF4444);
+            if (duck && duck.setTint) {
+                duck.setTint(0xFF4444);
                 this.scene.time.delayedCall(200, () => {
-                    if (body && body.clearTint) body.clearTint();
+                    if (duck && duck.clearTint) duck.clearTint();
                 });
             }
             
@@ -281,7 +278,7 @@ class DuckBufo extends BaseCharacter {
 
     // Calculate duck speed based on player stats
     getDuckSpeed(playerStats) {
-        return this.duckSpeed * (1 + (playerStats.moveSpeed - 4.2) * 0.3); // 30% of player speed bonus
+        return this.duckSpeed + (playerStats.moveSpeed - 4.2) * 20; // Simple addition scaling
     }
 
     // Calculate explosion radius based on player stats
