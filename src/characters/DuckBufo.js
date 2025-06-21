@@ -256,36 +256,57 @@ class DuckBufo extends BaseCharacter {
                 return;
             }
             
-            // Find all enemies within explosion radius
-            const enemiesInRange = this.getEnemiesInRange(duck.x, duck.y, duck.explosionRadius);
+            // Store duck position before any operations
+            const explosionX = duck.x;
+            const explosionY = duck.y;
+            const explosionRadius = duck.explosionRadius;
+            const explosionDamage = duck.explosionDamage;
+            
+            // Find all enemies within explosion radius manually to avoid helper method issues
+            const enemiesInRange = [];
+            if (this.scene.enemies && this.scene.enemies.children) {
+                const allEnemies = this.scene.enemies.children.entries;
+                for (let i = 0, len = allEnemies.length; i < len; i++) {
+                    const enemy = allEnemies[i];
+                    if (!enemy || !enemy.active || !enemy.scene) continue;
+                    if (typeof enemy.x !== 'number' || typeof enemy.y !== 'number') continue;
+                    
+                    const distance = Phaser.Math.Distance.Between(explosionX, explosionY, enemy.x, enemy.y);
+                    if (distance <= explosionRadius) {
+                        enemiesInRange.push(enemy);
+                    }
+                }
+            }
             
             // Deal damage to all enemies in range
             for (let i = 0, len = enemiesInRange.length; i < len; i++) {
                 const enemy = enemiesInRange[i];
                 if (!enemy || !enemy.active || !enemy.scene) continue;
                 
-                // Safety check for enemy position
+                // Final safety check for enemy position
                 if (typeof enemy.x !== 'number' || typeof enemy.y !== 'number') continue;
                 
-                this.damageEnemy(enemy, duck.explosionDamage);
+                this.damageEnemy(enemy, explosionDamage);
                 
-                // Apply knockback
-                const angle = Phaser.Math.Angle.Between(duck.x, duck.y, enemy.x, enemy.y);
+                // Apply knockback with additional safety checks
                 try {
-                    if (enemy.body && this.scene.matter && this.scene.matter.body) {
-                        this.scene.matter.body.setVelocity(enemy.body, {
-                            x: Math.cos(angle) * 6,
-                            y: Math.sin(angle) * 6
-                        });
+                    if (enemy.body && enemy.body.position && this.scene.matter && this.scene.matter.body) {
+                        const angle = Phaser.Math.Angle.Between(explosionX, explosionY, enemy.x, enemy.y);
+                        if (isFinite(angle)) {
+                            this.scene.matter.body.setVelocity(enemy.body, {
+                                x: Math.cos(angle) * 6,
+                                y: Math.sin(angle) * 6
+                            });
+                        }
                     }
                 } catch (knockbackError) {
                     // Silent knockback error handling
                 }
             }
             
-            // Create explosion visual effect
-            this.createVisualEffect(duck.x, duck.y, {
-                radius: duck.explosionRadius,
+            // Create explosion visual effect using stored position
+            this.createVisualEffect(explosionX, explosionY, {
+                radius: explosionRadius,
                 color: 0xFF6B35,
                 alpha: 0.8,
                 stroke: { width: 4, color: 0xFF0000 },
@@ -334,12 +355,12 @@ class DuckBufo extends BaseCharacter {
 
     // Calculate explosion radius based on player stats
     getExplosionRadius(playerStats) {
-        return this.explosionRadius * (1 + (playerStats.abilityRadius - 60) / 60); // Scale with ability radius
+        return this.explosionRadius * (1 + (playerStats.abilityRadius - 70) / 70); // Scale with ability radius (updated base from 60 to 70)
     }
 
     // Calculate explosion damage based on player stats
     getExplosionDamage(playerStats) {
-        return this.explosionDamage * (1 + (playerStats.abilityDamage - 1.8) / 1.8); // Scale with ability damage
+        return this.explosionDamage * (1 + (playerStats.abilityDamage - 3.0) / 3.0); // Scale with ability damage (updated base from 1.8 to 3.0)
     }
 
     // Calculate duck health based on player stats
@@ -348,7 +369,7 @@ class DuckBufo extends BaseCharacter {
     }
 
     // Get character-specific upgrades
-    getCharacterUpgrades() {
+    getUpgrades() {
         return [
             {
                 name: 'Duck Swarm',
