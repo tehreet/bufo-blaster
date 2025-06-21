@@ -22,6 +22,10 @@ class InputManager {
         // Character direction state
         this.lastFacingDirection = null; // Track current facing direction to prevent unnecessary flips
         
+        // Logging flags to prevent spam
+        this.loggedControllerFound = false;
+        this.loggedInvalidDevices = new Set();
+        
         this.setupInput();
     }
 
@@ -465,27 +469,38 @@ class InputManager {
 
     getGamepadState() {
         const gamepads = navigator.getGamepads();
-        Logger.warn(Logger.Categories.INPUT, `navigator.getGamepads() returned ${gamepads.length} slots`);
+        Logger.debug(Logger.Categories.INPUT, `navigator.getGamepads() returned ${gamepads.length} slots`);
         
         // Find the first connected VALID game controller (not headsets, etc.)
         let gamepad = null;
         for (let i = 0; i < gamepads.length; i++) {
             if (gamepads[i] && gamepads[i].connected) {
-                Logger.warn(Logger.Categories.INPUT, `Checking gamepad at index ${i}: ${gamepads[i].id}`);
+                Logger.debug(Logger.Categories.INPUT, `Checking gamepad at index ${i}: ${gamepads[i].id}`);
                 
                 // Use our filtering logic to ensure it's a real game controller
                 if (this.isValidGameController(gamepads[i])) {
                     gamepad = gamepads[i];
-                    Logger.warn(Logger.Categories.INPUT, `Found VALID game controller at index ${i}: ${gamepad.id}`);
+                    
+                    // Only log controller discovery once
+                    if (!this.loggedControllerFound) {
+                        Logger.info(Logger.Categories.INPUT, `Found VALID game controller at index ${i}: ${gamepad.id}`);
+                        this.loggedControllerFound = true;
+                    }
                     break;
                 } else {
-                    Logger.warn(Logger.Categories.INPUT, `Skipping invalid device at index ${i}: ${gamepads[i].id} (likely headset/audio device)`);
+                    // Only log invalid device once per device
+                    const deviceKey = `invalid_${i}_${gamepads[i].id}`;
+                    if (!this.loggedInvalidDevices) this.loggedInvalidDevices = new Set();
+                    if (!this.loggedInvalidDevices.has(deviceKey)) {
+                        Logger.info(Logger.Categories.INPUT, `Skipping invalid device at index ${i}: ${gamepads[i].id} (likely headset/audio device)`);
+                        this.loggedInvalidDevices.add(deviceKey);
+                    }
                 }
             }
         }
         
         if (!gamepad) {
-            Logger.warn(Logger.Categories.INPUT, 'No valid game controller found');
+            Logger.debug(Logger.Categories.INPUT, 'No valid game controller found');
             return { connected: false };
         }
 
@@ -501,7 +516,7 @@ class InputManager {
             id: gamepad.id
         };
 
-        Logger.warn(Logger.Categories.INPUT, `Valid gamepad state: ${gamepad.buttons.length} buttons, ${gamepad.axes.length} axes, id: ${gamepad.id}`);
+        Logger.debug(Logger.Categories.INPUT, `Valid gamepad state: ${gamepad.buttons.length} buttons, ${gamepad.axes.length} axes, id: ${gamepad.id}`);
         return state;
     }
 

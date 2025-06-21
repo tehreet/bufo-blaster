@@ -124,7 +124,7 @@ class HTMLUIManager {
     }
     
     updateCharacterSelection() {
-        Logger.warn(Logger.Categories.UI, `Updating character selection to index ${this.selectedCharacterIndex} of ${this.charactersArray.length} characters`);
+        Logger.debug(Logger.Categories.UI, `Updating character selection to index ${this.selectedCharacterIndex} of ${this.charactersArray.length} characters`);
         
         const characterCards = document.querySelectorAll('.character-card');
         
@@ -143,7 +143,7 @@ class HTMLUIManager {
             }
         });
         
-        Logger.warn(Logger.Categories.UI, `Character card ${this.selectedCharacterIndex} highlighted successfully`);
+        Logger.debug(Logger.Categories.UI, `Character card ${this.selectedCharacterIndex} highlighted successfully`);
     }
     
     handleKeyboardNavigation(event) {
@@ -176,7 +176,7 @@ class HTMLUIManager {
     selectCharacter() {
         const selectedCharacter = this.charactersArray[this.selectedCharacterIndex];
         
-        Logger.warn(Logger.Categories.UI, `Character selected: ${selectedCharacter.name}`);
+        Logger.info(Logger.Categories.UI, `Character selected: ${selectedCharacter.name}`);
         
         // Add selection animation
         const selectedCard = document.querySelector(`[data-character-index="${this.selectedCharacterIndex}"]`);
@@ -373,7 +373,7 @@ class HTMLUIManager {
     
     handleGamepadInput() {
         // Add basic debugging to see if this method is called
-        Logger.warn(Logger.Categories.INPUT, 'handleGamepadInput called');
+        Logger.debug(Logger.Categories.INPUT, 'handleGamepadInput called');
         
         // Safety check for InputManager with spam prevention
         if (!this.inputManager) {
@@ -384,18 +384,18 @@ class HTMLUIManager {
             return;
         }
         
-        Logger.warn(Logger.Categories.INPUT, 'InputManager available');
+        Logger.debug(Logger.Categories.INPUT, 'InputManager available');
         
         if (Date.now() - this.lastInputTime < 200) {
-            Logger.warn(Logger.Categories.INPUT, 'Input debounced');
+            Logger.debug(Logger.Categories.INPUT, 'Input debounced');
             return; // Debounce
         }
 
         const gamepadState = this.inputManager.getGamepadState();
-        Logger.warn(Logger.Categories.INPUT, `Gamepad state: connected=${gamepadState.connected}, buttons=${gamepadState.buttons?.length}`);
+        Logger.debug(Logger.Categories.INPUT, `Gamepad state: connected=${gamepadState.connected}, buttons=${gamepadState.buttons?.length}`);
         
         if (!gamepadState.connected) {
-            Logger.warn(Logger.Categories.INPUT, 'Gamepad not connected');
+            Logger.debug(Logger.Categories.INPUT, 'Gamepad not connected');
             return;
         }
 
@@ -405,17 +405,17 @@ class HTMLUIManager {
             if (pressed) pressedButtons.push(index);
         });
         if (pressedButtons.length > 0) {
-            Logger.warn(Logger.Categories.INPUT, `Buttons pressed: [${pressedButtons.join(', ')}] on screen: ${this.currentScreen}`);
+            Logger.debug(Logger.Categories.INPUT, `Buttons pressed: [${pressedButtons.join(', ')}] on screen: ${this.currentScreen}`);
         }
 
         // A or B button
         if (gamepadState.buttons[0] || gamepadState.buttons[1]) { 
             this.lastInputTime = Date.now();
             
-            Logger.warn(Logger.Categories.INPUT, `A/B pressed on screen: ${this.currentScreen}`);
+            Logger.info(Logger.Categories.INPUT, `A/B pressed on screen: ${this.currentScreen}`);
             
             if (this.currentScreen === 'character-selection') {
-                Logger.warn(Logger.Categories.UI, `Selecting character at index ${this.selectedCharacterIndex}: ${this.charactersArray[this.selectedCharacterIndex]?.name}`);
+                Logger.info(Logger.Categories.UI, `Selecting character at index ${this.selectedCharacterIndex}: ${this.charactersArray[this.selectedCharacterIndex]?.name}`);
                 this.selectCharacter();
             } else if (this.currentScreen === 'pause') {
                 this.resumeGame();
@@ -433,29 +433,29 @@ class HTMLUIManager {
             } else if (this.currentScreen === 'pause') {
                 this.resumeGame();
             }
-            Logger.warn(Logger.Categories.INPUT, 'Start button pressed');
+            Logger.info(Logger.Categories.INPUT, 'Start button pressed');
         }
 
         // D-pad navigation for character selection
         if (this.currentScreen === 'character-selection') {
-            Logger.warn(Logger.Categories.INPUT, `Checking D-pad navigation on character-selection screen`);
+            Logger.debug(Logger.Categories.INPUT, `Checking D-pad navigation on character-selection screen`);
             let moved = false;
             
             if (gamepadState.buttons[14]) { // D-pad left
                 const oldIndex = this.selectedCharacterIndex;
                 this.selectedCharacterIndex = Math.max(0, this.selectedCharacterIndex - 1);
                 moved = (oldIndex !== this.selectedCharacterIndex);
-                Logger.warn(Logger.Categories.INPUT, `D-pad LEFT pressed, index: ${oldIndex} -> ${this.selectedCharacterIndex}`);
+                Logger.info(Logger.Categories.INPUT, `D-pad LEFT pressed, index: ${oldIndex} -> ${this.selectedCharacterIndex}`);
             } else if (gamepadState.buttons[15]) { // D-pad right
                 const oldIndex = this.selectedCharacterIndex;
                 this.selectedCharacterIndex = Math.min(this.charactersArray.length - 1, this.selectedCharacterIndex + 1);
                 moved = (oldIndex !== this.selectedCharacterIndex);
-                Logger.warn(Logger.Categories.INPUT, `D-pad RIGHT pressed, index: ${oldIndex} -> ${this.selectedCharacterIndex}`);
+                Logger.info(Logger.Categories.INPUT, `D-pad RIGHT pressed, index: ${oldIndex} -> ${this.selectedCharacterIndex}`);
             }
             
             if (moved) {
                 this.lastInputTime = Date.now();
-                Logger.warn(Logger.Categories.INPUT, `Character selection moved to index ${this.selectedCharacterIndex} (${this.charactersArray[this.selectedCharacterIndex]?.name})`);
+                Logger.info(Logger.Categories.INPUT, `Character selection moved to index ${this.selectedCharacterIndex} (${this.charactersArray[this.selectedCharacterIndex]?.name})`);
                 this.updateCharacterSelection();
             }
         }
