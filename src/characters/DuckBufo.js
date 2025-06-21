@@ -60,9 +60,12 @@ class DuckBufo extends BaseCharacter {
             const duckX = player.x + Math.cos(spawnAngle) * spawnDistance;
             const duckY = player.y + Math.sin(spawnAngle) * spawnDistance;
             
-            // Create simple rubber duck visual (yellow circle with stroke)
-            const duck = this.scene.add.circle(duckX, duckY, 12, 0xFFD700);
-            duck.setStrokeStyle(3, 0xFF8C00); // Orange border to make it look more duck-like
+            // Create duck emoji visual
+            const duck = this.scene.add.text(duckX, duckY, '🦆', {
+                fontSize: '24px',
+                align: 'center'
+            });
+            duck.setOrigin(0.5, 0.5); // Center the emoji
             
             // Add physics to duck
             this.scene.matter.add.gameObject(duck, {
@@ -134,7 +137,10 @@ class DuckBufo extends BaseCharacter {
 
     // Update individual duck AI (pathfinding and movement)
     updateDuckAI(duck) {
-        if (!duck.body || duck.isExploding) return;
+        if (!duck || !duck.body || duck.isExploding || !duck.scene || !duck.active) return;
+        
+        // Safety check for duck position
+        if (typeof duck.x !== 'number' || typeof duck.y !== 'number') return;
         
         // Find nearest enemy manually to ensure it works
         let nearestEnemy = null;
@@ -146,6 +152,9 @@ class DuckBufo extends BaseCharacter {
             for (let i = 0, len = enemies.length; i < len; i++) {
                 const enemy = enemies[i];
                 if (!enemy || !enemy.active || !enemy.scene) continue;
+                
+                // Safety check for enemy position
+                if (typeof enemy.x !== 'number' || typeof enemy.y !== 'number') continue;
                 
                 const distance = Phaser.Math.Distance.Between(duck.x, duck.y, enemy.x, enemy.y);
                 if (distance < closestDistance) {
@@ -185,7 +194,10 @@ class DuckBufo extends BaseCharacter {
 
     // Check if duck should explode
     checkDuckExplosion(duck) {
-        if (duck.isExploding) return;
+        if (!duck || duck.isExploding || !duck.scene || !duck.active) return;
+        
+        // Safety check for duck position
+        if (typeof duck.x !== 'number' || typeof duck.y !== 'number') return;
         
         // Check proximity to ANY enemy (not just target)
         if (this.scene.enemies && this.scene.enemies.children) {
@@ -194,6 +206,9 @@ class DuckBufo extends BaseCharacter {
             for (let i = 0, len = enemies.length; i < len; i++) {
                 const enemy = enemies[i];
                 if (!enemy || !enemy.active || !enemy.scene) continue;
+                
+                // Safety check for enemy position
+                if (typeof enemy.x !== 'number' || typeof enemy.y !== 'number') continue;
                 
                 const distance = Phaser.Math.Distance.Between(duck.x, duck.y, enemy.x, enemy.y);
                 if (distance < 40) { // Increased trigger distance for easier explosions
@@ -211,31 +226,40 @@ class DuckBufo extends BaseCharacter {
 
     // Explode duck and deal area damage
     explodeDuck(duck) {
-        if (duck.isExploding) return;
+        if (!duck || duck.isExploding || !duck.scene || !duck.active) return;
         duck.isExploding = true;
         
         try {
+            // Safety check for duck position before explosion
+            if (typeof duck.x !== 'number' || typeof duck.y !== 'number') {
+                if (duck && duck.destroy) duck.destroy();
+                return;
+            }
+            
             // Find all enemies within explosion radius
             const enemiesInRange = this.getEnemiesInRange(duck.x, duck.y, duck.explosionRadius);
             
             // Deal damage to all enemies in range
             for (let i = 0, len = enemiesInRange.length; i < len; i++) {
                 const enemy = enemiesInRange[i];
-                if (enemy && enemy.active) {
-                    this.damageEnemy(enemy, duck.explosionDamage);
-                    
-                    // Apply knockback
-                    const angle = Phaser.Math.Angle.Between(duck.x, duck.y, enemy.x, enemy.y);
-                    try {
-                        if (enemy.body && this.scene.matter && this.scene.matter.body) {
-                            this.scene.matter.body.setVelocity(enemy.body, {
-                                x: Math.cos(angle) * 6,
-                                y: Math.sin(angle) * 6
-                            });
-                        }
-                    } catch (knockbackError) {
-                        // Silent knockback error handling
+                if (!enemy || !enemy.active || !enemy.scene) continue;
+                
+                // Safety check for enemy position
+                if (typeof enemy.x !== 'number' || typeof enemy.y !== 'number') continue;
+                
+                this.damageEnemy(enemy, duck.explosionDamage);
+                
+                // Apply knockback
+                const angle = Phaser.Math.Angle.Between(duck.x, duck.y, enemy.x, enemy.y);
+                try {
+                    if (enemy.body && this.scene.matter && this.scene.matter.body) {
+                        this.scene.matter.body.setVelocity(enemy.body, {
+                            x: Math.cos(angle) * 6,
+                            y: Math.sin(angle) * 6
+                        });
                     }
+                } catch (knockbackError) {
+                    // Silent knockback error handling
                 }
             }
             
@@ -248,10 +272,7 @@ class DuckBufo extends BaseCharacter {
                 duration: 600
             });
             
-            // Screen shake for satisfying explosion feel
-            if (this.scene.cameras && this.scene.cameras.main) {
-                this.scene.cameras.main.shake(200, 0.02);
-            }
+            // Screen shake removed per user request
             
             // Remove duck
             duck.destroy();
