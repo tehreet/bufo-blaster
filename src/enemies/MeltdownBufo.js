@@ -123,12 +123,6 @@ class MeltdownBufo extends BaseEnemy {
             this.gameObject.setScale(scale);
         }
         
-        // Screen shake effect in final second
-        if (remaining < 1000 && this.scene.cameras) {
-            const shakeIntensity = (1000 - remaining) / 1000 * 3; // 0 to 3 intensity
-            this.scene.cameras.main.shake(50, shakeIntensity);
-        }
-        
         // Faster particle generation as countdown progresses
         if (progress > 0.7 && currentTime % 200 < 50) { // Every 200ms in final phase
             this.createStressParticles();
