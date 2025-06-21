@@ -9,6 +9,11 @@ class HTMLUIManager {
         this.selectedCharacterIndex = 0;
         this.charactersArray = [];
         
+        // Upgrade selection state
+        this.selectedUpgradeIndex = 0;
+        this.currentUpgrades = [];
+        this.rerollCount = 0;
+        
         // Add InputManager reference
         this.inputManager = scene.inputManager;
         this.lastInputTime = 0;
@@ -24,6 +29,7 @@ class HTMLUIManager {
         this.gameHudOverlay = document.getElementById('game-hud-overlay');
         this.pauseOverlay = document.getElementById('pause-overlay');
         this.gameOverOverlay = document.getElementById('game-over-overlay');
+        this.upgradeOverlay = document.getElementById('upgrade-overlay');
         this.loadingOverlay = document.getElementById('loading-overlay');
         
         // Bind methods to preserve context
@@ -210,6 +216,170 @@ class HTMLUIManager {
         const characterIndex = parseInt(card.dataset.characterIndex);
         this.selectedCharacterIndex = characterIndex;
         this.selectCharacter();
+    }
+    
+    // =================== UPGRADE SELECTION ===================
+    
+    showUpgradeSelection(upgrades, rerollCount) {
+        Logger.info(Logger.Categories.UI, 'Showing upgrade selection screen');
+        this.currentScreen = 'upgrade-selection';
+        this.currentUpgrades = upgrades;
+        this.rerollCount = rerollCount;
+        
+        // Generate upgrade cards HTML
+        const upgradeGrid = document.getElementById('upgrade-grid');
+        upgradeGrid.innerHTML = this.generateUpgradeCardsHTML();
+        
+        // Setup click handlers
+        this.setupUpgradeCardHandlers();
+        
+        // Show overlay with fade-in effect
+        this.showOverlay(this.upgradeOverlay);
+        
+        // Reset selection
+        this.selectedUpgradeIndex = 0;
+        this.updateUpgradeSelection();
+    }
+    
+    generateUpgradeCardsHTML() {
+        return this.currentUpgrades.map((upgrade, index) => {
+            const upgradeIcon = this.getUpgradeIcon(upgrade);
+            const isCharacterUpgrade = upgrade.type === 'character';
+            
+            return `
+                <div class="upgrade-card ${isCharacterUpgrade ? 'character-upgrade' : ''}" 
+                     data-upgrade-index="${index}" 
+                     data-upgrade-id="${upgrade.id}">
+                    
+                    <div class="upgrade-type-badge ${upgrade.type}">
+                        ${upgrade.type === 'character' ? 'CHARACTER' : 'GENERIC'}
+                    </div>
+                    
+                    <div class="upgrade-icon">
+                        <i class="fas ${upgradeIcon}"></i>
+                    </div>
+                    
+                    <h3 class="title is-5 has-text-white mb-2">${upgrade.name}</h3>
+                    
+                    <div class="upgrade-stats">
+                        <p class="has-text-light is-size-7">${upgrade.description}</p>
+                    </div>
+                    
+                    <button class="reroll-btn" data-upgrade-index="${index}" ${this.rerollCount <= 0 ? 'disabled' : ''}>
+                        <i class="fas fa-dice mr-1"></i>Reroll (${this.rerollCount})
+                    </button>
+                </div>
+            `;
+        }).join('');
+    }
+    
+    getUpgradeIcon(upgrade) {
+        // Map upgrade types to Font Awesome icons
+        const iconMap = {
+            'health': 'fa-heart',
+            'armor': 'fa-shield-alt',
+            'regen': 'fa-plus-circle',
+            'damage': 'fa-fist-raised',
+            'cooldown': 'fa-clock',
+            'radius': 'fa-expand-arrows-alt',
+            'pickup': 'fa-magnet',
+            'projectile': 'fa-crosshairs',
+            'speed': 'fa-tachometer-alt',
+            'unique': 'fa-star'
+        };
+        
+        return iconMap[upgrade.statType] || iconMap[upgrade.id] || 'fa-bolt';
+    }
+    
+    setupUpgradeCardHandlers() {
+        const upgradeCards = document.querySelectorAll('.upgrade-card');
+        const rerollButtons = document.querySelectorAll('.reroll-btn');
+        
+        // Upgrade card click handlers
+        upgradeCards.forEach((card, index) => {
+            card.addEventListener('click', (event) => {
+                // Don't trigger card selection if reroll button was clicked
+                if (event.target.closest('.reroll-btn')) return;
+                
+                this.selectedUpgradeIndex = index;
+                this.selectUpgrade();
+            });
+            
+            // Hover handlers for visual feedback
+            card.addEventListener('mouseenter', () => {
+                this.selectedUpgradeIndex = index;
+                this.updateUpgradeSelection();
+            });
+        });
+        
+        // Reroll button handlers
+        rerollButtons.forEach((button, index) => {
+            button.addEventListener('click', (event) => {
+                event.stopPropagation(); // Prevent card click
+                this.rerollUpgrade(index);
+            });
+        });
+    }
+    
+    updateUpgradeSelection() {
+        Logger.debug(Logger.Categories.UI, `Updating upgrade selection to index ${this.selectedUpgradeIndex}`);
+        
+        const upgradeCards = document.querySelectorAll('.upgrade-card');
+        
+        upgradeCards.forEach((card, index) => {
+            if (index === this.selectedUpgradeIndex) {
+                card.classList.add('selected');
+                // Scroll into view if using keyboard/gamepad navigation
+                card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            } else {
+                card.classList.remove('selected');
+            }
+        });
+    }
+    
+    selectUpgrade() {
+        const selectedUpgrade = this.currentUpgrades[this.selectedUpgradeIndex];
+        
+        Logger.info(Logger.Categories.UI, `Upgrade selected: ${selectedUpgrade.name}`);
+        
+        // Add selection animation
+        const selectedCard = document.querySelector(`[data-upgrade-index="${this.selectedUpgradeIndex}"]`);
+        if (selectedCard) {
+            selectedCard.style.transform = 'scale(1.05)';
+            selectedCard.style.transition = 'transform 0.2s ease';
+            
+            setTimeout(() => {
+                selectedCard.style.transform = '';
+            }, 200);
+        }
+        
+        // Hide upgrade selection immediately
+        this.upgradeOverlay.style.display = 'none';
+        this.upgradeOverlay.classList.remove('fade-exit', 'fade-exit-active');
+        
+        // Update current screen
+        this.currentScreen = 'game';
+        
+        // Notify the upgrade system that an upgrade was selected
+        this.scene.upgradeSystem.selectUpgradeFromHTML(selectedUpgrade);
+    }
+    
+    rerollUpgrade(upgradeIndex) {
+        if (this.rerollCount <= 0) {
+            Logger.warn(Logger.Categories.UI, 'No rerolls remaining');
+            return;
+        }
+        
+        Logger.info(Logger.Categories.UI, `Rerolling upgrade at index ${upgradeIndex}`);
+        
+        // Notify the upgrade system to reroll
+        this.scene.upgradeSystem.rerollUpgradeFromHTML(upgradeIndex);
+    }
+    
+    hideUpgradeSelection() {
+        Logger.info(Logger.Categories.UI, 'Hiding upgrade selection screen');
+        this.currentScreen = 'game';
+        this.hideOverlay(this.upgradeOverlay);
     }
     
     // =================== OVERLAY MANAGEMENT ===================
@@ -417,11 +587,21 @@ class HTMLUIManager {
             if (this.currentScreen === 'character-selection') {
                 Logger.info(Logger.Categories.UI, `Selecting character at index ${this.selectedCharacterIndex}: ${this.charactersArray[this.selectedCharacterIndex]?.name}`);
                 this.selectCharacter();
+            } else if (this.currentScreen === 'upgrade-selection') {
+                Logger.info(Logger.Categories.UI, `Selecting upgrade at index ${this.selectedUpgradeIndex}: ${this.currentUpgrades[this.selectedUpgradeIndex]?.name}`);
+                this.selectUpgrade();
             } else if (this.currentScreen === 'pause') {
                 this.resumeGame();
             } else if (this.currentScreen === 'game-over') {
                 this.returnToMenu();
             }
+        }
+        
+        // X button for reroll (upgrade screen only)
+        if (gamepadState.buttons[2] && this.currentScreen === 'upgrade-selection') { 
+            this.lastInputTime = Date.now();
+            Logger.info(Logger.Categories.INPUT, `X pressed - rerolling upgrade at index ${this.selectedUpgradeIndex}`);
+            this.rerollUpgrade(this.selectedUpgradeIndex);
         }
 
         // Start/Menu button for pause/unpause
@@ -457,6 +637,30 @@ class HTMLUIManager {
                 this.lastInputTime = Date.now();
                 Logger.info(Logger.Categories.INPUT, `Character selection moved to index ${this.selectedCharacterIndex} (${this.charactersArray[this.selectedCharacterIndex]?.name})`);
                 this.updateCharacterSelection();
+            }
+        }
+        
+        // D-pad navigation for upgrade selection
+        if (this.currentScreen === 'upgrade-selection') {
+            Logger.debug(Logger.Categories.INPUT, `Checking D-pad navigation on upgrade-selection screen`);
+            let moved = false;
+            
+            if (gamepadState.buttons[14]) { // D-pad left
+                const oldIndex = this.selectedUpgradeIndex;
+                this.selectedUpgradeIndex = Math.max(0, this.selectedUpgradeIndex - 1);
+                moved = (oldIndex !== this.selectedUpgradeIndex);
+                Logger.info(Logger.Categories.INPUT, `D-pad LEFT pressed, upgrade index: ${oldIndex} -> ${this.selectedUpgradeIndex}`);
+            } else if (gamepadState.buttons[15]) { // D-pad right
+                const oldIndex = this.selectedUpgradeIndex;
+                this.selectedUpgradeIndex = Math.min(this.currentUpgrades.length - 1, this.selectedUpgradeIndex + 1);
+                moved = (oldIndex !== this.selectedUpgradeIndex);
+                Logger.info(Logger.Categories.INPUT, `D-pad RIGHT pressed, upgrade index: ${oldIndex} -> ${this.selectedUpgradeIndex}`);
+            }
+            
+            if (moved) {
+                this.lastInputTime = Date.now();
+                Logger.info(Logger.Categories.INPUT, `Upgrade selection moved to index ${this.selectedUpgradeIndex} (${this.currentUpgrades[this.selectedUpgradeIndex]?.name})`);
+                this.updateUpgradeSelection();
             }
         }
     }
@@ -496,6 +700,7 @@ class HTMLUIManager {
         this.hideOverlay(this.gameHudOverlay, 0);
         this.hideOverlay(this.pauseOverlay, 0);
         this.hideOverlay(this.gameOverOverlay, 0);
+        this.hideOverlay(this.upgradeOverlay, 0);
     }
 }
 

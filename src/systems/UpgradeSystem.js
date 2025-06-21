@@ -1,5 +1,7 @@
 // Upgrade System - Handles upgrade selection, UI, and upgrade application
 
+import Logger from '../utils/Logger.js';
+
 class UpgradeSystem {
     constructor(scene) {
         this.scene = scene;
@@ -26,7 +28,9 @@ class UpgradeSystem {
         }
         
         this.generateUpgradeChoices();
-        this.createUpgradeUI();
+        
+        // Use HTML UI instead of Phaser UI
+        this.scene.uiSystem.htmlUI.showUpgradeSelection(this.currentUpgrades, this.rerollCount);
     }
 
     generateUpgradeChoices() {
@@ -105,143 +109,20 @@ class UpgradeSystem {
         return Phaser.Utils.Array.GetRandom(unusedUpgrades);
     }
 
+    // Legacy Phaser UI methods - no longer used, replaced by HTML UI
+    // Keeping these methods for backward compatibility but they do nothing
     createUpgradeUI() {
-        // Clear any existing UI
-        this.upgradeUIElements.forEach(element => element.destroy());
-        this.upgradeUIElements = [];
-        
-        // Semi-transparent overlay that covers the entire screen
-        const overlay = this.scene.add.rectangle(0, 0, this.scene.cameras.main.width * 2, this.scene.cameras.main.height * 2, 0x000000, 0.8);
-        overlay.setOrigin(0, 0);
-        overlay.setScrollFactor(0).setDepth(1000);
-        overlay.setPosition(-this.scene.cameras.main.width/2, -this.scene.cameras.main.height/2);
-        this.upgradeUIElements.push(overlay);
-        
-        // Title
-        const title = this.scene.add.text(700, 150, 'LEVEL UP!', {
-            fontSize: '48px',
-            color: '#ffff00',
-            fontWeight: 'bold'
-        }).setOrigin(0.5, 0.5).setScrollFactor(0).setDepth(1001);
-        this.upgradeUIElements.push(title);
-        
-        const subtitle = this.scene.add.text(700, 200, 'Choose an Upgrade', {
-            fontSize: '24px',
-            color: '#ffffff'
-        }).setOrigin(0.5, 0.5).setScrollFactor(0).setDepth(1001);
-        this.upgradeUIElements.push(subtitle);
-        
-        // Create 3 upgrade cards side by side horizontally
-        const cardWidth = 320;
-        const cardHeight = 200;
-        const spacing = 40;
-        const totalWidth = (cardWidth * this.currentUpgrades.length) + (spacing * (this.currentUpgrades.length - 1));
-        const startX = (1400 - totalWidth) / 2; // Center horizontally
-        const cardY = 400; // Fixed vertical position
-        
-        for (let i = 0; i < this.currentUpgrades.length; i++) {
-            this.createSingleUpgradeCard(i, this.currentUpgrades[i], startX, cardY, cardWidth, cardHeight, spacing);
-        }
-        
-        // Controls text
-        const controls = this.scene.add.text(700, 620, 'Click upgrade to select • Click "Reroll" button to reroll that upgrade\nGamepad: A to select • X to reroll • Left/Right to navigate', {
-            fontSize: '14px',
-            color: '#aaaaaa',
-            align: 'center'
-        }).setOrigin(0.5, 0.5).setScrollFactor(0).setDepth(1001);
-        this.upgradeUIElements.push(controls);
-        
-        // Initialize gamepad selection
-        this.scene.gamepadState.selectedUpgradeIndex = 0;
-        this.updateUpgradeHighlight();
+        // This method is no longer used - HTML UI is used instead
+        Logger.debug(Logger.Categories.SYSTEM, 'createUpgradeUI called but no longer used (HTML UI is used instead)');
     }
 
-    createSingleUpgradeCard(upgradeIndex, upgrade, startX, cardY, cardWidth, cardHeight, spacing) {
-        const cardX = startX + upgradeIndex * (cardWidth + spacing) + cardWidth/2; // Position horizontally
-        
-        // Card background
-        const card = this.scene.add.rectangle(cardX, cardY, cardWidth, cardHeight, 0x333333);
-        card.setStrokeStyle(3, upgrade.type === 'character' ? 0xffa500 : 0x666666);
-        card.setScrollFactor(0).setDepth(1001);
-        card.setInteractive();
-        card.upgradeIndex = upgradeIndex;
-        
-        // Click handler for selection
-        card.on('pointerdown', () => {
-            // Set flag to prevent pause immediately after upgrade selection
-            this.scene.inputManager.setUpgradeCardClicked();
-            this.selectUpgrade(upgrade);
-        });
-        
-        // Hover effects
-        card.on('pointerover', () => {
-            card.setStrokeStyle(4, 0xffffff);
-        });
-        
-        card.on('pointerout', () => {
-            card.setStrokeStyle(3, upgrade.type === 'character' ? 0xffa500 : 0x666666);
-        });
-        
-        this.upgradeUIElements.push(card);
-        
-        // Upgrade name (centered at top of card)
-        const name = this.scene.add.text(cardX, cardY - 60, upgrade.name, {
-            fontSize: '18px',
-            color: upgrade.type === 'character' ? '#ffa500' : '#ffffff',
-            fontWeight: 'bold'
-        }).setOrigin(0.5, 0.5).setScrollFactor(0).setDepth(1002);
-        this.upgradeUIElements.push(name);
-        
-        // Upgrade description (centered in middle of card)
-        const description = this.scene.add.text(cardX, cardY - 10, upgrade.description, {
-            fontSize: '12px',
-            color: '#cccccc',
-            wordWrap: { width: cardWidth - 20 },
-            align: 'center'
-        }).setOrigin(0.5, 0.5).setScrollFactor(0).setDepth(1002);
-        this.upgradeUIElements.push(description);
-        
-        // Type indicator (top right of card)
-        const typeText = upgrade.type === 'character' ? 'CHARACTER' : 'GENERIC';
-        const type = this.scene.add.text(cardX + cardWidth/2 - 10, cardY - 80, typeText, {
-            fontSize: '10px',
-            color: upgrade.type === 'character' ? '#ffa500' : '#888888',
-            fontWeight: 'bold'
-        }).setOrigin(1, 0.5).setScrollFactor(0).setDepth(1002);
-        this.upgradeUIElements.push(type);
-        
-        // Reroll button inside the card at the bottom
-        const rerollButton = this.scene.add.rectangle(cardX, cardY + 60, 100, 30, 0x555555);
-        rerollButton.setStrokeStyle(2, 0x888888);
-        rerollButton.setScrollFactor(0).setDepth(1002);
-        rerollButton.setInteractive();
-        this.upgradeUIElements.push(rerollButton);
-        
-        const rerollText = this.scene.add.text(cardX, cardY + 60, `Reroll (${this.rerollCount})`, {
-            fontSize: '12px',
-            color: '#ffffff'
-        }).setOrigin(0.5, 0.5).setScrollFactor(0).setDepth(1003);
-        this.upgradeUIElements.push(rerollText);
-        
-        // Reroll button functionality
-        rerollButton.on('pointerdown', () => {
-            // Set flag to prevent pause immediately after reroll
-            this.scene.inputManager.setUpgradeCardClicked();
-            this.rerollSingleUpgrade(upgradeIndex);
-        });
-        
-        rerollButton.on('pointerover', () => {
-            rerollButton.setFillStyle(0x777777);
-        });
-        
-        rerollButton.on('pointerout', () => {
-            rerollButton.setFillStyle(0x555555);
-        });
+    createSingleUpgradeCard() {
+        // This method is no longer used - HTML UI is used instead
+        Logger.debug(Logger.Categories.SYSTEM, 'createSingleUpgradeCard called but no longer used (HTML UI is used instead)');
     }
 
-    selectUpgrade(upgrade) {
-        // Upgrade selected and applied
-        
+    // Method called by HTMLUIManager when an upgrade is selected
+    selectUpgradeFromHTML(upgrade) {
         // Apply the upgrade effect
         upgrade.effect();
         this.scene.statsSystem.refreshPlayerStats();
@@ -251,9 +132,16 @@ class UpgradeSystem {
         
         this.closeUpgradeUI();
     }
+    
+    // Legacy method for backward compatibility
+    selectUpgrade(upgrade) {
+        this.selectUpgradeFromHTML(upgrade);
+    }
 
-    rerollSingleUpgrade(upgradeIndex) {
+    // Method called by HTMLUIManager when a reroll is requested
+    rerollUpgradeFromHTML(upgradeIndex) {
         if (this.rerollCount <= 0) {
+            Logger.warn(Logger.Categories.SYSTEM, 'No rerolls remaining');
             return;
         }
         
@@ -265,9 +153,14 @@ class UpgradeSystem {
         
         if (newUpgrade) {
             this.currentUpgrades[upgradeIndex] = newUpgrade;
-            // Recreate the entire UI since layout is complex
-            this.createUpgradeUI();
+            // Update the HTML UI with new upgrades
+            this.scene.uiSystem.htmlUI.showUpgradeSelection(this.currentUpgrades, this.rerollCount);
         }
+    }
+    
+    // Legacy method for backward compatibility  
+    rerollSingleUpgrade(upgradeIndex) {
+        this.rerollUpgradeFromHTML(upgradeIndex);
     }
 
     rerollAllUpgrades() {
@@ -283,7 +176,10 @@ class UpgradeSystem {
     }
 
     closeUpgradeUI() {
-        // Clear upgrade UI
+        // Hide HTML upgrade UI
+        this.scene.uiSystem.htmlUI.hideUpgradeSelection();
+        
+        // Clear any legacy Phaser UI elements (for backward compatibility)
         this.upgradeUIElements.forEach(element => element.destroy());
         this.upgradeUIElements = [];
         
@@ -309,58 +205,18 @@ class UpgradeSystem {
             });
         }
         
-        // Upgrade UI closed, game resumed
+        Logger.info(Logger.Categories.SYSTEM, 'Upgrade UI closed, game resumed');
     }
 
+    // Legacy gamepad methods - no longer used, replaced by HTML UI gamepad handling
     updateUpgradeHighlight() {
-        // Update gamepad selection highlight for upgrade cards
-        if (!this.scene.gamepadState.connected || this.upgradeUIElements.length === 0) return;
-        
-        const upgradeCards = this.upgradeUIElements.filter(element => 
-            element.upgradeIndex !== undefined
-        );
-        
-        // Reset all card highlights
-        upgradeCards.forEach((card, index) => {
-            const upgrade = this.currentUpgrades[card.upgradeIndex];
-            if (upgrade) {
-                if (index === this.scene.gamepadState.selectedUpgradeIndex) {
-                    card.setStrokeStyle(4, 0xffffff); // Highlight selected
-                } else {
-                    card.setStrokeStyle(3, upgrade.type === 'character' ? 0xffa500 : 0x666666); // Normal
-                }
-            }
-        });
+        // This method is no longer used - HTML UI handles highlighting
+        Logger.debug(Logger.Categories.SYSTEM, 'updateUpgradeHighlight called but no longer used (HTML UI handles highlighting)');
     }
 
     handleGamepadUpgradeInput() {
-        if (!this.scene.gamepadState.connected || !this.upgradeActive) return;
-        
-        const pad = this.scene.gamepadState.pad;
-        const justPressed = this.scene.inputManager.getJustPressedFunction();
-        
-        // Navigate upgrades horizontally
-        if (justPressed(14) || (pad.leftStick.x < -this.scene.gamepadState.deadzone && justPressed('leftStick'))) { // Left
-            this.scene.gamepadState.selectedUpgradeIndex = Math.max(0, this.scene.gamepadState.selectedUpgradeIndex - 1);
-            this.updateUpgradeHighlight();
-        }
-        if (justPressed(15) || (pad.leftStick.x > this.scene.gamepadState.deadzone && justPressed('leftStick'))) { // Right
-            this.scene.gamepadState.selectedUpgradeIndex = Math.min(this.currentUpgrades.length - 1, this.scene.gamepadState.selectedUpgradeIndex + 1);
-            this.updateUpgradeHighlight();
-        }
-        
-        // Select upgrade
-        if (justPressed(0)) { // A button
-            const selectedUpgrade = this.currentUpgrades[this.scene.gamepadState.selectedUpgradeIndex];
-            if (selectedUpgrade) {
-                this.selectUpgrade(selectedUpgrade);
-            }
-        }
-        
-        // Reroll single upgrade
-        if (justPressed(2)) { // X button
-            this.rerollSingleUpgrade(this.scene.gamepadState.selectedUpgradeIndex);
-        }
+        // This method is no longer used - HTML UI handles gamepad input
+        Logger.debug(Logger.Categories.SYSTEM, 'handleGamepadUpgradeInput called but no longer used (HTML UI handles gamepad input)');
     }
 }
 

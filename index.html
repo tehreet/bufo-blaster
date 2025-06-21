@@ -109,6 +109,132 @@
             object-fit: contain;
         }
         
+        /* Upgrade Selection Styles */
+        .upgrade-selection {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background: rgba(34, 17, 0, 0.95);
+            backdrop-filter: blur(10px);
+        }
+        
+        .upgrade-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 2rem;
+            max-width: 1200px;
+            margin: 2rem;
+        }
+        
+        .upgrade-card {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            padding: 1.5rem;
+            text-align: center;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            border: 2px solid transparent;
+            position: relative;
+            min-height: 280px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+        
+        .upgrade-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 16px 40px rgba(0, 0, 0, 0.3);
+            border-color: #ffdd57;
+        }
+        
+        .upgrade-card.selected {
+            border-color: #ffdd57;
+            background: rgba(255, 221, 87, 0.2);
+        }
+        
+        .upgrade-card.character-upgrade {
+            border-color: #ff9800;
+        }
+        
+        .upgrade-card.character-upgrade:hover {
+            border-color: #ffa726;
+        }
+        
+        .upgrade-card.character-upgrade.selected {
+            border-color: #ffa726;
+            background: rgba(255, 167, 38, 0.2);
+        }
+        
+        .upgrade-type-badge {
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            font-size: 0.7rem;
+            padding: 0.25rem 0.5rem;
+            border-radius: 12px;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+        
+        .upgrade-type-badge.character {
+            background: rgba(255, 152, 0, 0.8);
+            color: white;
+        }
+        
+        .upgrade-type-badge.generic {
+            background: rgba(150, 150, 150, 0.8);
+            color: white;
+        }
+        
+        .upgrade-icon {
+            width: 80px;
+            height: 80px;
+            margin: 0 auto 1rem;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+            color: #ffdd57;
+        }
+        
+        .upgrade-card.character-upgrade .upgrade-icon {
+            color: #ff9800;
+        }
+        
+        .upgrade-stats {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 8px;
+            padding: 0.75rem;
+            margin: 0.5rem 0;
+        }
+        
+        .reroll-btn {
+            margin-top: auto;
+            padding: 0.5rem 1rem;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 8px;
+            color: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 0.8rem;
+        }
+        
+        .reroll-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+            border-color: rgba(255, 255, 255, 0.5);
+        }
+        
+        .reroll-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
         /* Mobile Optimizations */
         @media (max-width: 768px) {
             .character-grid {
@@ -124,6 +250,23 @@
             .character-image {
                 width: 80px;
                 height: 80px;
+            }
+            
+            .upgrade-grid {
+                grid-template-columns: 1fr;
+                gap: 1rem;
+                margin: 1rem;
+            }
+            
+            .upgrade-card {
+                padding: 1rem;
+                min-height: 240px;
+            }
+            
+            .upgrade-icon {
+                width: 60px;
+                height: 60px;
+                font-size: 1.5rem;
             }
         }
         
@@ -211,6 +354,33 @@
     <!-- Game Over Overlay -->
     <div id="game-over-overlay" class="ui-overlay interactive" style="display: none;">
         <!-- Game over screen will go here later -->
+    </div>
+    
+    <!-- Upgrade Selection Overlay -->
+    <div id="upgrade-overlay" class="ui-overlay interactive" style="display: none;">
+        <div class="upgrade-selection">
+            <div class="container">
+                <div class="has-text-centered mb-6">
+                    <h1 class="title is-1 has-text-warning">
+                        <i class="fas fa-arrow-up mr-3"></i>LEVEL UP!
+                    </h1>
+                    <p class="subtitle is-4 has-text-light">Choose Your Upgrade</p>
+                </div>
+                
+                <div id="upgrade-grid" class="upgrade-grid">
+                    <!-- Upgrade cards will be dynamically generated here -->
+                </div>
+                
+                <div class="has-text-centered mt-6">
+                    <p class="has-text-light">
+                        <i class="fas fa-mouse-pointer mr-2"></i>Click an upgrade to select it
+                    </p>
+                    <p class="has-text-light is-size-7 mt-2">
+                        <i class="fas fa-gamepad mr-2"></i>Gamepad: Use D-Pad to navigate, A to select, X to reroll
+                    </p>
+                </div>
+            </div>
+        </div>
     </div>
     
     <!-- Loading Screen -->
