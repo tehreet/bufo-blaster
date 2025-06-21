@@ -306,6 +306,31 @@
             transform: translateY(-20px);
             transition: all 0.3s ease;
         }
+        
+        /* Force white text in pause and game over screens */
+        #pause-overlay .box p,
+        #pause-overlay .box strong,
+        #game-over-overlay .box p,
+        #game-over-overlay .box strong,
+        #pause-overlay .column p,
+        #pause-overlay .column strong,
+        #game-over-overlay .column p,
+        #game-over-overlay .column strong,
+        #pause-overlay .box *,
+        #game-over-overlay .box * {
+            color: white !important;
+        }
+        
+        /* Catch all text in these overlays */
+        #pause-overlay .character-selection .box,
+        #game-over-overlay .character-selection .box {
+            color: white !important;
+        }
+        
+        #pause-overlay .character-selection .box > *,
+        #game-over-overlay .character-selection .box > * {
+            color: white !important;
+        }
     </style>
 </head>
 <body>
