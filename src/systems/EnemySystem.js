@@ -1,5 +1,6 @@
 // Enemy System - Handles enemy definitions, spawning, behavior, and interactions
 import Logger from '../utils/Logger.js';
+import EnemyRegistry from '../enemies/EnemyRegistry.js';
 
 class EnemySystem {
     constructor(scene) {
@@ -21,102 +22,8 @@ class EnemySystem {
         this.lastMagnetOrbLevel = 0; // Track last level where magnet orb was spawned
         this.magnetOrbKillChance = 0.005; // 0.5% chance per enemy kill (was 1.5% - reduced by 75%)
         
-        // Enemy type definitions (hitbox radii matched to player's 12.5% sprite ratio)
-        this.enemyTypes = [
-            {
-                id: 'hazmat',
-                name: 'Hazmat Bufo',
-                sprite: 'bufo-covid',
-                health: 4, // Increased from 2 to 4
-                speed: 90, // Increased from 80 to 90
-                displaySize: 40,
-                hitboxRadius: 3, // Reduced to match player scale (40px sprite)
-                xpValue: 25, // Increased from 15 to 25 due to much stronger poison
-                weight: 25, // Slightly reduced weight (was 30) - more dangerous so less common
-                specialEffect: 'poison' // Causes poison on contact
-            },
-            {
-                id: 'clown',
-                name: 'Clown Bufo',
-                sprite: 'bufo-clown',
-                health: 3,
-                speed: 45,
-                displaySize: 44,
-                hitboxRadius: 3, // Reduced to match player scale (44px sprite)
-                xpValue: 15,
-                weight: 25
-            },
-            {
-                id: 'pog',
-                name: 'Pog Bufo',
-                sprite: 'bufo-pog',
-                health: 1,
-                speed: 80,
-                displaySize: 36,
-                hitboxRadius: 2, // Very small hitbox for fast enemy (36px sprite)  
-                xpValue: 8,
-                weight: 35 // Fast but weak
-            },
-            {
-                id: 'teeth',
-                name: 'Teeth Bufo',
-                sprite: 'bufo-enraged',
-                health: 6, // Increased HP
-                speed: 65, // Increased movement speed
-                displaySize: 48,
-                hitboxRadius: 4, // Reduced to match player scale (48px sprite)
-                xpValue: 25, // More valuable
-                weight: 10,
-                specialEffect: 'regen', // Has health regeneration
-                contactDamage: 15 // Increased damage (vs normal 10)
-            },
-            {
-                id: 'mob',
-                name: 'Mob Bufo',
-                sprite: 'bufo-mob',
-                health: 6,
-                speed: 50,
-                displaySize: 48,
-                hitboxRadius: 4, // Reduced to match player scale (48px sprite)
-                xpValue: 30,
-                weight: 5 // Very rare but very tough
-            },
-            {
-                id: 'vampire',
-                name: 'Vampire Bufo',
-                sprite: 'bufo-vampire',
-                health: 5, // High health but not as tanky as mob bufo
-                speed: 100, // Very fast as requested
-                displaySize: 45,
-                hitboxRadius: 3, // Reduced to match player scale (45px sprite)
-                xpValue: 35, // High XP value due to special abilities
-                weight: 8, // Rarer than basic enemies but not as rare as mob bufo
-                specialEffect: 'bleed', // Causes bleed on contact
-                contactDamage: 12, // Moderate damage
-                healthRegen: 1.0 // High health regeneration (double the normal regen)
-            },
-            {
-                id: 'chicken',
-                name: 'Chicken Bufo',
-                sprite: 'bufo-chicken',
-                health: 3, // Moderate health
-                speed: 40, // Slow movement speed - prefers to keep distance
-                displaySize: 42,
-                hitboxRadius: 3, // Reduced to match player scale (42px sprite)
-                xpValue: 20, // Good XP value for ranged enemy
-                weight: 15, // Moderately common
-                specialEffect: 'ranged', // Shoots projectiles
-                contactDamage: 8, // Low contact damage since it's ranged
-                rangedAttack: {
-                    range: 400, // Doubled from 200 to 400 - much longer range
-                    keepDistance: 300, // Increased proportionally from 150 to 300
-                    projectileSpeed: 120, // Speed of egg projectiles
-                    projectileDamage: 12, // Doubled from 6 to 12 - much more damage
-                    attackCooldown: 2000, // 2 seconds between attacks
-                    accuracy: 0.8 // 80% accuracy (some spread)
-                }
-            }
-        ];
+        // Use EnemyRegistry instead of hardcoded types
+        this.enemyRegistry = EnemyRegistry;
     }
 
     startEnemySpawning() {
@@ -188,41 +95,26 @@ class EnemySystem {
         this.scene.matter.add.gameObject(enemy, {
             shape: {
                 type: 'circle',
-                radius: enemyType.hitboxRadius
+                radius: enemyType.baseStats.hitboxRadius
             },
             frictionAir: 0.01,
             label: 'enemy',
             ignoreGravity: true
         });
         
-        // Enemy stats based on type (scale with player level)
-        const levelScaling = 1 + (this.scene.statsSystem.getPlayerProgression().level - 1) * 0.2; // 20% increase per level
-        enemy.health = Math.ceil(enemyType.health * levelScaling);
-        enemy.maxHealth = Math.ceil(enemyType.health * levelScaling);
-        enemy.speed = enemyType.speed;
-        enemy.lastAttack = 0;
-        enemy.attackCooldown = 1000;
-        enemy.enemyType = enemyType; // Store reference to type
-        enemy.xpValue = enemyType.xpValue;
-        
-        // Special enemy properties
-        if (enemyType.specialEffect === 'regen') {
-            enemy.healthRegen = 0.5; // Health per second
-            enemy.lastRegenTime = 0;
-        } else if (enemyType.healthRegen) {
-            // Vampire bufo and other enemies with custom health regen
-            enemy.healthRegen = enemyType.healthRegen;
-            enemy.lastRegenTime = 0;
-        }
-        
-        if (enemyType.contactDamage) {
-            enemy.contactDamage = enemyType.contactDamage;
-        } else {
-            enemy.contactDamage = this.scene.gameConfig.ENEMY_CONTACT_DAMAGE; // Default damage
+        // Create enemy instance using the registry
+        try {
+            const enemyInstance = this.enemyRegistry.createEnemy(this.scene, enemyType.id, enemy);
+            Logger.system(`Created enemy instance: ${enemyType.name}`);
+        } catch (error) {
+            Logger.error('Failed to create enemy instance:', error);
+            // Fallback: destroy the enemy if instance creation fails
+            enemy.destroy();
+            return;
         }
         
         // Add debug hitbox visualization (initially hidden) - use actual physics body radius
-        const actualRadius = enemy.body.circleRadius || enemyType.hitboxRadius;
+        const actualRadius = enemy.body.circleRadius || enemyType.baseStats.hitboxRadius;
         enemy.hitboxDebug = this.scene.add.circle(clampedX, clampedY, actualRadius, 0xff0000, 0.3);
         enemy.hitboxDebug.setStrokeStyle(2, 0xff0000);
         enemy.hitboxDebug.setVisible(this.scene.showHitboxes);
@@ -231,36 +123,9 @@ class EnemySystem {
     }
 
     getRandomEnemyType() {
-        // Weight selection based on player level - higher levels see tougher enemies more often
+        // Use EnemyRegistry for random selection with level-based weighting
         const level = this.scene.statsSystem.getPlayerProgression().level;
-        const adjustedWeights = this.enemyTypes.map(type => {
-            let weight = type.weight;
-            
-            // Increase weight of tougher enemies at higher levels
-            if (type.health >= 4 && level >= 5) {
-                weight *= 1.5; // Eyes and Mob Bufo appear more often after level 5
-            }
-            if (type.health >= 6 && level >= 10) {
-                weight *= 2; // Mob Bufo appears even more often after level 10
-            }
-            
-            return { ...type, adjustedWeight: weight };
-        });
-        
-        // Calculate total weight
-        const totalWeight = adjustedWeights.reduce((sum, type) => sum + type.adjustedWeight, 0);
-        
-        // Random selection based on weights
-        let random = Math.random() * totalWeight;
-        for (const type of adjustedWeights) {
-            random -= type.adjustedWeight;
-            if (random <= 0) {
-                return type;
-            }
-        }
-        
-        // Fallback to first enemy type
-        return this.enemyTypes[0];
+        return this.enemyRegistry.getRandomEnemyType(level);
     }
 
     scaleEnemyDifficulty() {
@@ -288,7 +153,7 @@ class EnemySystem {
         for (let i = 0; i < waveSize; i++) {
             this.scene.time.delayedCall(i * 500, () => {
                 // Choose tougher enemy types for boss waves
-                const toughEnemyTypes = this.enemyTypes.filter(type => type.health >= 3);
+                const toughEnemyTypes = this.enemyRegistry.getBossWaveEnemyTypes();
                 const enemyType = Phaser.Utils.Array.GetRandom(toughEnemyTypes);
                 this.spawnSingleEnemyOfType(enemyType);
             });
@@ -328,42 +193,34 @@ class EnemySystem {
         this.scene.matter.add.gameObject(enemy, {
             shape: {
                 type: 'circle',
-                radius: enemyType.hitboxRadius
+                radius: enemyType.baseStats.hitboxRadius
             },
             frictionAir: 0.01,
             label: 'enemy',
             ignoreGravity: true
         });
         
-        // Enemy stats (boss wave enemies get +25% health bonus)
-        const levelScaling = 1 + (this.scene.statsSystem.getPlayerProgression().level - 1) * 0.2;
-        const bossWaveBonus = 1.25; // 25% more health for boss wave enemies
-        enemy.health = Math.ceil(enemyType.health * levelScaling * bossWaveBonus);
-        enemy.maxHealth = Math.ceil(enemyType.health * levelScaling * bossWaveBonus);
-        enemy.speed = enemyType.speed;
-        enemy.lastAttack = 0;
-        enemy.attackCooldown = 1000;
-        enemy.enemyType = enemyType;
-        enemy.xpValue = Math.ceil(enemyType.xpValue * 1.5); // Bonus XP for boss wave enemies
-        
-        // Special enemy properties
-        if (enemyType.specialEffect === 'regen') {
-            enemy.healthRegen = 0.5; // Health per second
-            enemy.lastRegenTime = 0;
-        } else if (enemyType.healthRegen) {
-            // Vampire bufo and other enemies with custom health regen
-            enemy.healthRegen = enemyType.healthRegen;
-            enemy.lastRegenTime = 0;
-        }
-        
-        if (enemyType.contactDamage) {
-            enemy.contactDamage = enemyType.contactDamage;
-        } else {
-            enemy.contactDamage = this.scene.gameConfig.ENEMY_CONTACT_DAMAGE; // Default damage
+        // Create enemy instance using the registry (with boss wave bonus)
+        try {
+            const enemyInstance = this.enemyRegistry.createEnemy(this.scene, enemyType.id, enemy);
+            
+            // Apply boss wave bonuses after instance creation
+            const levelScaling = 1 + (this.scene.statsSystem.getPlayerProgression().level - 1) * 0.2;
+            const bossWaveBonus = 1.25; // 25% more health for boss wave enemies
+            enemy.health = Math.ceil(enemyType.baseStats.health * levelScaling * bossWaveBonus);
+            enemy.maxHealth = Math.ceil(enemyType.baseStats.health * levelScaling * bossWaveBonus);
+            enemy.xpValue = Math.ceil(enemyType.baseStats.xpValue * 1.5); // Bonus XP for boss wave enemies
+            
+            Logger.system(`Created boss wave enemy instance: ${enemyType.name}`);
+        } catch (error) {
+            Logger.error('Failed to create boss wave enemy instance:', error);
+            // Fallback: destroy the enemy if instance creation fails
+            enemy.destroy();
+            return;
         }
         
         // Add debug hitbox visualization
-        const actualRadius = enemyType.hitboxRadius;
+        const actualRadius = enemyType.baseStats.hitboxRadius;
         enemy.hitboxDebug = this.scene.add.circle(clampedX, clampedY, actualRadius, 0xff0000, 0.3);
         enemy.hitboxDebug.setStrokeStyle(2, 0xff0000);
         enemy.hitboxDebug.setVisible(this.scene.showHitboxes);
@@ -429,6 +286,15 @@ class EnemySystem {
         // Stop all tweens on this enemy before destroying it
         this.scene.tweens.killTweensOf(enemy);
         
+        // Call enemy instance death handler if available
+        if (enemy.enemyInstance && typeof enemy.enemyInstance.onDeath === 'function') {
+            try {
+                enemy.enemyInstance.onDeath();
+            } catch (error) {
+                Logger.error('Error in enemy onDeath handler:', error);
+            }
+        }
+        
         // Increment kill count in UI
         this.scene.uiSystem.incrementKillCount();
         
@@ -438,8 +304,9 @@ class EnemySystem {
         // Check for XP Magnet Orb spawn (random chance)
         this.checkMagnetOrbSpawn(enemy.x, enemy.y);
         
-        // Death effect
-        const deathEffect = this.scene.add.circle(enemy.x, enemy.y, enemy.enemyType.displaySize / 2, 0xff0000, 0.6);
+        // Death effect - get display size from enemy type or default
+        const displaySize = enemy.enemyType ? enemy.enemyType.baseStats.displaySize : 40;
+        const deathEffect = this.scene.add.circle(enemy.x, enemy.y, displaySize / 2, 0xff0000, 0.6);
         this.scene.tweens.add({
             targets: deathEffect,
             alpha: 0,
@@ -447,6 +314,15 @@ class EnemySystem {
             duration: 300,
             onComplete: () => deathEffect.destroy()
         });
+        
+        // Clean up enemy instance
+        if (enemy.enemyInstance && typeof enemy.enemyInstance.cleanup === 'function') {
+            try {
+                enemy.enemyInstance.cleanup();
+            } catch (error) {
+                Logger.error('Error in enemy cleanup:', error);
+            }
+        }
         
         // Clean up enemy
         if (enemy.hitboxDebug) {
@@ -479,25 +355,21 @@ class EnemySystem {
         // Check if player is invincible
         if (this.scene.statsSystem.getPlayerProgression().invincible) return;
         
-        // Deal damage to player (use enemy's contact damage)
-        const damage = enemy.contactDamage || this.scene.gameConfig.ENEMY_CONTACT_DAMAGE;
-        this.scene.statsSystem.takeDamage(damage);
-        
-        // Special effects based on enemy type
-        if (enemy.enemyType.specialEffect === 'poison') {
-            this.applyPoisonEffect();
-        } else if (enemy.enemyType.specialEffect === 'bleed') {
-            this.applyBleedEffect();
+        // Delegate to enemy instance if available
+        if (enemy.enemyInstance && typeof enemy.enemyInstance.onContactWithPlayer === 'function') {
+            enemy.enemyInstance.onContactWithPlayer(player);
+        } else {
+            // Fallback for enemies without instances (shouldn't happen with new system)
+            const damage = enemy.contactDamage || this.scene.gameConfig.ENEMY_CONTACT_DAMAGE;
+            this.scene.statsSystem.takeDamage(damage);
+            
+            // Apply basic knockback
+            const angle = Phaser.Math.Angle.Between(enemy.x, enemy.y, player.x, player.y);
+            this.scene.matter.body.setVelocity(player.body, {
+                x: Math.cos(angle) * 4,
+                y: Math.sin(angle) * 4
+            });
         }
-        
-        // Knockback effect
-        const angle = Phaser.Math.Angle.Between(enemy.x, enemy.y, player.x, player.y);
-        this.scene.matter.body.setVelocity(player.body, {
-            x: Math.cos(angle) * 4, // Knockback force
-            y: Math.sin(angle) * 4
-        });
-        
-        // Visual feedback (screen shake removed, color flashing handled by StatsSystem)
     }
 
     playerCollectXP(player, xpOrb) {
@@ -533,11 +405,8 @@ class EnemySystem {
         // Return early if enemies group doesn't exist yet
         if (!this.scene.enemies || !this.scene.player) return;
         
-        // Update enemy movement and behavior - optimized for loop
+        // Update enemy AI and abilities using the new enemy instance system
         const enemies = this.scene.enemies.children.entries;
-        const currentTime = this.scene.time.now;
-        const playerX = this.scene.player.x;
-        const playerY = this.scene.player.y;
         
         for (let i = 0, len = enemies.length; i < len; i++) {
             const enemy = enemies[i];
@@ -545,33 +414,24 @@ class EnemySystem {
             // Fast validation checks
             if (!enemy || !enemy.active || !enemy.body || !enemy.scene) continue;
             
-            // Check if enemy is currently being knocked back
-            if (enemy.knockbackTime && currentTime < enemy.knockbackTime) {
-                continue; // Skip AI movement while being knocked back
-            }
-            
-            // Check if enemy is stunned
-            if (this.scene.stunnedEnemies && this.scene.stunnedEnemies.has(enemy)) {
-                continue; // Stunned enemies don't move
-            }
-            
-            const speed = enemy.speed / 50; // Scale down for Matter.js
-            
-            // Handle special AI behaviors
-            if (enemy.enemyType.specialEffect === 'ranged') {
-                this.handleRangedEnemyAI(enemy);
-            } else {
-                // Normal chase AI - move towards player
-                const angle = Phaser.Math.Angle.Between(enemy.x, enemy.y, playerX, playerY);
-                
+            // Delegate to enemy instance if available
+            if (enemy.enemyInstance) {
                 try {
-                    this.scene.matter.body.setVelocity(enemy.body, {
-                        x: Math.cos(angle) * speed,
-                        y: Math.sin(angle) * speed
-                    });
+                    // Update enemy AI
+                    if (typeof enemy.enemyInstance.updateAI === 'function') {
+                        enemy.enemyInstance.updateAI();
+                    }
+                    
+                    // Update enemy abilities
+                    if (typeof enemy.enemyInstance.updateAbility === 'function') {
+                        enemy.enemyInstance.updateAbility();
+                    }
                 } catch (error) {
-                    Logger.error('Enemy velocity error:', error);
+                    Logger.error(`Error updating enemy instance ${enemy.enemyType?.name}:`, error);
                 }
+            } else {
+                // Fallback: use basic chase AI for enemies without instances
+                this.basicChaseAI(enemy);
             }
             
             // Update debug hitbox position
@@ -582,6 +442,38 @@ class EnemySystem {
             
             // Update animated overlay position
             this.scene.assetManager.updateAnimatedOverlay(enemy);
+        }
+    }
+    
+    // Fallback basic AI for enemies without instances
+    basicChaseAI(enemy) {
+        // Check if enemy is being knocked back
+        if (enemy.knockbackTime && this.scene.time.now < enemy.knockbackTime) {
+            return; // Don't apply AI movement during knockback
+        }
+        
+        // Check if enemy is stunned
+        if (this.scene.stunnedEnemies && this.scene.stunnedEnemies.has(enemy)) {
+            return; // Stunned enemies don't move
+        }
+        
+        const dx = this.scene.player.x - enemy.x;
+        const dy = this.scene.player.y - enemy.y;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+        
+        if (distance > 5) { // Avoid jittering when very close
+            const speed = enemy.speed / 50; // Scale down for Matter.js
+            const velocityX = (dx / distance) * speed;
+            const velocityY = (dy / distance) * speed;
+            
+            try {
+                this.scene.matter.body.setVelocity(enemy.body, {
+                    x: velocityX,
+                    y: velocityY
+                });
+            } catch (error) {
+                // Handle physics errors gracefully
+            }
         }
     }
 
