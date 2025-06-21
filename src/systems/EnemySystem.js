@@ -102,10 +102,22 @@ class EnemySystem {
             ignoreGravity: true
         });
         
+        // Initialize enemy stats from enemy type data
+        const levelScaling = 1 + (this.scene.statsSystem.getPlayerProgression().level - 1) * 0.2;
+        enemy.health = Math.ceil(enemyType.baseStats.health * levelScaling);
+        enemy.maxHealth = Math.ceil(enemyType.baseStats.health * levelScaling);
+        enemy.speed = enemyType.baseStats.speed;
+        enemy.xpValue = enemyType.baseStats.xpValue;
+        enemy.contactDamage = enemyType.baseStats.contactDamage;
+        enemy.healthRegen = enemyType.baseStats.healthRegen || 0;
+        enemy.lastRegenTime = this.scene.time.now;
+
         // Create enemy instance using the registry
         try {
             const enemyInstance = this.enemyRegistry.createEnemy(this.scene, enemyType.id, enemy);
-            Logger.system(`Created enemy instance: ${enemyType.name}`);
+            enemy.enemyInstance = enemyInstance; // CRITICAL: Attach instance to game object
+            enemy.enemyType = enemyType; // Store enemy type data for reference
+            Logger.system(`Created enemy instance: ${enemyType.name} (HP: ${enemy.health})`);
         } catch (error) {
             Logger.error('Failed to create enemy instance:', error);
             // Fallback: destroy the enemy if instance creation fails
@@ -203,6 +215,8 @@ class EnemySystem {
         // Create enemy instance using the registry (with boss wave bonus)
         try {
             const enemyInstance = this.enemyRegistry.createEnemy(this.scene, enemyType.id, enemy);
+            enemy.enemyInstance = enemyInstance; // CRITICAL: Attach instance to game object
+            enemy.enemyType = enemyType; // Store enemy type data for reference
             
             // Apply boss wave bonuses after instance creation
             const levelScaling = 1 + (this.scene.statsSystem.getPlayerProgression().level - 1) * 0.2;

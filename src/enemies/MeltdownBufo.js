@@ -347,6 +347,31 @@ class MeltdownBufo extends BaseEnemy {
         }
     }
     
+    // Handle direct contact with player - ALWAYS triggers meltdown
+    onContactWithPlayer(player) {
+        // Always trigger meltdown on contact with player
+        if (!this.isTriggered) {
+            this.triggerMeltdown();
+        }
+        
+        // Still apply basic contact damage (minimal since explosion is the main threat)
+        const damage = this.gameObject.contactDamage || 5;
+        this.scene.statsSystem.takeDamage(damage);
+        
+        // Apply basic knockback
+        if (player && player.body && this.gameObject) {
+            const angle = Phaser.Math.Angle.Between(this.gameObject.x, this.gameObject.y, player.x, player.y);
+            try {
+                this.scene.matter.body.setVelocity(player.body, {
+                    x: Math.cos(angle) * 4,
+                    y: Math.sin(angle) * 4
+                });
+            } catch (error) {
+                // Handle knockback errors silently
+            }
+        }
+    }
+
     // Override takeDamage to potentially trigger meltdown when damaged
     takeDamage(damage) {
         // Take damage on game object
