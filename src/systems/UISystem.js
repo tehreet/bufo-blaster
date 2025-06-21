@@ -1,4 +1,7 @@
-// UI System - Handles all user interface elements and interactions
+// UI System - Handles user interface elements and interactions
+// Now uses hybrid approach: HTML overlays for menus, Phaser for game UI
+
+import HTMLUIManager from './HTMLUIManager.js';
 
 class UISystem {
     constructor(scene) {
@@ -6,126 +9,14 @@ class UISystem {
         this.isPaused = false;
         this.pauseUIElements = [];
         this.gameUIElements = [];
+        
+        // Initialize HTML UI Manager for modern overlays
+        this.htmlUI = new HTMLUIManager(scene);
     }
 
     showCharacterSelection() {
-        // Clear any existing content
-        this.scene.children.removeAll();
-        
-        // Add a dark background to prevent green screen
-        const background = this.scene.add.rectangle(700, 400, 1400, 800, 0x002200);
-        background.setDepth(-1000); // Behind everything else
-        
-        // Title
-        this.scene.add.text(700, 100, 'BUFO BLASTER', {
-            fontSize: '48px',
-            color: '#ffffff',
-            fontWeight: 'bold'
-        }).setOrigin(0.5, 0.5);
-        
-        this.scene.add.text(700, 150, 'Choose Your Character', {
-            fontSize: '24px',
-            color: '#cccccc'
-        }).setOrigin(0.5, 0.5);
-        
-        // Character cards
-        const characters = this.scene.characterSystem.getCharacters();
-        const charactersArray = Object.values(characters);
-        const cardWidth = 200;
-        const cardHeight = 360; // Increased height to accommodate larger character previews
-        const spacing = 50;
-        const totalWidth = (cardWidth * charactersArray.length) + (spacing * (charactersArray.length - 1));
-        const startX = (1400 - totalWidth) / 2;
-        const cardY = 250;
-        
-        const characterCards = [];
-        
-        charactersArray.forEach((character, index) => {
-            const cardX = startX + index * (cardWidth + spacing);
-            
-            // Card background
-            const card = this.scene.add.rectangle(cardX + cardWidth/2, cardY + cardHeight/2, cardWidth, cardHeight, 0x333333);
-            card.setStrokeStyle(3, character.color);
-            card.setInteractive();
-            card.characterData = character;
-            
-            // Character sprite
-            const charSprite = this.scene.add.image(cardX + cardWidth/2, cardY + 80, character.sprite);
-            // Get the configured preview size
-            const previewSize = this.scene.assetManager.getPreviewSize ? 
-                this.scene.assetManager.getPreviewSize(character.sprite) : 120;
-            charSprite.setDisplaySize(previewSize, previewSize);
-            
-            // Try to create animated overlay using centralized asset management
-            const hasAnimatedOverlay = this.scene.assetManager.createAnimatedOverlay(charSprite, character.sprite, 'characters');
-            
-            if (!hasAnimatedOverlay) {
-                // No animated version available or failed to load, show static sprite
-                charSprite.setAlpha(1);
-            }
-            
-            // Character name (moved down to accommodate larger sprite)
-            this.scene.add.text(cardX + cardWidth/2, cardY + 170, character.name, {
-                fontSize: '16px',
-                color: '#ffffff',
-                fontWeight: 'bold'
-            }).setOrigin(0.5, 0.5);
-            
-            // Character description (moved down)
-            this.scene.add.text(cardX + cardWidth/2, cardY + 200, character.description, {
-                fontSize: '10px',
-                color: '#cccccc',
-                wordWrap: { width: cardWidth - 20 }
-            }).setOrigin(0.5, 0);
-            
-            // Ability info (moved down)
-            this.scene.add.text(cardX + cardWidth/2, cardY + 250, character.abilityName, {
-                fontSize: '12px',
-                color: character.color,
-                fontWeight: 'bold'
-            }).setOrigin(0.5, 0.5);
-            
-            this.scene.add.text(cardX + cardWidth/2, cardY + 270, character.abilityDescription, {
-                fontSize: '9px',
-                color: '#aaaaaa',
-                wordWrap: { width: cardWidth - 20 }
-            }).setOrigin(0.5, 0);
-            
-            // Stats (moved down)
-            this.scene.add.text(cardX + cardWidth/2, cardY + 310, `Health: ${character.baseStats.health} | Speed: ${character.baseStats.moveSpeed} | Armor: ${character.baseStats.armor}`, {
-                fontSize: '10px',
-                color: '#888888'
-            }).setOrigin(0.5, 0.5);
-            
-            // Click handler
-            card.on('pointerdown', () => {
-                // Set a flag to prevent the global click handler from triggering
-                this.scene.inputManager.setCharacterCardClicked();
-                this.selectCharacter(character);
-            });
-            
-            // Hover effect
-            card.on('pointerover', () => {
-                card.setStrokeStyle(4, 0xffffff);
-            });
-            
-            card.on('pointerout', () => {
-                card.setStrokeStyle(3, character.color);
-            });
-            
-            characterCards.push(card);
-        });
-        
-        // Instructions
-        this.scene.add.text(700, 750, 'Click on a character to begin your adventure!\nGamepad: Use D-Pad or Left Stick to navigate, A to select', {
-            fontSize: '16px',
-            color: '#ffffff',
-            align: 'center'
-        }).setOrigin(0.5, 0.5);
-        
-        // Set up input manager with character cards
-        this.scene.inputManager.setCharacterCards(characterCards);
-        this.scene.inputManager.updateCharacterHighlight();
+        // Use the new HTML character selection instead of Phaser
+        this.htmlUI.showCharacterSelection();
     }
 
     selectCharacter(character) {
@@ -134,9 +25,8 @@ class UISystem {
     }
 
     startGame() {
-        
-        // Clear character selection UI
-        this.scene.children.removeAll();
+        // Clear character selection UI (handled by HTMLUIManager)
+        // No need to clear Phaser children anymore
         
         // Game state
         this.scene.gameStarted = true;
@@ -449,7 +339,8 @@ class UISystem {
             this.scene.audioManager.onGamePause();
         }
         
-        this.showPauseUI();
+        // Use HTML pause menu instead of Phaser
+        this.htmlUI.showPauseMenu();
     }
 
     resumeGame() {
@@ -461,274 +352,83 @@ class UISystem {
             this.scene.audioManager.onGameResume();
         }
         
-        this.hidePauseUI();
+        // Hide HTML pause menu
+        this.htmlUI.hidePauseMenu();
     }
 
     showPauseUI() {
-        // Semi-transparent overlay that covers the entire screen
-        const overlay = this.scene.add.rectangle(0, 0, this.scene.cameras.main.width * 2, this.scene.cameras.main.height * 2, 0x000000, 0.7);
-        overlay.setOrigin(0, 0);
-        overlay.setScrollFactor(0).setDepth(1500);
-        overlay.setPosition(-this.scene.cameras.main.width/2, -this.scene.cameras.main.height/2);
-        this.pauseUIElements.push(overlay);
-        
-        // Pause title
-        const title = this.scene.add.text(700, 300, 'GAME PAUSED', {
-            fontSize: '48px',
-            color: '#ffffff',
-            fontWeight: 'bold'
-        }).setOrigin(0.5, 0.5).setScrollFactor(0).setDepth(1501);
-        this.pauseUIElements.push(title);
-        
-        // Instructions
-        const instructions = this.scene.add.text(700, 400, 'Press ESC or click to resume\nGamepad: Press Start to resume', {
-            fontSize: '18px',
-            color: '#cccccc',
-            align: 'center'
-        }).setOrigin(0.5, 0.5).setScrollFactor(0).setDepth(1501);
-        this.pauseUIElements.push(instructions);
-        
-        // Stats summary
-        if (this.scene.statsSystem) {
-            const stats = this.scene.statsSystem.getPlayerStats();
-            const progression = this.scene.statsSystem.getPlayerProgression();
-            
-            const summary = this.scene.add.text(700, 500, 
-                `Character: ${progression.character.name}\n` +
-                `Level: ${progression.level}\n` +
-                `Health: ${Math.round(stats.health)}/${stats.maxHealth}\n` +
-                `Damage: ${stats.abilityDamage.toFixed(1)} | Cooldown: ${Math.round(stats.abilityCooldown)}ms`, {
-                fontSize: '14px',
-                color: '#aaaaaa',
-                align: 'center'
-            }).setOrigin(0.5, 0.5).setScrollFactor(0).setDepth(1501);
-            this.pauseUIElements.push(summary);
-        }
+        // This method is deprecated - using HTML UI now
+        // Keep for backward compatibility but does nothing
     }
 
     hidePauseUI() {
-        this.pauseUIElements.forEach(element => element.destroy());
-        this.pauseUIElements = [];
+        // This method is deprecated - using HTML UI now
+        // Keep for backward compatibility but does nothing
     }
 
     gameOver() {
-        
-        // Stop game systems
-        this.scene.gameStarted = false;
-        this.scene.matter.world.enabled = false;
-        
-        // Clean up systems
-        if (this.scene.enemySpawnTimer) {
-            this.scene.enemySpawnTimer.remove();
-        }
-        if (this.scene.shieldBashTimer) {
-            this.scene.shieldBashTimer.remove();
-        }
-        
-        // Clean up poison and bleed timers
-        if (this.scene.enemySystem) {
-            if (this.scene.enemySystem.poisonTimer) {
-                this.scene.enemySystem.poisonTimer.remove();
-                this.scene.enemySystem.poisonTimer = null;
-            }
-            if (this.scene.enemySystem.bleedTimer) {
-                this.scene.enemySystem.bleedTimer.remove();
-                this.scene.enemySystem.bleedTimer = null;
-            }
-            // Clear poison/bleed state
-            this.scene.enemySystem.clearPoisonEffect();
-            this.scene.enemySystem.clearBleedEffect();
-        }
-        
-        // Hide debug UIs
-        this.scene.debugUtils.hideStatsDebugUI();
-        
-        // Clean up magnet orbs
-        if (this.scene.enemySystem) {
-            this.scene.enemySystem.cleanupAllMagnetOrbs();
-        }
-        
-        // Clean up status effects
-        if (this.scene.statusEffectSystem) {
-            this.scene.statusEffectSystem.cleanup();
-        }
-        
-        // Handle game over music (keep playing by default)
-        if (this.scene.audioManager) {
-            this.scene.audioManager.onGameOver();
-        }
-        
-        // Clean up animated overlays
-        this.scene.assetManager.cleanupAllOverlays();
-        
-        // Clear game UI
-        this.gameUIElements.forEach(element => element.destroy());
-        this.gameUIElements = [];
-        
-        // Show game over screen
         this.showGameOverScreen();
     }
 
     showGameOverScreen() {
-        // Calculate final run time
-        let finalRunTime = '0:00';
-        if (this.gameStartTime) {
-            const elapsedMs = Date.now() - this.gameStartTime;
-            const elapsedMinutes = Math.floor(elapsedMs / 60000);
-            const elapsedSeconds = Math.floor((elapsedMs % 60000) / 1000);
-            finalRunTime = `${elapsedMinutes}:${elapsedSeconds.toString().padStart(2, '0')}`;
+        // Prepare stats for the game over screen
+        const stats = this.scene.statsSystem.getPlayerStats();
+        const progression = this.scene.statsSystem.getPlayerProgression();
+        
+        const gameOverStats = {
+            level: progression ? progression.level : 1,
+            time: this.getElapsedTimeString(),
+            kills: this.enemyKillCount
+        };
+        
+        // Use HTML game over screen instead of Phaser
+        this.htmlUI.showGameOverScreen(gameOverStats);
+        
+        // Stop background music
+        if (this.scene.audioManager) {
+            this.scene.audioManager.onGamePause();
         }
+    }
+    
+    getElapsedTimeString() {
+        if (!this.gameStartTime) return '0:00';
         
-        // Semi-transparent overlay that covers the entire screen
-        const overlay = this.scene.add.rectangle(0, 0, this.scene.cameras.main.width * 2, this.scene.cameras.main.height * 2, 0x000000, 0.9);
-        overlay.setOrigin(0, 0);
-        overlay.setScrollFactor(0).setDepth(2000);
-        overlay.setPosition(-this.scene.cameras.main.width/2, -this.scene.cameras.main.height/2);
-        
-        // Game Over title
-        const title = this.scene.add.text(700, 200, 'GAME OVER', {
-            fontSize: '64px',
-            color: '#ff0000',
-            fontWeight: 'bold'
-        }).setOrigin(0.5, 0.5).setScrollFactor(0).setDepth(2001);
-        
-        // Final stats
-        if (this.scene.statsSystem) {
-            const progression = this.scene.statsSystem.getPlayerProgression();
-            
-            const finalStats = this.scene.add.text(700, 350, 
-                `Character: ${progression.character.name}\n` +
-                `Final Level: ${progression.level}\n` +
-                `Total XP: ${progression.xp}\n` +
-                `Run Time: ${finalRunTime}\n` +
-                `Enemies Killed: ${this.enemyKillCount}`, {
-                fontSize: '24px',
-                color: '#ffffff',
-                align: 'center'
-            }).setOrigin(0.5, 0.5).setScrollFactor(0).setDepth(2001);
-        }
-        
-        // Restart button
-        const restartButton = this.scene.add.rectangle(700, 550, 300, 60, 0x444444);
-        restartButton.setStrokeStyle(3, 0x888888);
-        restartButton.setScrollFactor(0).setDepth(2001);
-        restartButton.setInteractive();
-        
-        const restartText = this.scene.add.text(700, 550, 'RESTART GAME', {
-            fontSize: '24px',
-            color: '#ffffff',
-            fontWeight: 'bold'
-        }).setOrigin(0.5, 0.5).setScrollFactor(0).setDepth(2002);
-        
-        // Button functionality
-        restartButton.on('pointerdown', () => {
-            this.restartGame();
-        });
-        
-        restartButton.on('pointerover', () => {
-            restartButton.setFillStyle(0x666666);
-        });
-        
-        restartButton.on('pointerout', () => {
-            restartButton.setFillStyle(0x444444);
-        });
-        
-        // Additional instruction
-        const instruction = this.scene.add.text(700, 630, 'Click restart to choose a new character', {
-            fontSize: '14px',
-            color: '#aaaaaa'
-        }).setOrigin(0.5, 0.5).setScrollFactor(0).setDepth(2001);
+        const elapsedMs = Date.now() - this.gameStartTime;
+        const elapsedMinutes = Math.floor(elapsedMs / 60000);
+        const elapsedSeconds = Math.floor((elapsedMs % 60000) / 1000);
+        return `${elapsedMinutes}:${elapsedSeconds.toString().padStart(2, '0')}`;
     }
 
     restartGame() {
-        
-        // Clean up all systems and timers
-        if (this.scene.enemySpawnTimer) {
-            this.scene.enemySpawnTimer.remove();
-            this.scene.enemySpawnTimer = null;
-        }
-        if (this.scene.shieldBashTimer) {
-            this.scene.shieldBashTimer.remove();
-            this.scene.shieldBashTimer = null;
-        }
-        if (this.scene.enemySystem && this.scene.enemySystem.poisonTimer) {
-            this.scene.enemySystem.poisonTimer.remove();
-            this.scene.enemySystem.poisonTimer = null;
-        }
-        
-        // Clear enemy system poison state and magnet orbs
-        if (this.scene.enemySystem) {
-            this.scene.enemySystem.hidePoisonEffect();
-            this.scene.enemySystem.poisonTimer = null;
-            this.scene.enemySystem.cleanupAllMagnetOrbs();
-        }
-        
-        // Clean up status effects
-        if (this.scene.statusEffectSystem) {
-            this.scene.statusEffectSystem.cleanup();
-        }
-        
-        // Clean up animated overlays
-        this.scene.assetManager.cleanupAllOverlays();
-        
-        // Clear all groups
-        if (this.scene.enemies) this.scene.enemies.clear(true, true);
-        if (this.scene.xpOrbs) this.scene.xpOrbs.clear(true, true);
-        if (this.scene.auraEffects) this.scene.auraEffects.clear(true, true);
-        if (this.scene.starfallProjectiles) this.scene.starfallProjectiles.clear(true, true);
-        if (this.scene.boomerangs) this.scene.boomerangs.clear(true, true);
-        if (this.scene.enemyProjectiles) this.scene.enemyProjectiles.clear(true, true);
-        
-        // Clean up character system using new cleanup method
-        this.scene.characterSystem.cleanup();
-        
-        // Clear character-specific timer states
-        this.scene.lastStarfallTime = 0;
-        this.scene.starfallCooldown = 0;
-        this.scene.lastBoomerangTime = 0;
-        this.scene.stunnedEnemies = null;
-        
-        // Reset stats system
-        this.scene.statsSystem.playerStats = null;
-        this.scene.statsSystem.playerProgression = null;
-        this.scene.statsSystem.statModifiers = null;
-        
-        // Reset upgrade system
-        this.scene.upgradeSystem.isPaused = false;
-        this.scene.upgradeSystem.upgradeActive = false;
-        this.scene.upgradeSystem.currentUpgrades = [];
-        this.scene.upgradeSystem.upgradeUIElements = [];
-        this.scene.upgradeSystem.rerollCount = 1;
+        // Hide all HTML overlays
+        this.htmlUI.hideGameOverScreen();
+        this.htmlUI.hidePauseMenu();
         
         // Reset game state
         this.scene.gameStarted = false;
-        this.scene.isPaused = false;
-        this.scene.matter.world.enabled = false;
-        
-        // Reset camera
-        this.scene.cameras.main.stopFollow();
-        this.scene.cameras.main.setScroll(0, 0);
-        this.scene.cameras.main.setBounds(0, 0, 1400, 800);
-        
-        // Clear all children (remove everything from scene)
-        this.scene.children.removeAll();
-        
-        // Reset UI states
         this.isPaused = false;
+        
+        // Clear existing UI elements
+        this.gameUIElements.forEach(element => element.destroy());
         this.gameUIElements = [];
-        this.pauseUIElements = [];
         
-        // Reset input manager state
-        this.scene.inputManager.characterCardClicked = false;
-        this.scene.inputManager.upgradeCardClicked = false;
-        this.scene.inputManager.selectedCharacterIndex = 0;
-        this.scene.inputManager.characterCards = [];
-        
-        // Reset character direction state
-        this.scene.inputManager.lastFacingDirection = null;
-        
-        // Go back to character selection
+        // Show character selection
         this.showCharacterSelection();
+    }
+    
+    // Handle gamepad input for HTML UI
+    handleGamepadInput() {
+        if (this.scene.inputManager && this.scene.inputManager.getGamepadState) {
+            const gamepadState = this.scene.inputManager.getGamepadState();
+            this.htmlUI.handleGamepadInput(gamepadState);
+        }
+    }
+    
+    // Cleanup method
+    destroy() {
+        if (this.htmlUI) {
+            this.htmlUI.destroy();
+        }
     }
 }
 

@@ -138,6 +138,9 @@ class GameScene extends Phaser.Scene {
         this.inputManager.update();
         this.assetManager.updateAllOverlays();
         
+        // Always update HTML UI for input handling (menus, character selection, etc.)
+        this.uiSystem.handleGamepadInput();
+        
         // Only update game systems when the game has started AND is not paused
         if (this.gameStarted && !this.isPaused && !this.upgradeSystem.upgradeActive) {
             this.statsSystem.update();
