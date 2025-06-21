@@ -1,8 +1,8 @@
 import BaseEnemy from './BaseEnemy.js';
 
 class GhostBufo extends BaseEnemy {
-    constructor(scene, x, y, enemyData) {
-        super(scene, x, y, enemyData);
+    constructor(scene, enemyData, gameObject) {
+        super(scene, enemyData, gameObject);
         
         // Ghost-specific properties
         this.reflectionPower = 0.6; // Reflects 60% of damage back
@@ -10,13 +10,13 @@ class GhostBufo extends BaseEnemy {
         this.totalReflectedDamage = 0; // Track total reflected damage
         this.ghostlyAlpha = 0.7; // Translucent appearance
         this.phaseTimer = 0; // For ghostly phasing effect
-        
-        // Set ghostly appearance
-        this.setAlpha(this.ghostlyAlpha);
-        this.setTint(0xBBBBFF); // Slight blue tint for ghostly effect
     }
     
-    setupAbilities() {
+    setupAbility() {
+        // Set initial ghostly appearance
+        this.gameObject.setAlpha(this.ghostlyAlpha);
+        this.gameObject.setTint(0xBBBBFF); // Slight blue tint for ghostly effect
+        
         // Ghost Bufo doesn't have active abilities, just passive reflection
         // But we can add ghostly visual effects
         this.setupGhostlyEffects();
@@ -24,7 +24,7 @@ class GhostBufo extends BaseEnemy {
     
     setupGhostlyEffects() {
         // Create ethereal aura effect
-        this.createVisualEffect(this.x, this.y, {
+        this.createVisualEffect(this.gameObject.x, this.gameObject.y, {
             radius: 25,
             color: 0x9999FF,
             alpha: 0.2,
@@ -50,29 +50,29 @@ class GhostBufo extends BaseEnemy {
         
         // Gentle alpha oscillation for ghostly effect
         const phaseAlpha = this.ghostlyAlpha + Math.sin(this.phaseTimer) * 0.15;
-        this.setAlpha(Math.max(0.4, Math.min(0.9, phaseAlpha)));
+        this.gameObject.setAlpha(Math.max(0.4, Math.min(0.9, phaseAlpha)));
     }
     
     updateAI() {
         // Ghost Bufo moves slower and more erratically
-        if (!this.scene.player || !this.body) return;
+        if (!this.scene.player || !this.gameObject.body) return;
         
         const playerX = this.scene.player.x;
         const playerY = this.scene.player.y;
-        const dx = playerX - this.x;
-        const dy = playerY - this.y;
+        const dx = playerX - this.gameObject.x;
+        const dy = playerY - this.gameObject.y;
         const distance = Math.sqrt(dx * dx + dy * dy);
         
         if (distance > 50) {
             // Move toward player but slower and with some drift
-            const moveSpeed = this.getEnemyData().speed * 0.6; // 40% slower than normal
+            const moveSpeed = this.gameObject.speed * 0.6; // 40% slower than normal
             const driftX = Math.sin(this.phaseTimer * 2) * 0.5; // Ghostly drift
             const driftY = Math.cos(this.phaseTimer * 1.7) * 0.5;
             
             try {
-                this.scene.matter.body.setVelocity(this.body, {
-                    x: (dx / distance) * moveSpeed + driftX,
-                    y: (dy / distance) * moveSpeed + driftY
+                this.scene.matter.body.setVelocity(this.gameObject.body, {
+                    x: (dx / distance) * moveSpeed / 50 + driftX,
+                    y: (dy / distance) * moveSpeed / 50 + driftY
                 });
             } catch (error) {
                 // Handle velocity setting errors silently
@@ -106,8 +106,11 @@ class GhostBufo extends BaseEnemy {
             }
         }
         
-        // Take reduced damage
-        super.takeDamage(damage);
+        // Take reduced damage - we need to implement damage handling for game object
+        this.gameObject.health -= damage;
+        if (this.gameObject.health <= 0) {
+            this.die();
+        }
         
         // Check if reflection power is exhausted
         if (this.totalReflectedDamage >= this.maxReflectedDamage) {
@@ -127,20 +130,20 @@ class GhostBufo extends BaseEnemy {
     
     createReflectionEffect() {
         // Flash effect when reflecting damage
-        this.setTint(0xFFFFFF);
+        this.gameObject.setTint(0xFFFFFF);
         this.scene.time.delayedCall(100, () => {
-            if (this.active && this.scene) {
-                this.setTint(0xBBBBFF);
+            if (this.gameObject.active && this.scene) {
+                this.gameObject.setTint(0xBBBBFF);
             }
         });
         
         // Particle-like effect
         for (let i = 0; i < 3; i++) {
             this.scene.time.delayedCall(i * 50, () => {
-                if (this.active && this.scene) {
+                if (this.gameObject.active && this.scene) {
                     this.createVisualEffect(
-                        this.x + (Math.random() - 0.5) * 30,
-                        this.y + (Math.random() - 0.5) * 30,
+                        this.gameObject.x + (Math.random() - 0.5) * 30,
+                        this.gameObject.y + (Math.random() - 0.5) * 30,
                         {
                             radius: 8,
                             color: 0x9999FF,
@@ -160,7 +163,7 @@ class GhostBufo extends BaseEnemy {
         // Create temporary beam visual
         const beam = this.scene.add.line(
             0, 0,
-            this.x, this.y,
+            this.gameObject.x, this.gameObject.y,
             this.scene.player.x, this.scene.player.y,
             0x9999FF, 0.6
         );
@@ -181,11 +184,11 @@ class GhostBufo extends BaseEnemy {
     
     onReflectionExhausted() {
         // Ghost becomes more vulnerable when reflection power is used up
-        this.setTint(0xFFBBBB); // Reddish tint to show vulnerability
+        this.gameObject.setTint(0xFFBBBB); // Reddish tint to show vulnerability
         this.ghostlyAlpha = 0.9; // Less transparent
         
         // Visual feedback
-        this.createVisualEffect(this.x, this.y, {
+        this.createVisualEffect(this.gameObject.x, this.gameObject.y, {
             radius: 40,
             color: 0xFF6666,
             alpha: 0.4,
@@ -202,7 +205,7 @@ class GhostBufo extends BaseEnemy {
             const offsetX = Math.cos(angle) * 30;
             const offsetY = Math.sin(angle) * 30;
             
-            this.createVisualEffect(this.x + offsetX, this.y + offsetY, {
+            this.createVisualEffect(this.gameObject.x + offsetX, this.gameObject.y + offsetY, {
                 radius: 12,
                 color: 0x9999FF,
                 alpha: 0.7,
@@ -211,10 +214,36 @@ class GhostBufo extends BaseEnemy {
             });
         }
         
-        // Call parent death
-        super.die();
+        // Cleanup and destroy
+        this.cleanup();
+        if (this.gameObject && this.gameObject.destroy) {
+            this.gameObject.destroy();
+        }
     }
     
+    // Helper method to create visual effects
+    createVisualEffect(x, y, config) {
+        const effect = this.scene.add.circle(x, y, config.radius || 20, config.color || 0xffffff, config.alpha || 0.5);
+        if (config.stroke) {
+            effect.setStrokeStyle(config.stroke.width || 2, config.stroke.color || 0xffffff);
+        }
+        
+        if (this.scene.auraEffects) {
+            this.scene.auraEffects.add(effect);
+        }
+
+        // Animate the effect
+        this.scene.tweens.add({
+            targets: effect,
+            alpha: 0,
+            scale: config.endScale || 2,
+            duration: config.duration || 500,
+            onComplete: () => effect.destroy()
+        });
+
+        return effect;
+    }
+
     // Ghost Bufo doesn't use projectiles, so return empty collision handlers
     getCollisionHandlers() {
         return [];
