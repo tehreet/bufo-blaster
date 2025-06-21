@@ -7,6 +7,7 @@ class UISystem {
     constructor(scene) {
         this.scene = scene;
         this.isPaused = false;
+        this.gameOverInProgress = false;
         this.pauseUIElements = [];
         this.gameUIElements = [];
         
@@ -367,6 +368,41 @@ class UISystem {
     }
 
     gameOver() {
+        // Prevent multiple game over calls
+        if (this.gameOverInProgress) return;
+        this.gameOverInProgress = true;
+        
+        // Stop game systems immediately
+        this.scene.gameStarted = false;
+        this.scene.matter.world.enabled = false;
+        
+        // Clean up systems
+        if (this.scene.enemySpawnTimer) {
+            this.scene.enemySpawnTimer.remove();
+            this.scene.enemySpawnTimer = null;
+        }
+        
+        // Clean up character system timers
+        if (this.scene.characterSystem) {
+            this.scene.characterSystem.cleanup();
+        }
+        
+        // Clean up enemy system
+        if (this.scene.enemySystem) {
+            this.scene.enemySystem.cleanup();
+        }
+        
+        // Clean up status effects
+        if (this.scene.statusEffectSystem) {
+            this.scene.statusEffectSystem.cleanup();
+        }
+        
+        // Hide debug UIs
+        if (this.scene.debugUtils) {
+            this.scene.debugUtils.hideStatsDebugUI();
+        }
+        
+        // Show game over screen
         this.showGameOverScreen();
     }
 
@@ -407,10 +443,24 @@ class UISystem {
         // Reset game state
         this.scene.gameStarted = false;
         this.isPaused = false;
+        this.gameOverInProgress = false; // Reset game over flag
         
         // Clear existing UI elements
         this.gameUIElements.forEach(element => element.destroy());
         this.gameUIElements = [];
+        
+        // Reset camera
+        this.scene.cameras.main.stopFollow();
+        this.scene.cameras.main.setScroll(0, 0);
+        
+        // Clear all children (remove everything from scene)
+        this.scene.children.removeAll();
+        
+        // Clear all groups if they exist
+        if (this.scene.enemies) this.scene.enemies.clear(true, true);
+        if (this.scene.xpOrbs) this.scene.xpOrbs.clear(true, true);
+        if (this.scene.auraEffects) this.scene.auraEffects.clear(true, true);
+        if (this.scene.enemyProjectiles) this.scene.enemyProjectiles.clear(true, true);
         
         // Show character selection
         this.showCharacterSelection();

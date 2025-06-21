@@ -7,6 +7,10 @@ class HTMLUIManager {
         this.selectedCharacterIndex = 0;
         this.charactersArray = [];
         
+        // Gamepad input debouncing
+        this.gamepadInputCooldown = 0;
+        this.gamepadInputDelay = 200; // 200ms between inputs
+        
         // Get references to HTML overlay elements
         this.characterSelectionOverlay = document.getElementById('character-selection-overlay');
         this.gameHudOverlay = document.getElementById('game-hud-overlay');
@@ -62,26 +66,26 @@ class HTMLUIManager {
                     <p class="is-size-7 has-text-dark">${character.abilityDescription}</p>
                 </div>
                 
-                <div class="columns is-gapless is-mobile has-text-centered">
-                    <div class="column">
-                        <p class="has-text-light is-size-7">
-                            <i class="fas fa-heart has-text-danger"></i><br>
-                            <strong>${character.baseStats.health}</strong>
-                        </p>
-                    </div>
-                    <div class="column">
-                        <p class="has-text-light is-size-7">
-                            <i class="fas fa-tachometer-alt has-text-warning"></i><br>
-                            <strong>${character.baseStats.moveSpeed}</strong>
-                        </p>
-                    </div>
-                    <div class="column">
-                        <p class="has-text-light is-size-7">
-                            <i class="fas fa-shield-alt has-text-info"></i><br>
-                            <strong>${character.baseStats.armor}</strong>
-                        </p>
-                    </div>
-                </div>
+                                 <div class="columns is-gapless is-mobile has-text-centered">
+                     <div class="column">
+                         <p class="has-text-white is-size-7">
+                             <i class="fas fa-heart has-text-danger"></i><br>
+                             <strong class="has-text-white">${character.baseStats.health}</strong>
+                         </p>
+                     </div>
+                     <div class="column">
+                         <p class="has-text-white is-size-7">
+                             <i class="fas fa-tachometer-alt has-text-warning"></i><br>
+                             <strong class="has-text-white">${character.baseStats.moveSpeed}</strong>
+                         </p>
+                     </div>
+                     <div class="column">
+                         <p class="has-text-white is-size-7">
+                             <i class="fas fa-shield-alt has-text-info"></i><br>
+                             <strong class="has-text-white">${character.baseStats.armor}</strong>
+                         </p>
+                     </div>
+                 </div>
                 
                 <button class="button is-primary is-fullwidth mt-3 character-select-btn">
                     <i class="fas fa-play mr-2"></i>Select
@@ -332,21 +336,58 @@ class HTMLUIManager {
     // =================== GAMEPAD SUPPORT ===================
     
     handleGamepadInput(gamepadState) {
-        // Only handle gamepad input on character selection screen
-        if (this.characterSelectionOverlay.style.display === 'none') return;
+        // Check cooldown to prevent rapid-fire inputs
+        const currentTime = Date.now();
+        if (currentTime < this.gamepadInputCooldown) return;
         
-        // Handle D-pad navigation
-        if (gamepadState.left || gamepadState.up) {
-            this.selectedCharacterIndex = Math.max(0, this.selectedCharacterIndex - 1);
-            this.updateCharacterSelection();
-        } else if (gamepadState.right || gamepadState.down) {
-            this.selectedCharacterIndex = Math.min(this.charactersArray.length - 1, this.selectedCharacterIndex + 1);
-            this.updateCharacterSelection();
+        let inputDetected = false;
+        
+        // Handle character selection screen
+        if (this.characterSelectionOverlay.style.display !== 'none') {
+            // Handle D-pad navigation
+            if (gamepadState.left || gamepadState.up) {
+                this.selectedCharacterIndex = Math.max(0, this.selectedCharacterIndex - 1);
+                this.updateCharacterSelection();
+                inputDetected = true;
+            } else if (gamepadState.right || gamepadState.down) {
+                this.selectedCharacterIndex = Math.min(this.charactersArray.length - 1, this.selectedCharacterIndex + 1);
+                this.updateCharacterSelection();
+                inputDetected = true;
+            }
+            
+            // Handle A button (select)
+            if (gamepadState.a) {
+                this.selectCharacter();
+                inputDetected = true;
+            }
         }
         
-        // Handle A button (select)
-        if (gamepadState.a) {
-            this.selectCharacter();
+        // Handle pause screen
+        else if (this.pauseOverlay.style.display !== 'none') {
+            if (gamepadState.a || gamepadState.start) {
+                this.scene.uiSystem.resumeGame();
+                inputDetected = true;
+            } else if (gamepadState.b) {
+                this.scene.uiSystem.restartGame();
+                inputDetected = true;
+            }
+        }
+        
+        // Handle game over screen
+        else if (this.gameOverOverlay.style.display !== 'none') {
+            if (gamepadState.a) {
+                this.scene.uiSystem.restartGame();
+                inputDetected = true;
+            } else if (gamepadState.b) {
+                this.hideOverlay(this.gameOverOverlay);
+                this.showCharacterSelection();
+                inputDetected = true;
+            }
+        }
+        
+        // Set cooldown if input was detected
+        if (inputDetected) {
+            this.gamepadInputCooldown = currentTime + this.gamepadInputDelay;
         }
     }
     

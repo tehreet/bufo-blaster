@@ -1212,6 +1212,31 @@ class EnemySystem {
         // Check for level-based magnet orb spawning
         this.checkLevelMagnetOrbSpawn();
     }
+    
+    // Cleanup method for game over/restart
+    cleanup() {
+        // Clear poison timer
+        if (this.poisonTimer) {
+            this.poisonTimer.remove();
+            this.poisonTimer = null;
+        }
+        
+        // Clear bleed timer
+        if (this.bleedTimer) {
+            this.bleedTimer.remove();
+            this.bleedTimer = null;
+        }
+        
+        // Clear poison/bleed effects
+        this.clearPoisonEffect();
+        this.clearBleedEffect();
+        
+        // Cleanup all magnet orbs
+        this.cleanupAllMagnetOrbs();
+        
+        // Reset magnet orb tracking
+        this.lastMagnetOrbLevel = 0;
+    }
 }
 
 export default EnemySystem; 
