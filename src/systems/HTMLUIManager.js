@@ -426,48 +426,218 @@ class HTMLUIManager {
     showPauseMenu() {
         Logger.ui('Showing pause menu');
         this.currentScreen = 'pause';
-        // Create pause menu HTML if it doesn't exist
-        if (!this.pauseOverlay.innerHTML.trim()) {
-            this.pauseOverlay.innerHTML = `
-                <div class="character-selection">
-                    <div class="container has-text-centered">
-                        <h1 class="title is-1 has-text-white mb-6">
-                            <i class="fas fa-pause mr-3"></i>GAME PAUSED
-                        </h1>
-                        
-                        <div class="buttons is-centered">
-                            <button class="button is-primary is-large" id="resume-btn">
-                                <i class="fas fa-play mr-2"></i>Resume
-                            </button>
-                            <button class="button is-light is-large" id="restart-btn">
-                                <i class="fas fa-redo mr-2"></i>Restart
-                            </button>
+        
+        // Get current run statistics
+        const currentStats = this.getCurrentRunStats();
+        
+        // Always recreate pause menu with fresh stats
+        this.pauseOverlay.innerHTML = `
+            <div class="character-selection">
+                <div class="container has-text-centered">
+                    <h1 class="title is-1 has-text-white mb-6">
+                        <i class="fas fa-pause mr-3"></i>GAME PAUSED
+                    </h1>
+                    
+                    <div class="box has-background-dark has-text-light mb-6">
+                        <h2 class="title is-4 has-text-light mb-4">Current Run</h2>
+                        <div class="columns is-mobile">
+                            <div class="column">
+                                <p class="is-size-6">
+                                    <i class="fas fa-user has-text-primary"></i><br>
+                                    <strong>${currentStats.character}</strong>
+                                </p>
+                            </div>
+                            <div class="column">
+                                <p class="is-size-6">
+                                    <i class="fas fa-trophy has-text-warning"></i><br>
+                                    <strong>Level ${currentStats.level}</strong>
+                                </p>
+                            </div>
+                            <div class="column">
+                                <p class="is-size-6">
+                                    <i class="fas fa-clock has-text-info"></i><br>
+                                    <strong>${currentStats.time}</strong>
+                                </p>
+                            </div>
+                            <div class="column">
+                                <p class="is-size-6">
+                                    <i class="fas fa-crosshairs has-text-danger"></i><br>
+                                    <strong>${currentStats.kills} Kills</strong>
+                                </p>
+                            </div>
                         </div>
                         
-                        <p class="has-text-light mt-6">
-                            <i class="fas fa-keyboard mr-2"></i>Press ESC to resume
-                        </p>
+                        <div class="columns is-mobile mt-4">
+                            <div class="column">
+                                <p class="is-size-7">
+                                    <i class="fas fa-heart has-text-danger"></i>
+                                    <strong>${currentStats.health}/${currentStats.maxHealth} HP</strong>
+                                </p>
+                            </div>
+                            <div class="column">
+                                <p class="is-size-7">
+                                    <i class="fas fa-star has-text-warning"></i>
+                                    <strong>${currentStats.xp}/${currentStats.xpToNext} XP</strong>
+                                </p>
+                            </div>
+                        </div>
                     </div>
+                    
+                    <div class="buttons is-centered">
+                        <button class="button is-primary is-large" id="resume-btn">
+                            <i class="fas fa-play mr-2"></i>Resume Game
+                        </button>
+                        <button class="button is-warning is-large" id="restart-same-btn">
+                            <i class="fas fa-redo mr-2"></i>Restart Run
+                        </button>
+                        <button class="button is-light is-large" id="change-character-btn">
+                            <i class="fas fa-user-edit mr-2"></i>Change Character
+                        </button>
+                    </div>
+                    
+                    <p class="has-text-light mt-6">
+                        <i class="fas fa-mouse-pointer mr-2"></i>Click anywhere or press ESC to resume
+                        <br>
+                        <i class="fas fa-gamepad mr-2"></i>Gamepad: A to resume, Start to resume
+                    </p>
                 </div>
-            `;
-            
-            // Setup pause menu handlers
-            document.getElementById('resume-btn').addEventListener('click', () => {
+            </div>
+        `;
+        
+        // Setup pause menu handlers
+        document.getElementById('resume-btn').addEventListener('click', () => {
+            this.scene.uiSystem.resumeGame();
+        });
+        
+        document.getElementById('restart-same-btn').addEventListener('click', () => {
+            // Restart with the same character - reload the current game
+            this.scene.uiSystem.restartGame();
+        });
+        
+        document.getElementById('change-character-btn').addEventListener('click', () => {
+            // Go back to character selection
+            this.returnToCharacterSelection();
+        });
+        
+        // Add click-to-resume functionality to the entire overlay
+        this.pauseClickHandler = (event) => {
+            // Only resume if clicking on the background (not on buttons)
+            if (event.target === this.pauseOverlay || event.target.classList.contains('character-selection')) {
                 this.scene.uiSystem.resumeGame();
-            });
-            
-            document.getElementById('restart-btn').addEventListener('click', () => {
-                this.scene.uiSystem.restartGame();
-            });
-        }
+            }
+        };
+        this.pauseOverlay.addEventListener('click', this.pauseClickHandler);
+        
+        // Initialize pause menu selection for gamepad
+        this.selectedPauseOption = 0; // 0 = Resume, 1 = Restart, 2 = Change Character
+        this.updatePauseMenuSelection();
         
         this.showOverlay(this.pauseOverlay);
+    }
+    
+    getCurrentRunStats() {
+        // Get current game statistics for the pause menu
+        const stats = this.scene.statsSystem ? this.scene.statsSystem.getPlayerStats() : {};
+        const progression = this.scene.statsSystem ? this.scene.statsSystem.getPlayerProgression() : {};
+        const selectedCharacter = this.scene.characterSystem ? this.scene.characterSystem.getSelectedCharacter() : {};
+        const elapsedTime = this.scene.uiSystem ? this.scene.uiSystem.getElapsedTimeString() : '0:00';
+        const kills = this.scene.uiSystem ? this.scene.uiSystem.enemyKillCount : 0;
+        
+        return {
+            character: selectedCharacter.name || 'Unknown',
+            level: progression.level || 1,
+            time: elapsedTime,
+            kills: kills,
+            health: Math.round(stats.health || 0),
+            maxHealth: stats.maxHealth || 100,
+            xp: progression.xp || 0,
+            xpToNext: progression.xpToNextLevel || 100
+        };
+    }
+    
+    returnToCharacterSelection() {
+        // Hide pause menu first
+        this.hideOverlay(this.pauseOverlay);
+        
+        // Reset game state completely
+        this.scene.gameStarted = false;
+        this.scene.isPaused = false;
+        
+        // Clear all game objects
+        this.scene.children.removeAll();
+        
+        // Clear all groups if they exist
+        if (this.scene.enemies) this.scene.enemies.clear(true, true);
+        if (this.scene.xpOrbs) this.scene.xpOrbs.clear(true, true);
+        if (this.scene.auraEffects) this.scene.auraEffects.clear(true, true);
+        if (this.scene.enemyProjectiles) this.scene.enemyProjectiles.clear(true, true);
+        
+        // Reset camera
+        this.scene.cameras.main.stopFollow();
+        this.scene.cameras.main.setScroll(0, 0);
+        
+        // Clean up systems
+        if (this.scene.characterSystem) {
+            this.scene.characterSystem.cleanup();
+        }
+        if (this.scene.enemySystem) {
+            this.scene.enemySystem.cleanup();
+        }
+        if (this.scene.statusEffectSystem) {
+            this.scene.statusEffectSystem.cleanup();
+        }
+        
+        // Stop background music
+        if (this.scene.audioManager) {
+            this.scene.audioManager.onGamePause();
+        }
+        
+        // Show character selection
+        this.showCharacterSelection();
+    }
+    
+    updatePauseMenuSelection() {
+        // Update visual selection for pause menu buttons
+        const buttons = ['resume-btn', 'restart-same-btn', 'change-character-btn'];
+        
+        buttons.forEach((buttonId, index) => {
+            const button = document.getElementById(buttonId);
+            if (button) {
+                if (index === this.selectedPauseOption) {
+                    button.classList.add('is-focused');
+                    button.style.transform = 'scale(1.05)';
+                    button.style.boxShadow = '0 0 0 3px rgba(50, 115, 220, 0.5)';
+                } else {
+                    button.classList.remove('is-focused');
+                    button.style.transform = '';
+                    button.style.boxShadow = '';
+                }
+            }
+        });
+    }
+    
+    selectPauseMenuOption() {
+        // Execute the selected pause menu option
+        switch(this.selectedPauseOption) {
+            case 0: // Resume
+                this.scene.uiSystem.resumeGame();
+                break;
+            case 1: // Restart
+                this.scene.uiSystem.restartGame();
+                break;
+            case 2: // Change Character
+                this.returnToCharacterSelection();
+                break;
+        }
     }
     
     hidePauseMenu() {
         Logger.ui('Hiding pause menu');
         this.currentScreen = 'game';
         this.hideOverlay(this.pauseOverlay);
+        
+        // Clean up any event listeners
+        this.pauseOverlay.removeEventListener('click', this.pauseClickHandler);
     }
     
     // =================== GAME OVER SCREEN ===================
@@ -591,7 +761,8 @@ class HTMLUIManager {
                 Logger.info(Logger.Categories.UI, `Selecting upgrade at index ${this.selectedUpgradeIndex}: ${this.currentUpgrades[this.selectedUpgradeIndex]?.name}`);
                 this.selectUpgrade();
             } else if (this.currentScreen === 'pause') {
-                this.resumeGame();
+                Logger.info(Logger.Categories.UI, `Selecting pause menu option ${this.selectedPauseOption}`);
+                this.selectPauseMenuOption();
             } else if (this.currentScreen === 'game-over') {
                 this.returnToMenu();
             }
@@ -661,6 +832,31 @@ class HTMLUIManager {
                 this.lastInputTime = Date.now();
                 Logger.info(Logger.Categories.INPUT, `Upgrade selection moved to index ${this.selectedUpgradeIndex} (${this.currentUpgrades[this.selectedUpgradeIndex]?.name})`);
                 this.updateUpgradeSelection();
+            }
+        }
+        
+        // D-pad navigation for pause menu
+        if (this.currentScreen === 'pause') {
+            Logger.debug(Logger.Categories.INPUT, `Checking D-pad navigation on pause screen`);
+            let moved = false;
+            
+            if (gamepadState.buttons[14] || gamepadState.buttons[12]) { // D-pad left or up
+                const oldIndex = this.selectedPauseOption;
+                this.selectedPauseOption = Math.max(0, this.selectedPauseOption - 1);
+                moved = (oldIndex !== this.selectedPauseOption);
+                Logger.info(Logger.Categories.INPUT, `D-pad LEFT/UP pressed, pause option: ${oldIndex} -> ${this.selectedPauseOption}`);
+            } else if (gamepadState.buttons[15] || gamepadState.buttons[13]) { // D-pad right or down
+                const oldIndex = this.selectedPauseOption;
+                this.selectedPauseOption = Math.min(2, this.selectedPauseOption + 1); // 0=Resume, 1=Restart, 2=Change Character
+                moved = (oldIndex !== this.selectedPauseOption);
+                Logger.info(Logger.Categories.INPUT, `D-pad RIGHT/DOWN pressed, pause option: ${oldIndex} -> ${this.selectedPauseOption}`);
+            }
+            
+            if (moved) {
+                this.lastInputTime = Date.now();
+                const optionNames = ['Resume Game', 'Restart Run', 'Change Character'];
+                Logger.info(Logger.Categories.INPUT, `Pause menu selection moved to: ${optionNames[this.selectedPauseOption]}`);
+                this.updatePauseMenuSelection();
             }
         }
     }
