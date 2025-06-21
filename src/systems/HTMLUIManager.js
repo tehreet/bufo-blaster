@@ -438,29 +438,29 @@ class HTMLUIManager {
                         <i class="fas fa-pause mr-3"></i>GAME PAUSED
                     </h1>
                     
-                    <div class="box has-background-dark has-text-white mb-6">
+                    <div class="box has-background-dark has-text-white mb-6" style="color: white !important;">
                         <h2 class="title is-4 has-text-white mb-4">Current Run</h2>
                         <div class="columns is-mobile">
                             <div class="column">
-                                <p class="is-size-6 has-text-white">
+                                <p class="is-size-6" style="color: white !important;">
                                     <i class="fas fa-user has-text-primary"></i><br>
                                     <strong>${currentStats.character}</strong>
                                 </p>
                             </div>
                             <div class="column">
-                                <p class="is-size-6 has-text-white">
+                                <p class="is-size-6" style="color: white !important;">
                                     <i class="fas fa-trophy has-text-warning"></i><br>
                                     <strong>Level ${currentStats.level}</strong>
                                 </p>
                             </div>
                             <div class="column">
-                                <p class="is-size-6 has-text-white">
+                                <p class="is-size-6" style="color: white !important;">
                                     <i class="fas fa-clock has-text-info"></i><br>
                                     <strong>${currentStats.time}</strong>
                                 </p>
                             </div>
                             <div class="column">
-                                <p class="is-size-6 has-text-white">
+                                <p class="is-size-6" style="color: white !important;">
                                     <i class="fas fa-crosshairs has-text-danger"></i><br>
                                     <strong>${currentStats.kills} Kills</strong>
                                 </p>
@@ -469,13 +469,13 @@ class HTMLUIManager {
                         
                         <div class="columns is-mobile mt-4">
                             <div class="column">
-                                <p class="is-size-7 has-text-white">
+                                <p class="is-size-7" style="color: white !important;">
                                     <i class="fas fa-heart has-text-danger"></i>
                                     <strong>${currentStats.health}/${currentStats.maxHealth} HP</strong>
                                 </p>
                             </div>
                             <div class="column">
-                                <p class="is-size-7 has-text-white">
+                                <p class="is-size-7" style="color: white !important;">
                                     <i class="fas fa-star has-text-warning"></i>
                                     <strong>${currentStats.xp}/${currentStats.xpToNext} XP</strong>
                                 </p>
@@ -652,23 +652,23 @@ class HTMLUIManager {
                         <i class="fas fa-skull mr-3"></i>GAME OVER
                     </h1>
                     
-                    <div class="box has-background-dark has-text-white mb-6">
+                    <div class="box has-background-dark has-text-white mb-6" style="color: white !important;">
                         <h2 class="title is-4 has-text-white mb-4">Final Stats</h2>
                         <div class="columns is-mobile">
                             <div class="column">
-                                <p class="is-size-6 has-text-white">
+                                <p class="is-size-6" style="color: white !important;">
                                     <i class="fas fa-trophy has-text-warning"></i><br>
                                     <strong>Level ${stats.level || 1}</strong>
                                 </p>
                             </div>
                             <div class="column">
-                                <p class="is-size-6 has-text-white">
+                                <p class="is-size-6" style="color: white !important;">
                                     <i class="fas fa-clock has-text-info"></i><br>
                                     <strong>${stats.time || '0:00'}</strong>
                                 </p>
                             </div>
                             <div class="column">
-                                <p class="is-size-6 has-text-white">
+                                <p class="is-size-6" style="color: white !important;">
                                     <i class="fas fa-crosshairs has-text-danger"></i><br>
                                     <strong>${stats.kills || 0} Kills</strong>
                                 </p>
