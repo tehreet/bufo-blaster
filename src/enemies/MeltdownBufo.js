@@ -22,17 +22,16 @@ class MeltdownBufo extends BaseEnemy {
     setupAbility() {
         // Set initial distressed appearance
         this.gameObject.setTint(0xFFAAAA); // Slightly reddish tint
-        this.gameObject.setScale(0.9); // Slightly smaller but will grow during meltdown
+        this.gameObject.setScale(1.0); // Normal size
         
-        // Meltdown Bufo doesn't have regular abilities, just the meltdown sequence
-        // But we can add stress indicators
+        // Simple stress indicators without complex timers
         this.setupStressIndicators();
     }
     
     setupStressIndicators() {
-        // Create periodic stress particle effects
+        // Simple periodic stress particle effects - less frequent to avoid spam
         this.createAbilityTimer('stressParticles', {
-            delay: 1000,
+            delay: 2000, // Every 2 seconds instead of 1
             callback: () => this.createStressParticles(),
             loop: true
         });
@@ -49,29 +48,30 @@ class MeltdownBufo extends BaseEnemy {
             return;
         }
         
-        // Create small particle effect to show instability
-        const particleCount = this.isTriggered ? 5 : 2;
+        // Simple single particle - no delays or loops
+        const particle = this.scene.add.circle(
+            this.gameObject.x + (Math.random() - 0.5) * 20,
+            this.gameObject.y + (Math.random() - 0.5) * 20,
+            4,
+            this.isTriggered ? 0xFF4444 : 0xFF8888,
+            0.6
+        );
         
-        for (let i = 0; i < particleCount; i++) {
-            if (this.scene.time) {
-                this.scene.time.delayedCall(i * 100, () => {
-                    if (this.gameObject && this.gameObject.active && this.scene &&
-                        typeof this.gameObject.x === 'number' && typeof this.gameObject.y === 'number') {
-                        this.createVisualEffect(
-                            this.gameObject.x + (Math.random() - 0.5) * 25,
-                            this.gameObject.y + (Math.random() - 0.5) * 25,
-                            {
-                                radius: 4,
-                                color: this.isTriggered ? 0xFF4444 : 0xFF8888,
-                                alpha: 0.6,
-                                duration: 400,
-                                endScale: 2
-                            }
-                        );
-                    }
-                });
-            }
+        if (this.scene.auraEffects) {
+            this.scene.auraEffects.add(particle);
         }
+        
+        this.scene.tweens.add({
+            targets: particle,
+            alpha: 0,
+            scale: 2,
+            duration: 400,
+            onComplete: () => {
+                if (particle && particle.destroy) {
+                    particle.destroy();
+                }
+            }
+        });
     }
     
     updateAbility() {
@@ -101,42 +101,30 @@ class MeltdownBufo extends BaseEnemy {
         const progress = elapsed / this.meltdownTime;
         this.agitationLevel = progress;
         
-        // Visual feedback based on how close to explosion - MUCH MORE OBVIOUS
+        // Simple visual feedback - no complex color interpolation
         if (this.gameObject.setTint) {
             if (progress < 0.33) {
-                // First third - bright orange warning
-                this.gameObject.setTint(0xFF8800);
+                this.gameObject.setTint(0xFF8800); // Orange warning
             } else if (progress < 0.66) {
-                // Second third - bright red danger (flashing)
-                const flash = Math.sin(elapsed * 0.01) > 0 ? 0xFF2200 : 0xFF6600;
-                this.gameObject.setTint(flash);
+                this.gameObject.setTint(0xFF4400); // Red danger  
             } else {
-                // Final third - rapid flashing bright red/white
-                const rapidFlash = Math.sin(elapsed * 0.02) > 0 ? 0xFF0000 : 0xFFFFFF;
-                this.gameObject.setTint(rapidFlash);
+                this.gameObject.setTint(0xFF0000); // Critical red
             }
         }
         
-        // Scale grows dramatically as explosion approaches
-        const scale = 0.8 + (progress * 0.6); // Grows from 0.8 to 1.4 (more dramatic)
+        // Slight scale increase
+        const scale = 1.0 + (progress * 0.2); // Grows from 1.0 to 1.2 (subtle)
         if (this.gameObject.setScale) {
             this.gameObject.setScale(scale);
         }
         
-        // Faster particle generation as countdown progresses
-        if (progress > 0.7 && currentTime % 200 < 50) { // Every 200ms in final phase
-            this.createStressParticles();
-        }
+        // No complex particle generation during countdown to avoid crashes
     }
     
     updateVisualEffects() {
-        this.pulsateTimer += 0.1;
-        
-        if (this.isTriggered) {
-            // Pulsating effect during countdown
-            const pulsate = Math.sin(this.pulsateTimer * (1 + this.agitationLevel * 3));
-            const alphaMod = 0.2 + (pulsate * 0.1);
-            this.gameObject.setAlpha(0.9 + alphaMod);
+        // Simplified - no complex pulsating effects that can cause issues
+        if (this.isTriggered && this.gameObject && this.gameObject.setAlpha) {
+            this.gameObject.setAlpha(1.0); // Just keep it solid
         }
     }
     
@@ -217,11 +205,8 @@ class MeltdownBufo extends BaseEnemy {
         // Deal damage to player if in range
         this.dealExplosionDamage();
         
-        // Clean up and destroy (don't call die() to avoid recursion)
-        this.cleanup();
-        if (this.gameObject && this.gameObject.destroy) {
-            this.gameObject.destroy();
-        }
+        // Destroy self
+        this.die();
     }
     
     createExplosionVisual() {
@@ -235,55 +220,30 @@ class MeltdownBufo extends BaseEnemy {
             return;
         }
         
-        // Main explosion effect
-        this.createVisualEffect(this.gameObject.x, this.gameObject.y, {
-            radius: this.explosionRadius,
-            color: 0xFF2200,
-            alpha: 0.4,
-            duration: 800,
-            endScale: 1.5,
-            stroke: { width: 4, color: 0xFF4400 }
+        // Store position before cleanup (object might be destroyed)
+        const explosionX = this.gameObject.x;
+        const explosionY = this.gameObject.y;
+        
+        // Simple single explosion effect - like other effects in game
+        const explosionEffect = this.scene.add.circle(explosionX, explosionY, this.explosionRadius, 0xFF4400, 0.6);
+        explosionEffect.setStrokeStyle(3, 0xFF0000);
+        
+        if (this.scene.auraEffects) {
+            this.scene.auraEffects.add(explosionEffect);
+        }
+
+        // Simple tween animation
+        this.scene.tweens.add({
+            targets: explosionEffect,
+            alpha: 0,
+            scale: 2,
+            duration: 500,
+            onComplete: () => {
+                if (explosionEffect && explosionEffect.destroy) {
+                    explosionEffect.destroy();
+                }
+            }
         });
-        
-        // Secondary explosion rings
-        for (let i = 1; i <= 3; i++) {
-            if (this.scene.time) {
-                this.scene.time.delayedCall(i * 100, () => {
-                    if (this.scene && this.scene.add && this.gameObject &&
-                        typeof this.gameObject.x === 'number' && typeof this.gameObject.y === 'number') {
-                        this.createVisualEffect(this.gameObject.x, this.gameObject.y, {
-                            radius: this.explosionRadius * (0.3 + i * 0.2),
-                            color: 0xFF6600,
-                            alpha: 0.3,
-                            duration: 400,
-                            endScale: 2
-                        });
-                    }
-                });
-            }
-        }
-        
-        // Particle explosion
-        for (let i = 0; i < 12; i++) {
-            const angle = (i / 12) * Math.PI * 2;
-            const distance = this.explosionRadius * (0.5 + Math.random() * 0.5);
-            const particleX = this.gameObject.x + Math.cos(angle) * distance;
-            const particleY = this.gameObject.y + Math.sin(angle) * distance;
-            
-            if (this.scene.time) {
-                this.scene.time.delayedCall(Math.random() * 200, () => {
-                    if (this.scene && this.scene.add) {
-                        this.createVisualEffect(particleX, particleY, {
-                            radius: 15,
-                            color: 0xFF8800,
-                            alpha: 0.7,
-                            duration: 600,
-                            endScale: 3
-                        });
-                    }
-                });
-            }
-        }
     }
     
     dealExplosionDamage() {
@@ -341,31 +301,6 @@ class MeltdownBufo extends BaseEnemy {
         }
     }
     
-    // Handle direct contact with player - ALWAYS triggers meltdown
-    onContactWithPlayer(player) {
-        // Always trigger meltdown on contact with player
-        if (!this.isTriggered) {
-            this.triggerMeltdown();
-        }
-        
-        // Still apply basic contact damage (minimal since explosion is the main threat)
-        const damage = this.gameObject.contactDamage || 5;
-        this.scene.statsSystem.takeDamage(damage);
-        
-        // Apply basic knockback
-        if (player && player.body && this.gameObject) {
-            const angle = Phaser.Math.Angle.Between(this.gameObject.x, this.gameObject.y, player.x, player.y);
-            try {
-                this.scene.matter.body.setVelocity(player.body, {
-                    x: Math.cos(angle) * 4,
-                    y: Math.sin(angle) * 4
-                });
-            } catch (error) {
-                // Handle knockback errors silently
-            }
-        }
-    }
-
     // Override takeDamage to potentially trigger meltdown when damaged
     takeDamage(damage) {
         // Take damage on game object
@@ -382,17 +317,37 @@ class MeltdownBufo extends BaseEnemy {
         }
     }
     
-    // Override death to ALWAYS explode
+    // Override death - simplified and safe
     die() {
-        // MeltdownBufo ALWAYS explodes on death, regardless of trigger state
-        if (this.gameObject && typeof this.gameObject.x === 'number' && typeof this.gameObject.y === 'number') {
-            this.explode();
-        } else {
-            // Fallback cleanup if position is invalid
-            this.cleanup();
-            if (this.gameObject && this.gameObject.destroy) {
-                this.gameObject.destroy();
+        // Safety check first
+        if (!this.gameObject || this.gameObject.active === false) {
+            return;
+        }
+        
+        // Create simple death effect
+        if (typeof this.gameObject.x === 'number' && typeof this.gameObject.y === 'number') {
+            const deathEffect = this.scene.add.circle(this.gameObject.x, this.gameObject.y, 30, 0x888888, 0.5);
+            if (this.scene.auraEffects) {
+                this.scene.auraEffects.add(deathEffect);
             }
+            
+            this.scene.tweens.add({
+                targets: deathEffect,
+                alpha: 0,
+                scale: 2,
+                duration: 400,
+                onComplete: () => {
+                    if (deathEffect && deathEffect.destroy) {
+                        deathEffect.destroy();
+                    }
+                }
+            });
+        }
+        
+        // Clean shutdown
+        this.cleanup();
+        if (this.gameObject && this.gameObject.destroy) {
+            this.gameObject.destroy();
         }
     }
     

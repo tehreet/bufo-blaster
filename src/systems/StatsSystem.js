@@ -12,6 +12,8 @@ class StatsSystem {
     initializePlayerStats(character) {
         // Clear any existing player stats to ensure clean start
         this.playerStats = null;
+        this.playerProgression = null;
+        this.statModifiers = null;
         
         // Base character stats
         const baseStats = character.baseStats;
@@ -25,8 +27,7 @@ class StatsSystem {
             invincible: false,
             invincibilityEnd: 0,
             lastRegenTime: 0,
-            isPoisoned: false,
-            isBleeding: false  // CRITICAL: Reset bleeding status for new character
+            isPoisoned: false
         };
         
         // Upgrade modifiers (flat bonuses and multipliers)
@@ -49,8 +50,15 @@ class StatsSystem {
             healthRegenMultiplier: 1.0
         };
         
-        // Calculate and cache current stats (reset health to max for new game)
+        // Calculate and cache current stats (FORCE reset health to max for new character)
         this.refreshPlayerStats(true);
+        
+        // Double-check health is properly set to max
+        if (this.playerStats) {
+            this.playerStats.health = this.playerStats.maxHealth;
+        }
+        
+        Logger.system(`Player stats initialized for ${character.name} - Health: ${this.playerStats.health}/${this.playerStats.maxHealth}`);
     }
 
     refreshPlayerStats(resetHealth = false) {
@@ -71,8 +79,9 @@ class StatsSystem {
         
         // Determine current health: reset to max if requested, otherwise preserve current health
         let currentHealth;
-        if (resetHealth || !this.playerStats || typeof this.playerStats.health !== 'number') {
-            currentHealth = maxHealth; // Reset to full health for new game or if health is invalid
+        if (resetHealth || !this.playerStats || typeof this.playerStats.health !== 'number' || 
+            this.playerStats.health <= 0 || isNaN(this.playerStats.health)) {
+            currentHealth = maxHealth; // Reset to full health for new game or if health is invalid/negative
         } else {
             currentHealth = this.playerStats.health; // Preserve current health during upgrades
         }
@@ -179,6 +188,16 @@ class StatsSystem {
     }
 
     takeDamage(amount, bypassInvincibility = false) {
+        // Safety check - don't take damage if stats not initialized or game not started
+        if (!this.playerStats || !this.playerProgression || !this.scene.gameStarted) {
+            return 0;
+        }
+        
+        // Don't take damage if already dead
+        if (this.playerStats.health <= 0) {
+            return 0;
+        }
+        
         // Check invincibility, but allow bypass for damage over time effects
         if (this.playerProgression.invincible && !bypassInvincibility) {
             return 0;
@@ -193,7 +212,7 @@ class StatsSystem {
             this.setInvincible(1000); // 1 second invincibility
         }
         
-        // Check for game over
+        // Check for game over (only if health just dropped to 0 or below)
         if (this.playerStats.health <= 0) {
             this.scene.gameOver();
         }

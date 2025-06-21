@@ -116,13 +116,13 @@
             justify-content: center;
             align-items: center;
             height: 100vh;
-            background: rgba(0, 34, 17, 0.95);
+            background: rgba(34, 17, 0, 0.95);
             backdrop-filter: blur(10px);
         }
         
         .upgrade-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            grid-template-columns: repeat(3, 1fr);
             gap: 2rem;
             max-width: 1200px;
             margin: 2rem;
@@ -132,13 +132,13 @@
             background: rgba(255, 255, 255, 0.1);
             backdrop-filter: blur(10px);
             border-radius: 16px;
-            padding: 2rem;
+            padding: 1.5rem;
             text-align: center;
             transition: all 0.3s ease;
             cursor: pointer;
             border: 2px solid transparent;
             position: relative;
-            min-height: 320px;
+            min-height: 280px;
             display: flex;
             flex-direction: column;
             justify-content: space-between;
@@ -147,25 +147,25 @@
         .upgrade-card:hover {
             transform: translateY(-8px);
             box-shadow: 0 16px 40px rgba(0, 0, 0, 0.3);
-            border-color: #00d1b2;
+            border-color: #ffdd57;
         }
         
         .upgrade-card.selected {
-            border-color: #3273dc;
-            background: rgba(50, 115, 220, 0.2);
+            border-color: #ffdd57;
+            background: rgba(255, 221, 87, 0.2);
         }
         
         .upgrade-card.character-upgrade {
-            border-color: #48c774;
+            border-color: #ff9800;
         }
         
         .upgrade-card.character-upgrade:hover {
-            border-color: #00d1b2;
+            border-color: #ffa726;
         }
         
         .upgrade-card.character-upgrade.selected {
-            border-color: #00d1b2;
-            background: rgba(0, 209, 178, 0.2);
+            border-color: #ffa726;
+            background: rgba(255, 167, 38, 0.2);
         }
         
         .upgrade-type-badge {
@@ -180,30 +180,30 @@
         }
         
         .upgrade-type-badge.character {
-            background: rgba(72, 199, 116, 0.8);
+            background: rgba(255, 152, 0, 0.8);
             color: white;
         }
         
         .upgrade-type-badge.generic {
-            background: rgba(0, 209, 178, 0.8);
+            background: rgba(150, 150, 150, 0.8);
             color: white;
         }
         
         .upgrade-icon {
-            width: 100px;
-            height: 100px;
+            width: 80px;
+            height: 80px;
             margin: 0 auto 1rem;
             border-radius: 50%;
             background: rgba(255, 255, 255, 0.1);
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 2.5rem;
-            color: #00d1b2;
+            font-size: 2rem;
+            color: #ffdd57;
         }
         
         .upgrade-card.character-upgrade .upgrade-icon {
-            color: #48c774;
+            color: #ff9800;
         }
         
         .upgrade-stats {
@@ -259,14 +259,14 @@
             }
             
             .upgrade-card {
-                padding: 1.5rem;
-                min-height: 280px;
+                padding: 1rem;
+                min-height: 240px;
             }
             
             .upgrade-icon {
-                width: 80px;
-                height: 80px;
-                font-size: 2rem;
+                width: 60px;
+                height: 60px;
+                font-size: 1.5rem;
             }
         }
         
@@ -305,52 +305,6 @@
             opacity: 0;
             transform: translateY(-20px);
             transition: all 0.3s ease;
-        }
-        
-        /* Force white text in pause and game over screens */
-        #pause-overlay .box p,
-        #pause-overlay .box strong,
-        #game-over-overlay .box p,
-        #game-over-overlay .box strong,
-        #pause-overlay .column p,
-        #pause-overlay .column strong,
-        #game-over-overlay .column p,
-        #game-over-overlay .column strong,
-        #pause-overlay .box *,
-        #game-over-overlay .box * {
-            color: white !important;
-        }
-        
-        /* Catch all text in these overlays */
-        #pause-overlay .character-selection .box,
-        #game-over-overlay .character-selection .box {
-            color: white !important;
-        }
-        
-        #pause-overlay .character-selection .box > *,
-        #game-over-overlay .character-selection .box > * {
-            color: white !important;
-        }
-        
-        /* Preserve original icon colors */
-        #pause-overlay .fas.has-text-primary,
-        #game-over-overlay .fas.has-text-primary {
-            color: #3273dc !important;
-        }
-        
-        #pause-overlay .fas.has-text-warning,
-        #game-over-overlay .fas.has-text-warning {
-            color: #ffdd57 !important;
-        }
-        
-        #pause-overlay .fas.has-text-info,
-        #game-over-overlay .fas.has-text-info {
-            color: #3298dc !important;
-        }
-        
-        #pause-overlay .fas.has-text-danger,
-        #game-over-overlay .fas.has-text-danger {
-            color: #f14668 !important;
         }
     </style>
 </head>
@@ -407,8 +361,8 @@
         <div class="upgrade-selection">
             <div class="container">
                 <div class="has-text-centered mb-6">
-                    <h1 class="title is-1 has-text-white">
-                        <i class="fas fa-arrow-up mr-3" style="color: #00d1b2;"></i>LEVEL UP!
+                    <h1 class="title is-1 has-text-warning">
+                        <i class="fas fa-arrow-up mr-3"></i>LEVEL UP!
                     </h1>
                     <p class="subtitle is-4 has-text-white">Choose Your Upgrade</p>
                 </div>
