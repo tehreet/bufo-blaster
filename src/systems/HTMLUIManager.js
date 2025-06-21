@@ -372,6 +372,9 @@ class HTMLUIManager {
     // =================== GAMEPAD SUPPORT ===================
     
     handleGamepadInput() {
+        // Add basic debugging to see if this method is called
+        Logger.warn(Logger.Categories.INPUT, 'handleGamepadInput called');
+        
         // Safety check for InputManager with spam prevention
         if (!this.inputManager) {
             if (!this.inputManagerWarningShown) {
@@ -381,10 +384,20 @@ class HTMLUIManager {
             return;
         }
         
-        if (Date.now() - this.lastInputTime < 200) return; // Debounce
+        Logger.warn(Logger.Categories.INPUT, 'InputManager available');
+        
+        if (Date.now() - this.lastInputTime < 200) {
+            Logger.warn(Logger.Categories.INPUT, 'Input debounced');
+            return; // Debounce
+        }
 
         const gamepadState = this.inputManager.getGamepadState();
-        if (!gamepadState.connected) return;
+        Logger.warn(Logger.Categories.INPUT, `Gamepad state: connected=${gamepadState.connected}, buttons=${gamepadState.buttons?.length}`);
+        
+        if (!gamepadState.connected) {
+            Logger.warn(Logger.Categories.INPUT, 'Gamepad not connected');
+            return;
+        }
 
         // DEBUG: Show all button states that are pressed
         const pressedButtons = [];
@@ -425,6 +438,7 @@ class HTMLUIManager {
 
         // D-pad navigation for character selection
         if (this.currentScreen === 'character-selection') {
+            Logger.warn(Logger.Categories.INPUT, `Checking D-pad navigation on character-selection screen`);
             let moved = false;
             
             if (gamepadState.buttons[14]) { // D-pad left
