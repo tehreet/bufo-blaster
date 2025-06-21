@@ -179,8 +179,21 @@ class UISystem {
 
     // Dynamic collision handler for character projectiles
     handleCharacterProjectileCollisions(bodyA, bodyB) {
-        // Get all registered collision handlers from the character system
-        if (!this.scene.characterSystem.collisionHandlers) return;
+        // Safety checks for physics bodies and gameObjects
+        if (!bodyA || !bodyB || !bodyA.gameObject || !bodyB.gameObject) {
+            return;
+        }
+        
+        // Safety check for character system
+        if (!this.scene.characterSystem || !this.scene.characterSystem.collisionHandlers) {
+            return;
+        }
+        
+        // Additional safety checks for active game objects
+        if (!bodyA.gameObject.active || !bodyB.gameObject.active || 
+            !bodyA.gameObject.scene || !bodyB.gameObject.scene) {
+            return;
+        }
         
         // Check all registered projectile labels
         for (const [label, handler] of this.scene.characterSystem.collisionHandlers) {

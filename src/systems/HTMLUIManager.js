@@ -9,6 +9,11 @@ class HTMLUIManager {
         this.selectedCharacterIndex = 0;
         this.charactersArray = [];
         
+        // Add InputManager reference
+        this.inputManager = scene.inputManager;
+        this.lastInputTime = 0;
+        this.currentScreen = 'character-selection';
+        
         // Gamepad input debouncing
         this.gamepadInputCooldown = 0;
         this.gamepadInputDelay = 200; // 200ms between inputs
@@ -33,7 +38,6 @@ class HTMLUIManager {
     showCharacterSelection() {
         Logger.ui('Showing character selection screen');
         this.currentScreen = 'character-selection';
-        this.currentCharacterIndex = 0;
         
         // Get characters from the character system
         const characters = this.scene.characterSystem.getCharacters();
@@ -354,6 +358,12 @@ class HTMLUIManager {
     // =================== GAMEPAD SUPPORT ===================
     
     handleGamepadInput() {
+        // Safety check for InputManager
+        if (!this.inputManager) {
+            Logger.warn(Logger.Categories.INPUT, 'InputManager not available for gamepad input');
+            return;
+        }
+        
         if (Date.now() - this.lastInputTime < 200) return; // Debounce
 
         const gamepadState = this.inputManager.getGamepadState();
@@ -389,17 +399,17 @@ class HTMLUIManager {
             let moved = false;
             
             if (gamepadState.buttons[14]) { // D-pad left
-                this.currentCharacterIndex = Math.max(0, this.currentCharacterIndex - 1);
+                this.selectedCharacterIndex = Math.max(0, this.selectedCharacterIndex - 1);
                 moved = true;
             } else if (gamepadState.buttons[15]) { // D-pad right
-                this.currentCharacterIndex = Math.min(this.characters.length - 1, this.currentCharacterIndex + 1);
+                this.selectedCharacterIndex = Math.min(this.charactersArray.length - 1, this.selectedCharacterIndex + 1);
                 moved = true;
             }
             
             if (moved) {
                 this.lastInputTime = Date.now();
                 this.updateCharacterSelection();
-                Logger.input(`Character selection moved to index ${this.currentCharacterIndex}`);
+                Logger.input(`Character selection moved to index ${this.selectedCharacterIndex}`);
             }
         }
     }

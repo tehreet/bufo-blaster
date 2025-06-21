@@ -104,9 +104,19 @@ class CharacterSystem {
 
     // Handle collisions dynamically
     handleProjectileCollision(projectileLabel, projectile, enemy) {
-        // Add safety checks
-        if (!projectileLabel || !projectile || !enemy) {
-            Logger.warn('Invalid collision parameters');
+        // Enhanced safety checks with detailed logging
+        if (!projectileLabel) {
+            Logger.warn(Logger.Categories.SYSTEM, 'Invalid collision: projectileLabel is undefined');
+            return;
+        }
+        
+        if (!projectile) {
+            Logger.warn(Logger.Categories.SYSTEM, `Invalid collision: projectile is undefined for label ${projectileLabel}`);
+            return;
+        }
+        
+        if (!enemy) {
+            Logger.warn(Logger.Categories.SYSTEM, `Invalid collision: enemy is undefined for label ${projectileLabel}`);
             return;
         }
         
@@ -120,7 +130,7 @@ class CharacterSystem {
             try {
                 handler(projectile, enemy);
             } catch (error) {
-                Logger.error(`Error in collision handler for ${projectileLabel}:`, error);
+                Logger.error(Logger.Categories.SYSTEM, `Error in collision handler for ${projectileLabel}:`, error);
             }
         }
     }
