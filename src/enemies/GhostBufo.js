@@ -28,6 +28,11 @@ class GhostBufo extends BaseEnemy {
             return;
         }
         
+        // Additional check: ensure position properties are valid
+        if (typeof this.gameObject.x !== 'number' || typeof this.gameObject.y !== 'number') {
+            return;
+        }
+        
         // Create ethereal aura effect
         this.createVisualEffect(this.gameObject.x, this.gameObject.y, {
             radius: 25,
@@ -68,6 +73,12 @@ class GhostBufo extends BaseEnemy {
     updateAI() {
         // Ghost Bufo moves slower and more erratically
         if (!this.scene.player || !this.gameObject.body) return;
+        
+        // Additional check: ensure position properties are valid
+        if (typeof this.gameObject.x !== 'number' || typeof this.gameObject.y !== 'number' ||
+            typeof this.scene.player.x !== 'number' || typeof this.scene.player.y !== 'number') {
+            return;
+        }
         
         const playerX = this.scene.player.x;
         const playerY = this.scene.player.y;
@@ -146,6 +157,11 @@ class GhostBufo extends BaseEnemy {
             return;
         }
         
+        // Additional check: ensure position properties are valid
+        if (typeof this.gameObject.x !== 'number' || typeof this.gameObject.y !== 'number') {
+            return;
+        }
+        
         // Flash effect when reflecting damage
         if (this.gameObject.setTint) {
             this.gameObject.setTint(0xFFFFFF);
@@ -163,7 +179,8 @@ class GhostBufo extends BaseEnemy {
         for (let i = 0; i < 3; i++) {
             if (this.scene.time) {
                 this.scene.time.delayedCall(i * 50, () => {
-                    if (this.gameObject && this.gameObject.active && this.scene) {
+                    if (this.gameObject && this.gameObject.active && this.scene && 
+                        typeof this.gameObject.x === 'number' && typeof this.gameObject.y === 'number') {
                         this.createVisualEffect(
                             this.gameObject.x + (Math.random() - 0.5) * 30,
                             this.gameObject.y + (Math.random() - 0.5) * 30,
@@ -184,6 +201,12 @@ class GhostBufo extends BaseEnemy {
     createReflectionBeam() {
         // Safety checks: ensure all required objects exist
         if (!this.scene || !this.scene.player || !this.gameObject || !this.scene.add) {
+            return;
+        }
+        
+        // Additional check: ensure position properties are valid
+        if (typeof this.gameObject.x !== 'number' || typeof this.gameObject.y !== 'number' ||
+            typeof this.scene.player.x !== 'number' || typeof this.scene.player.y !== 'number') {
             return;
         }
         
@@ -221,6 +244,11 @@ class GhostBufo extends BaseEnemy {
             return;
         }
         
+        // Additional check: ensure position properties are valid
+        if (typeof this.gameObject.x !== 'number' || typeof this.gameObject.y !== 'number') {
+            return;
+        }
+        
         // Ghost becomes more vulnerable when reflection power is used up
         if (this.gameObject.setTint) {
             this.gameObject.setTint(0xFFBBBB); // Reddish tint to show vulnerability
@@ -239,19 +267,21 @@ class GhostBufo extends BaseEnemy {
     
     // Override death to create special ghostly death effect
     die() {
-        // Create ghostly dispersion effect
-        for (let i = 0; i < 8; i++) {
-            const angle = (i / 8) * Math.PI * 2;
-            const offsetX = Math.cos(angle) * 30;
-            const offsetY = Math.sin(angle) * 30;
-            
-            this.createVisualEffect(this.gameObject.x + offsetX, this.gameObject.y + offsetY, {
-                radius: 12,
-                color: 0x9999FF,
-                alpha: 0.7,
-                duration: 800,
-                endScale: 3
-            });
+        // Create ghostly dispersion effect only if position is valid
+        if (this.gameObject && typeof this.gameObject.x === 'number' && typeof this.gameObject.y === 'number') {
+            for (let i = 0; i < 8; i++) {
+                const angle = (i / 8) * Math.PI * 2;
+                const offsetX = Math.cos(angle) * 30;
+                const offsetY = Math.sin(angle) * 30;
+                
+                this.createVisualEffect(this.gameObject.x + offsetX, this.gameObject.y + offsetY, {
+                    radius: 12,
+                    color: 0x9999FF,
+                    alpha: 0.7,
+                    duration: 800,
+                    endScale: 3
+                });
+            }
         }
         
         // Cleanup and destroy

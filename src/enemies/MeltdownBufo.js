@@ -44,13 +44,19 @@ class MeltdownBufo extends BaseEnemy {
             return;
         }
         
+        // Additional check: ensure position properties are valid
+        if (typeof this.gameObject.x !== 'number' || typeof this.gameObject.y !== 'number') {
+            return;
+        }
+        
         // Create small particle effect to show instability
         const particleCount = this.isTriggered ? 5 : 2;
         
         for (let i = 0; i < particleCount; i++) {
             if (this.scene.time) {
                 this.scene.time.delayedCall(i * 100, () => {
-                    if (this.gameObject && this.gameObject.active && this.scene) {
+                    if (this.gameObject && this.gameObject.active && this.scene &&
+                        typeof this.gameObject.x === 'number' && typeof this.gameObject.y === 'number') {
                         this.createVisualEffect(
                             this.gameObject.x + (Math.random() - 0.5) * 25,
                             this.gameObject.y + (Math.random() - 0.5) * 25,
@@ -145,6 +151,12 @@ class MeltdownBufo extends BaseEnemy {
         // Meltdown Bufo is very fast and aggressive
         if (!this.scene.player || !this.gameObject.body) return;
         
+        // Additional check: ensure position properties are valid
+        if (typeof this.gameObject.x !== 'number' || typeof this.gameObject.y !== 'number' ||
+            typeof this.scene.player.x !== 'number' || typeof this.scene.player.y !== 'number') {
+            return;
+        }
+        
         const playerX = this.scene.player.x;
         const playerY = this.scene.player.y;
         const dx = playerX - this.gameObject.x;
@@ -175,6 +187,11 @@ class MeltdownBufo extends BaseEnemy {
     
     triggerMeltdown() {
         if (this.isTriggered) return; // Already triggered
+        
+        // Additional check: ensure position properties are valid
+        if (!this.gameObject || typeof this.gameObject.x !== 'number' || typeof this.gameObject.y !== 'number') {
+            return;
+        }
         
         this.isTriggered = true;
         this.meltdownStartTime = this.scene.time.now;
@@ -217,6 +234,11 @@ class MeltdownBufo extends BaseEnemy {
             return;
         }
         
+        // Additional check: ensure position properties are valid
+        if (typeof this.gameObject.x !== 'number' || typeof this.gameObject.y !== 'number') {
+            return;
+        }
+        
         // Main explosion effect
         this.createVisualEffect(this.gameObject.x, this.gameObject.y, {
             radius: this.explosionRadius,
@@ -231,7 +253,8 @@ class MeltdownBufo extends BaseEnemy {
         for (let i = 1; i <= 3; i++) {
             if (this.scene.time) {
                 this.scene.time.delayedCall(i * 100, () => {
-                    if (this.scene && this.scene.add && this.gameObject) {
+                    if (this.scene && this.scene.add && this.gameObject &&
+                        typeof this.gameObject.x === 'number' && typeof this.gameObject.y === 'number') {
                         this.createVisualEffect(this.gameObject.x, this.gameObject.y, {
                             radius: this.explosionRadius * (0.3 + i * 0.2),
                             color: 0xFF6600,
@@ -271,6 +294,12 @@ class MeltdownBufo extends BaseEnemy {
         // Check if player is in explosion radius
         if (!this.scene.player) return;
         
+        // Additional check: ensure position properties are valid
+        if (!this.gameObject || typeof this.gameObject.x !== 'number' || typeof this.gameObject.y !== 'number' ||
+            typeof this.scene.player.x !== 'number' || typeof this.scene.player.y !== 'number') {
+            return;
+        }
+        
         const playerDistance = Phaser.Math.Distance.Between(
             this.gameObject.x, this.gameObject.y,
             this.scene.player.x, this.scene.player.y
@@ -292,6 +321,12 @@ class MeltdownBufo extends BaseEnemy {
     
     applyExplosionKnockback() {
         if (!this.scene.player || !this.scene.player.body) return;
+        
+        // Additional check: ensure position properties are valid
+        if (!this.gameObject || typeof this.gameObject.x !== 'number' || typeof this.gameObject.y !== 'number' ||
+            typeof this.scene.player.x !== 'number' || typeof this.scene.player.y !== 'number') {
+            return;
+        }
         
         const dx = this.scene.player.x - this.gameObject.x;
         const dy = this.scene.player.y - this.gameObject.y;
@@ -329,13 +364,14 @@ class MeltdownBufo extends BaseEnemy {
     // Override death to prevent normal death if explosion is imminent
     die() {
         // If triggered but haven't exploded yet, force explosion
-        if (this.isTriggered && this.gameObject.health > 0) {
+        if (this.isTriggered && this.gameObject && this.gameObject.health > 0) {
             this.explode();
             return;
         }
         
         // Create special death effect if not from explosion
-        if (!this.isTriggered) {
+        if (!this.isTriggered && this.gameObject && 
+            typeof this.gameObject.x === 'number' && typeof this.gameObject.y === 'number') {
             this.createVisualEffect(this.gameObject.x, this.gameObject.y, {
                 radius: 30,
                 color: 0x888888,
