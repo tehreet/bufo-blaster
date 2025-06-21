@@ -124,9 +124,14 @@ class HTMLUIManager {
     }
     
     updateCharacterSelection() {
-        Logger.ui(`Updating character selection to index ${this.selectedCharacterIndex}`);
+        Logger.ui(`Updating character selection to index ${this.selectedCharacterIndex} of ${this.charactersArray.length} characters`);
         
         const characterCards = document.querySelectorAll('.character-card');
+        
+        if (characterCards.length === 0) {
+            Logger.warn(Logger.Categories.UI, 'No character cards found for selection update');
+            return;
+        }
         
         characterCards.forEach((card, index) => {
             if (index === this.selectedCharacterIndex) {
@@ -137,11 +142,13 @@ class HTMLUIManager {
                 card.classList.remove('selected');
             }
         });
+        
+        Logger.ui(`Character card ${this.selectedCharacterIndex} highlighted successfully`);
     }
     
     handleKeyboardNavigation(event) {
         // Only handle keyboard navigation on character selection screen
-        if (this.characterSelectionOverlay.style.display === 'none') return;
+        if (this.currentScreen !== 'character-selection') return;
         
         switch (event.key) {
             case 'ArrowLeft':
@@ -185,16 +192,15 @@ class HTMLUIManager {
         // Set character in scene
         this.scene.characterSystem.setSelectedCharacter(selectedCharacter);
         
-        // Hide character selection immediately and start game
-        this.hideOverlay(this.characterSelectionOverlay);
+        // Hide character selection IMMEDIATELY (no animation delay for character selection)
+        this.characterSelectionOverlay.style.display = 'none';
+        this.characterSelectionOverlay.classList.remove('fade-exit', 'fade-exit-active');
         
         // Update current screen
         this.currentScreen = 'game';
         
-        // Start game after a short delay to ensure overlay is hidden
-        setTimeout(() => {
-            this.scene.uiSystem.startGame();
-        }, 100);
+        // Start game immediately
+        this.scene.uiSystem.startGame();
     }
     
     handleCharacterCardClick(event) {
@@ -380,17 +386,20 @@ class HTMLUIManager {
         const gamepadState = this.inputManager.getGamepadState();
         if (!gamepadState.connected) return;
 
-        if (gamepadState.buttons[0] || gamepadState.buttons[1]) { // A or B button
+        // A or B button
+        if (gamepadState.buttons[0] || gamepadState.buttons[1]) { 
             this.lastInputTime = Date.now();
             
+            Logger.input(`Gamepad A/B pressed on screen: ${this.currentScreen}`);
+            
             if (this.currentScreen === 'character-selection') {
+                Logger.ui(`Selecting character at index ${this.selectedCharacterIndex}: ${this.charactersArray[this.selectedCharacterIndex]?.name}`);
                 this.selectCharacter();
             } else if (this.currentScreen === 'pause') {
                 this.resumeGame();
             } else if (this.currentScreen === 'game-over') {
                 this.returnToMenu();
             }
-            Logger.input('Gamepad button pressed');
         }
 
         // Start/Menu button for pause/unpause
@@ -410,17 +419,19 @@ class HTMLUIManager {
             let moved = false;
             
             if (gamepadState.buttons[14]) { // D-pad left
+                const oldIndex = this.selectedCharacterIndex;
                 this.selectedCharacterIndex = Math.max(0, this.selectedCharacterIndex - 1);
-                moved = true;
+                moved = (oldIndex !== this.selectedCharacterIndex);
             } else if (gamepadState.buttons[15]) { // D-pad right
+                const oldIndex = this.selectedCharacterIndex;
                 this.selectedCharacterIndex = Math.min(this.charactersArray.length - 1, this.selectedCharacterIndex + 1);
-                moved = true;
+                moved = (oldIndex !== this.selectedCharacterIndex);
             }
             
             if (moved) {
                 this.lastInputTime = Date.now();
+                Logger.input(`Character selection moved to index ${this.selectedCharacterIndex} (${this.charactersArray[this.selectedCharacterIndex]?.name})`);
                 this.updateCharacterSelection();
-                Logger.input(`Character selection moved to index ${this.selectedCharacterIndex}`);
             }
         }
     }
