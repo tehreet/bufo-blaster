@@ -16,7 +16,7 @@ class DuckBufo extends BaseCharacter {
     }
 
     // Called every frame to handle duck summoning
-    update() {
+    updateAbility() {
         if (!this.scene.gameStarted || this.scene.isPaused) return;
         
         const currentTime = this.scene.time.now;
