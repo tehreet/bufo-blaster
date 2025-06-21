@@ -149,6 +149,12 @@ class EnemySystem {
     spawnSingleEnemy() {
         if (!this.scene.gameStarted || this.scene.isPaused || this.scene.upgradeSystem.upgradeActive) return;
         
+        // Additional safety checks
+        if (!this.scene.player || !this.scene.enemies || !this.scene.matter) {
+            Logger.warn('Cannot spawn enemy: Missing required scene components');
+            return;
+        }
+        
         // Get random enemy type (weighted towards tougher enemies at higher levels)
         const enemyType = this.getRandomEnemyType();
         

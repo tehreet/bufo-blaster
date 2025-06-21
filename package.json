@@ -2,7 +2,7 @@
   "name": "bufo-blaster",
   "version": "1.0.0",
   "description": "Browser-based survival game where you play as different Bufo characters, fight enemies, and face epic boss battles.",
-  "main": "index.js",
+  "main": "index.html",
   "scripts": {
     "dev": "vite",
     "build": "vite build",

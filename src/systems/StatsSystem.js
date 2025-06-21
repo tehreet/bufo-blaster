@@ -44,7 +44,8 @@ class StatsSystem {
             abilityCooldownMultiplier: 1.0,
             moveSpeedMultiplier: 1.0,
             abilityRadiusMultiplier: 1.0,
-            pickupRangeMultiplier: 1.0
+            pickupRangeMultiplier: 1.0,
+            healthRegenMultiplier: 1.0
         };
         
         // Calculate and cache current stats (reset health to max for new game)
@@ -59,7 +60,7 @@ class StatsSystem {
         // Calculate final stats
         const maxHealth = Math.floor(baseStats.health + mods.healthBonus);
         const armor = Math.max(0, baseStats.armor + mods.armorBonus);
-        const healthRegen = Math.max(0, baseStats.healthRegen + mods.healthRegenBonus);
+        const healthRegen = Math.max(0, (baseStats.healthRegen + mods.healthRegenBonus) * mods.healthRegenMultiplier);
         const abilityDamage = Math.max(0.1, (baseStats.abilityDamage + mods.abilityDamageBonus) * mods.abilityDamageMultiplier);
         const abilityCooldown = Math.max(50, baseStats.abilityCooldown * mods.abilityCooldownMultiplier);
         const abilityRadius = Math.max(10, (baseStats.abilityRadius + mods.abilityRadiusBonus) * mods.abilityRadiusMultiplier);
@@ -105,7 +106,8 @@ class StatsSystem {
             // Keep upgrade multipliers for systems that need them
             abilityDamageMultiplier: mods.abilityDamageMultiplier,
             abilityCooldownMultiplier: mods.abilityCooldownMultiplier,
-            moveSpeedMultiplier: mods.moveSpeedMultiplier
+            moveSpeedMultiplier: mods.moveSpeedMultiplier,
+            healthRegenMultiplier: mods.healthRegenMultiplier
         };
         
         // Ensure health doesn't exceed max

@@ -230,6 +230,10 @@ class AssetManager {
         this.animatedOverlays.forEach((overlay, gameObject) => {
             if (overlay.element) {
                 try {
+                    // Remove event listeners to prevent memory leaks
+                    overlay.element.onload = null;
+                    overlay.element.onerror = null;
+                    
                     if (overlay.element.parentNode) {
                         overlay.element.parentNode.removeChild(overlay.element);
                     }
@@ -240,6 +244,10 @@ class AssetManager {
         });
         
         this.animatedOverlays.clear();
+        
+        // Clear loading and failed asset tracking
+        this.loadingAssets.clear();
+        // Note: Keep failedAssets to prevent retrying broken assets
     }
 
     hideAllOverlays() {

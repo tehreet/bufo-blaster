@@ -104,6 +104,17 @@ class CharacterSystem {
 
     // Handle collisions dynamically
     handleProjectileCollision(projectileLabel, projectile, enemy) {
+        // Add safety checks
+        if (!projectileLabel || !projectile || !enemy) {
+            Logger.warn('Invalid collision parameters');
+            return;
+        }
+        
+        // Check if objects are still active
+        if (!projectile.active || !enemy.active || !projectile.scene || !enemy.scene) {
+            return;
+        }
+        
         const handler = this.collisionHandlers.get(projectileLabel);
         if (handler) {
             try {
