@@ -21,7 +21,7 @@ class DuckBufo extends BaseCharacter {
         this.nextDuckSummon = this.scene.time.now + 1000; // Start summoning after 1 second
         
         // Create ability groups for ducks
-        this.ensureAbilityGroup('rubberDucks');
+        this.createAbilityGroup('rubberDucks');
     }
 
     // Called every frame to handle duck summoning
@@ -68,7 +68,8 @@ class DuckBufo extends BaseCharacter {
             this.scene.matter.add.gameObject(duck, {
                 shape: 'circle',
                 radius: 12,
-                frictionAir: 0.05,
+                frictionAir: 0.1,
+                isSensor: true, // Don't physically collide with player/enemies
                 label: 'rubberDuck'
             });
             
@@ -135,29 +136,47 @@ class DuckBufo extends BaseCharacter {
     updateDuckAI(duck) {
         if (!duck.body || duck.isExploding) return;
         
-        // Find nearest enemy
-        const nearestEnemy = this.findNearestEnemy(duck.x, duck.y, 300); // 300px search radius
+        // Find nearest enemy manually to ensure it works
+        let nearestEnemy = null;
+        let closestDistance = 300; // Max search distance
+        
+        if (this.scene.enemies && this.scene.enemies.children) {
+            const enemies = this.scene.enemies.children.entries;
+            
+            for (let i = 0, len = enemies.length; i < len; i++) {
+                const enemy = enemies[i];
+                if (!enemy || !enemy.active || !enemy.scene) continue;
+                
+                const distance = Phaser.Math.Distance.Between(duck.x, duck.y, enemy.x, enemy.y);
+                if (distance < closestDistance) {
+                    closestDistance = distance;
+                    nearestEnemy = enemy;
+                }
+            }
+        }
         
         if (nearestEnemy) {
             duck.targetEnemy = nearestEnemy;
             
             // Move towards target enemy  
             const angle = Phaser.Math.Angle.Between(duck.x, duck.y, nearestEnemy.x, nearestEnemy.y);
-            const velocityX = Math.cos(angle) * (duck.speed / 50); // Scale down for Matter.js
-            const velocityY = Math.sin(angle) * (duck.speed / 50); // Scale down for Matter.js
+            const speed = duck.speed / 50; // Scale down for Matter.js
+            const velocityX = Math.cos(angle) * speed;
+            const velocityY = Math.sin(angle) * speed;
             
             try {
-                this.scene.matter.body.setVelocity(duck.body, { x: velocityX, y: velocityY });
+                if (duck.body && this.scene.matter && this.scene.matter.body) {
+                    this.scene.matter.body.setVelocity(duck.body, { x: velocityX, y: velocityY });
+                }
             } catch (error) {
-                // Silent error handling for destroyed objects
+                Logger.error('Duck movement error:', error);
             }
-            
-            // Add bobbing animation for visual appeal
-            duck.y += Math.sin(this.scene.time.now * 0.005) * 0.5;
         } else {
             // No enemy found, stop moving
             try {
-                this.scene.matter.body.setVelocity(duck.body, { x: 0, y: 0 });
+                if (duck.body && this.scene.matter && this.scene.matter.body) {
+                    this.scene.matter.body.setVelocity(duck.body, { x: 0, y: 0 });
+                }
             } catch (error) {
                 // Silent error handling
             }
@@ -168,21 +187,24 @@ class DuckBufo extends BaseCharacter {
     checkDuckExplosion(duck) {
         if (duck.isExploding) return;
         
-        // Explode when close to target enemy
-        if (duck.targetEnemy && duck.targetEnemy.active) {
-            const distance = Phaser.Math.Distance.Between(
-                duck.x, duck.y, 
-                duck.targetEnemy.x, duck.targetEnemy.y
-            );
+        // Check proximity to ANY enemy (not just target)
+        if (this.scene.enemies && this.scene.enemies.children) {
+            const enemies = this.scene.enemies.children.entries;
             
-            if (distance < 25) { // 25px explosion trigger distance
-                this.explodeDuck(duck);
-                return;
+            for (let i = 0, len = enemies.length; i < len; i++) {
+                const enemy = enemies[i];
+                if (!enemy || !enemy.active || !enemy.scene) continue;
+                
+                const distance = Phaser.Math.Distance.Between(duck.x, duck.y, enemy.x, enemy.y);
+                if (distance < 40) { // Increased trigger distance for easier explosions
+                    this.explodeDuck(duck);
+                    return;
+                }
             }
         }
         
-        // Auto-explode after 15 seconds to prevent clutter
-        if (this.scene.time.now - duck.birthTime > 15000) {
+        // Auto-explode after 10 seconds to prevent clutter (reduced from 15)
+        if (this.scene.time.now - duck.birthTime > 10000) {
             this.explodeDuck(duck);
         }
     }
@@ -194,7 +216,7 @@ class DuckBufo extends BaseCharacter {
         
         try {
             // Find all enemies within explosion radius
-            const enemiesInRange = this.findEnemiesInRange(duck.x, duck.y, duck.explosionRadius);
+            const enemiesInRange = this.getEnemiesInRange(duck.x, duck.y, duck.explosionRadius);
             
             // Deal damage to all enemies in range
             for (let i = 0, len = enemiesInRange.length; i < len; i++) {
@@ -240,28 +262,16 @@ class DuckBufo extends BaseCharacter {
         }
     }
 
-    // Handle duck taking damage (when enemies hit ducks)
+    // Handle duck hitting enemy or taking damage
     duckHitByEnemy(duck, enemy) {
-        if (!duck || duck.isExploding) return;
+        if (!duck || duck.isExploding || !enemy) return;
         
         try {
-            duck.health -= 1;
-            
-            // Visual damage effect (red tint)
-            if (duck && duck.setTint) {
-                duck.setTint(0xFF4444);
-                this.scene.time.delayedCall(200, () => {
-                    if (duck && duck.clearTint) duck.clearTint();
-                });
-            }
-            
-            // Duck dies, explode
-            if (duck.health <= 0) {
-                this.explodeDuck(duck);
-            }
+            // When duck hits enemy, explode immediately
+            this.explodeDuck(duck);
             
         } catch (error) {
-            Logger.error('Duck damage error:', error);
+            Logger.error('Duck collision error:', error);
         }
     }
 
@@ -354,13 +364,9 @@ class DuckBufo extends BaseCharacter {
     // Get collision handlers for rubber ducks
     getCollisionHandlers() {
         return [
-            {
-                label: 'rubberDuck',
-                handler: (duck, enemy) => {
-                    if (enemy.label === 'enemy') {
-                        this.duckHitByEnemy(duck, enemy);
-                    }
-                }
+            { 
+                projectileLabel: 'rubberDuck', 
+                handler: this.duckHitByEnemy.bind(this) 
             }
         ];
     }
