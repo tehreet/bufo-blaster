@@ -7,6 +7,7 @@ import TeethBufo from './TeethBufo.js';
 import HazmatBufo from './HazmatBufo.js';
 import GhostBufo from './GhostBufo.js';
 import MeltdownBufo from './MeltdownBufo.js';
+import VampireBufo from './VampireBufo.js';
 
 // Enemy definitions with comprehensive base stats
 const ENEMY_DATA = {
@@ -164,7 +165,7 @@ const ENEMY_CLASSES = {
     'pog': BaseEnemy,        // Basic enemy - just fast and weak
     'teeth': TeethBufo,      // Specialized: Health regeneration and berserker mode
     'mob': BaseEnemy,        // Basic enemy - just tough
-    'vampire': BaseEnemy,    // TODO: Will become VampireBufo class (bleed effects)
+    'vampire': VampireBufo,  // Specialized: Bleed effects and life steal mechanics
     'chicken': ChickenBufo,  // Specialized: Ranged attacks
     'ghost': GhostBufo,      // Specialized: Damage reflection mechanics
     'meltdown': MeltdownBufo // Specialized: Explosion timer mechanics
