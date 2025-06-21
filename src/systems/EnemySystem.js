@@ -24,6 +24,33 @@ class EnemySystem {
         
         // Use EnemyRegistry instead of hardcoded types
         this.enemyRegistry = EnemyRegistry;
+        
+        // Level progression system
+        this.levelProgression = {
+            maxLevel: 25,
+            currentLevel: 1,
+            frenzyLevels: [5, 15, 25], // Enhanced frenzy at these levels
+            bossLevels: [10, 20], // Boss fights at these levels
+            lastProcessedLevel: 0
+        };
+        
+        // Boss fight state
+        this.bossState = {
+            active: false,
+            currentBoss: null,
+            bossDefeated: false,
+            bossSpawned: false
+        };
+        
+        // Frenzy state
+        this.frenzyState = {
+            active: false,
+            startTime: 0,
+            duration: 30000, // 30 seconds of frenzy
+            spawnMultiplier: 3, // 3x more enemies
+            speedMultiplier: 1.5, // 1.5x faster
+            damageMultiplier: 1.3 // 30% more damage
+        };
     }
 
     startEnemySpawning() {
@@ -39,12 +66,24 @@ class EnemySystem {
     spawnEnemy() {
         if (!this.scene.gameStarted || this.scene.isPaused || this.scene.upgradeSystem.upgradeActive) return;
         
+        // Update level progression
+        this.updateLevelProgression();
+        
+        // Handle boss fights - don't spawn regular enemies during boss fights
+        if (this.bossState.active) {
+            return;
+        }
+        
         // Scale enemy count and difficulty based on player level
         this.scaleEnemyDifficulty();
         
-        // Spawn multiple enemies at higher levels
-        const enemyCount = Math.min(Math.floor(this.scene.statsSystem.getPlayerProgression().level / 3) + 1, 5);
+        // Determine spawn count (increased during frenzy)
+        let enemyCount = Math.min(Math.floor(this.levelProgression.currentLevel / 3) + 1, 5);
+        if (this.frenzyState.active) {
+            enemyCount = Math.floor(enemyCount * this.frenzyState.spawnMultiplier);
+        }
         
+        // Spawn multiple enemies
         for (let i = 0; i < enemyCount; i++) {
             // Small delay between spawns to spread them out
             this.scene.time.delayedCall(i * 100, () => {
@@ -106,6 +145,12 @@ class EnemySystem {
         try {
             const enemyInstance = this.enemyRegistry.createEnemy(this.scene, enemyType.id, enemy);
             Logger.system(`Created enemy instance: ${enemyType.name}`);
+            
+            // Apply frenzy modifiers if active
+            if (this.frenzyState.active) {
+                this.applyFrenzyModifiers(enemy);
+            }
+            
         } catch (error) {
             Logger.error('Failed to create enemy instance:', error);
             // Fallback: destroy the enemy if instance creation fails
@@ -1246,12 +1291,12 @@ class EnemySystem {
         this.updateXPOrbMagnetism();
         this.updateEnemyRegeneration();
         this.updateEnemyProjectiles();
-        
-        // Update magnet orb indicator
         this.updateMagnetOrbIndicator();
         
-        // Check for level-based magnet orb spawning
-        this.checkLevelMagnetOrbSpawn();
+        // Update boss health bar if boss is active
+        if (this.bossState.active && this.bossState.currentBoss) {
+            this.updateBossHealthBar();
+        }
     }
     
     // Cleanup method for game over/restart
@@ -1277,6 +1322,467 @@ class EnemySystem {
         
         // Reset magnet orb tracking
         this.lastMagnetOrbLevel = 0;
+    }
+
+    updateLevelProgression() {
+        const currentLevel = this.scene.statsSystem.getPlayerProgression().level;
+        this.levelProgression.currentLevel = currentLevel;
+        
+        // Check if we need to process a new level
+        if (currentLevel > this.levelProgression.lastProcessedLevel) {
+            this.processLevelEvents(currentLevel);
+            this.levelProgression.lastProcessedLevel = currentLevel;
+        }
+        
+        // Update frenzy state
+        this.updateFrenzyState();
+    }
+    
+    processLevelEvents(level) {
+        Logger.system(`Processing level ${level} events`);
+        
+        // Check for boss levels
+        if (this.levelProgression.bossLevels.includes(level)) {
+            this.triggerBossFight(level);
+        }
+        // Check for frenzy levels (only if not a boss level)
+        else if (this.levelProgression.frenzyLevels.includes(level)) {
+            this.triggerFrenzyMode(level);
+        }
+        
+        // Check for XP magnet orb level spawns
+        this.checkLevelMagnetOrbSpawn();
+    }
+    
+    triggerBossFight(level) {
+        if (this.bossState.active) return; // Boss already active
+        
+        Logger.system(`🏆 BOSS FIGHT TRIGGERED at level ${level}!`);
+        
+        // Clear existing enemies for boss fight
+        this.clearAllEnemies();
+        
+        // Set boss state
+        this.bossState.active = true;
+        this.bossState.bossDefeated = false;
+        this.bossState.bossSpawned = false;
+        
+        // Show boss warning
+        this.showBossWarning(level);
+        
+        // Spawn boss after warning
+        this.scene.time.delayedCall(3000, () => {
+            this.spawnBoss(level);
+        });
+    }
+    
+    showBossWarning(level) {
+        // Create warning notification
+        const warning = this.scene.add.text(
+            this.scene.cameras.main.width / 2, 
+            this.scene.cameras.main.height / 2, 
+            `⚠️ BOSS APPROACHING ⚠️\nLevel ${level} Boss Fight!`, 
+            {
+                fontSize: '48px',
+                color: '#ff0000',
+                fontWeight: 'bold',
+                backgroundColor: '#000000',
+                padding: { x: 24, y: 16 },
+                align: 'center'
+            }
+        ).setOrigin(0.5, 0.5).setScrollFactor(0).setDepth(2000);
+        
+        // Pulsing effect
+        this.scene.tweens.add({
+            targets: warning,
+            scaleX: 1.2,
+            scaleY: 1.2,
+            duration: 500,
+            yoyo: true,
+            repeat: 4
+        });
+        
+        // Fade out and destroy after 3 seconds
+        this.scene.time.delayedCall(2500, () => {
+            this.scene.tweens.add({
+                targets: warning,
+                alpha: 0,
+                duration: 500,
+                onComplete: () => warning.destroy()
+            });
+        });
+    }
+    
+    spawnBoss(level) {
+        if (this.bossState.bossSpawned) return;
+        
+        let bossType;
+        
+        // Determine boss type based on level
+        if (level === 10) {
+            bossType = this.enemyRegistry.getEnemyData('yoda');
+        } else if (level === 20) {
+            // Future boss - for now use Yoda again
+            bossType = this.enemyRegistry.getEnemyData('yoda');
+        }
+        
+        if (!bossType) {
+            Logger.error('No boss type found for level', level);
+            this.endBossFight(false);
+            return;
+        }
+        
+        Logger.system(`Spawning boss: ${bossType.name}`);
+        
+        // Spawn boss at center of map
+        const mapCenterX = this.scene.map ? this.scene.map.widthInPixels / 2 : 1600;
+        const mapCenterY = this.scene.map ? this.scene.map.heightInPixels / 2 : 1200;
+        
+        // Create boss sprite
+        const boss = this.scene.add.image(mapCenterX, mapCenterY, bossType.sprite);
+        boss.setDisplaySize(bossType.baseStats.displaySize, bossType.baseStats.displaySize);
+        
+        // Try to create animated overlay
+        const hasAnimatedOverlay = this.scene.assetManager.createAnimatedOverlay(boss, bossType.sprite, 'enemies');
+        if (!hasAnimatedOverlay) {
+            boss.setAlpha(1);
+        }
+        
+        // Add Matter.js physics with boss-specific settings
+        this.scene.matter.add.gameObject(boss, {
+            shape: {
+                type: 'circle',
+                radius: bossType.baseStats.hitboxRadius
+            },
+            frictionAir: 0.01,
+            label: 'enemy',
+            ignoreGravity: true
+        });
+        
+        // Create boss instance
+        try {
+            const bossInstance = this.enemyRegistry.createEnemy(this.scene, bossType.id, boss);
+            
+            // Mark as boss
+            boss.isBoss = true;
+            boss.bossLevel = level;
+            
+            Logger.system(`Boss ${bossType.name} spawned successfully`);
+        } catch (error) {
+            Logger.error('Failed to create boss instance:', error);
+            boss.destroy();
+            this.endBossFight(false);
+            return;
+        }
+        
+        // Add debug hitbox visualization
+        boss.hitboxDebug = this.scene.add.circle(
+            mapCenterX, 
+            mapCenterY, 
+            bossType.baseStats.hitboxRadius, 
+            0xff0000, 
+            0.3
+        );
+        boss.hitboxDebug.setStrokeStyle(4, 0xff0000);
+        boss.hitboxDebug.setVisible(this.scene.showHitboxes);
+        
+        // Add to enemies group
+        this.scene.enemies.add(boss);
+        
+        // Store boss reference
+        this.bossState.currentBoss = boss;
+        this.bossState.bossSpawned = true;
+        
+        // Show boss health bar
+        this.showBossHealthBar(boss);
+    }
+    
+    showBossHealthBar(boss) {
+        // Create boss health bar UI
+        const barWidth = 600;
+        const barHeight = 20;
+        const barX = this.scene.cameras.main.width / 2 - barWidth / 2;
+        const barY = 50;
+        
+        // Background
+        const healthBarBg = this.scene.add.rectangle(
+            barX + barWidth / 2, 
+            barY + barHeight / 2, 
+            barWidth, 
+            barHeight, 
+            0x330000
+        );
+        healthBarBg.setStrokeStyle(2, 0xff0000);
+        healthBarBg.setScrollFactor(0).setDepth(1500);
+        
+        // Foreground
+        const healthBar = this.scene.add.rectangle(
+            barX, 
+            barY + barHeight / 2, 
+            barWidth, 
+            barHeight, 
+            0xff0000
+        );
+        healthBar.setOrigin(0, 0.5);
+        healthBar.setScrollFactor(0).setDepth(1501);
+        
+        // Boss name text
+        const bossNameText = this.scene.add.text(
+            this.scene.cameras.main.width / 2, 
+            barY - 25, 
+            boss.enemyType ? boss.enemyType.name : 'Boss', 
+            {
+                fontSize: '24px',
+                color: '#ff0000',
+                fontWeight: 'bold',
+                align: 'center'
+            }
+        ).setOrigin(0.5, 0.5).setScrollFactor(0).setDepth(1502);
+        
+        // Store references for updates
+        boss.healthBarBg = healthBarBg;
+        boss.healthBar = healthBar;
+        boss.bossNameText = bossNameText;
+    }
+    
+    triggerFrenzyMode(level) {
+        if (this.frenzyState.active) return; // Frenzy already active
+        
+        Logger.system(`🔥 FRENZY MODE TRIGGERED at level ${level}!`);
+        
+        // Set frenzy state
+        this.frenzyState.active = true;
+        this.frenzyState.startTime = this.scene.time.now;
+        
+        // Show frenzy notification
+        this.showFrenzyNotification(level);
+        
+        // Apply frenzy effects to existing enemies
+        this.applyFrenzyToExistingEnemies();
+    }
+    
+    showFrenzyNotification(level) {
+        const notification = this.scene.add.text(
+            this.scene.cameras.main.width / 2, 
+            300, 
+            `🔥 FRENZY MODE 🔥\nLevel ${level} - 30 seconds of chaos!`, 
+            {
+                fontSize: '36px',
+                color: '#ff6600',
+                fontWeight: 'bold',
+                backgroundColor: '#000000',
+                padding: { x: 16, y: 8 },
+                align: 'center'
+            }
+        ).setOrigin(0.5, 0.5).setScrollFactor(0).setDepth(1000);
+        
+        // Pulsing effect
+        this.scene.tweens.add({
+            targets: notification,
+            scaleX: 1.3,
+            scaleY: 1.3,
+            duration: 400,
+            yoyo: true,
+            repeat: 4
+        });
+        
+        // Fade out after 3 seconds
+        this.scene.time.delayedCall(3000, () => {
+            this.scene.tweens.add({
+                targets: notification,
+                alpha: 0,
+                duration: 1000,
+                onComplete: () => notification.destroy()
+            });
+        });
+    }
+    
+    applyFrenzyToExistingEnemies() {
+        if (!this.scene.enemies) return;
+        
+        this.scene.enemies.children.entries.forEach(enemy => {
+            if (enemy && enemy.active && !enemy.isBoss) {
+                // Increase speed
+                if (enemy.speed) {
+                    enemy.speed *= this.frenzyState.speedMultiplier;
+                }
+                
+                // Increase damage
+                if (enemy.contactDamage) {
+                    enemy.contactDamage = Math.floor(enemy.contactDamage * this.frenzyState.damageMultiplier);
+                }
+                
+                // Add visual frenzy effect
+                if (enemy.setTint) {
+                    enemy.setTint(0xff6600); // Orange tint for frenzy
+                }
+            }
+        });
+    }
+    
+    updateFrenzyState() {
+        if (!this.frenzyState.active) return;
+        
+        const currentTime = this.scene.time.now;
+        const elapsed = currentTime - this.frenzyState.startTime;
+        
+        if (elapsed >= this.frenzyState.duration) {
+            this.endFrenzyMode();
+        }
+    }
+    
+    endFrenzyMode() {
+        if (!this.frenzyState.active) return;
+        
+        Logger.system('Frenzy mode ended');
+        this.frenzyState.active = false;
+        
+        // Remove frenzy effects from existing enemies
+        if (this.scene.enemies) {
+            this.scene.enemies.children.entries.forEach(enemy => {
+                if (enemy && enemy.active && !enemy.isBoss) {
+                    // Reset speed
+                    if (enemy.speed && enemy.enemyType) {
+                        enemy.speed = enemy.enemyType.baseStats.speed;
+                    }
+                    
+                    // Reset damage
+                    if (enemy.contactDamage && enemy.enemyType) {
+                        enemy.contactDamage = enemy.enemyType.baseStats.contactDamage;
+                    }
+                    
+                    // Remove tint
+                    if (enemy.clearTint) {
+                        enemy.clearTint();
+                    }
+                }
+            });
+        }
+    }
+    
+    clearAllEnemies() {
+        if (!this.scene.enemies) return;
+        
+        // Clear all non-boss enemies
+        this.scene.enemies.children.entries.forEach(enemy => {
+            if (enemy && enemy.active && !enemy.isBoss) {
+                this.killEnemy(enemy);
+            }
+        });
+    }
+    
+    // Method to handle boss defeat
+    onBossDefeated(bossType) {
+        Logger.system(`🎉 Boss ${bossType} defeated!`);
+        
+        this.bossState.bossDefeated = true;
+        
+        // Clean up boss UI
+        if (this.bossState.currentBoss) {
+            const boss = this.bossState.currentBoss;
+            if (boss.healthBarBg) boss.healthBarBg.destroy();
+            if (boss.healthBar) boss.healthBar.destroy(); 
+            if (boss.bossNameText) boss.bossNameText.destroy();
+        }
+        
+        // Show victory message
+        this.showBossVictoryMessage(bossType);
+        
+        // End boss fight after delay
+        this.scene.time.delayedCall(3000, () => {
+            this.endBossFight(true);
+        });
+    }
+    
+    showBossVictoryMessage(bossType) {
+        const victory = this.scene.add.text(
+            this.scene.cameras.main.width / 2, 
+            this.scene.cameras.main.height / 2, 
+            `🎉 BOSS DEFEATED! 🎉\n${bossType.toUpperCase()} BUFO VANQUISHED!`, 
+            {
+                fontSize: '42px',
+                color: '#00ff00',
+                fontWeight: 'bold',
+                backgroundColor: '#000000',
+                padding: { x: 24, y: 16 },
+                align: 'center'
+            }
+        ).setOrigin(0.5, 0.5).setScrollFactor(0).setDepth(2000);
+        
+        // Celebration effect
+        this.scene.tweens.add({
+            targets: victory,
+            scaleX: 1.1,
+            scaleY: 1.1,
+            duration: 600,
+            yoyo: true,
+            repeat: 3
+        });
+        
+        // Fade out
+        this.scene.time.delayedCall(2500, () => {
+            this.scene.tweens.add({
+                targets: victory,
+                alpha: 0,
+                duration: 500,
+                onComplete: () => victory.destroy()
+            });
+        });
+    }
+    
+    endBossFight(victory) {
+        Logger.system(`Boss fight ended - Victory: ${victory}`);
+        
+        // Reset boss state
+        this.bossState.active = false;
+        this.bossState.currentBoss = null;
+        this.bossState.bossDefeated = false;
+        this.bossState.bossSpawned = false;
+        
+        // Resume normal enemy spawning
+        // (spawnEnemy method will automatically resume when bossState.active = false)
+    }
+
+    applyFrenzyModifiers(enemy) {
+        if (!enemy || !enemy.enemyType) return;
+        
+        // Increase speed
+        if (enemy.speed) {
+            enemy.speed = Math.floor(enemy.speed * this.frenzyState.speedMultiplier);
+        }
+        
+        // Increase damage
+        if (enemy.contactDamage) {
+            enemy.contactDamage = Math.floor(enemy.contactDamage * this.frenzyState.damageMultiplier);
+        }
+        
+        // Add visual frenzy effect
+        if (enemy.setTint) {
+            enemy.setTint(0xff6600); // Orange tint for frenzy
+        }
+        
+        Logger.enemy(`Applied frenzy modifiers to ${enemy.enemyType.name}`);
+    }
+    
+    updateBossHealthBar() {
+        const boss = this.bossState.currentBoss;
+        if (!boss || !boss.active || !boss.healthBar) return;
+        
+        // Calculate health percentage
+        const healthPercent = Math.max(0, boss.health / boss.maxHealth);
+        
+        // Update health bar width
+        boss.healthBar.scaleX = healthPercent;
+        
+        // Change color based on health
+        let healthColor = 0xff0000; // Red
+        if (healthPercent > 0.6) {
+            healthColor = 0xffff00; // Yellow
+        } else if (healthPercent > 0.3) {
+            healthColor = 0xff8800; // Orange
+        }
+        
+        boss.healthBar.setFillStyle(healthColor);
     }
 }
 

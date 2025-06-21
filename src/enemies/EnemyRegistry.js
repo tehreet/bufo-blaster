@@ -8,6 +8,7 @@ import HazmatBufo from './HazmatBufo.js';
 import GhostBufo from './GhostBufo.js';
 import MeltdownBufo from './MeltdownBufo.js';
 import VampireBufo from './VampireBufo.js';
+import YodaBufo from './YodaBufo.js';
 
 // Enemy definitions with comprehensive base stats
 const ENEMY_DATA = {
@@ -155,6 +156,22 @@ const ENEMY_DATA = {
             xpValue: 60, // High XP reward for the danger
             contactDamage: 5 // Low contact damage - the explosion is the threat
         }
+    },
+    YODA_BUFO: {
+        id: 'yoda',
+        name: 'Yoda Bufo',
+        sprite: 'yoda-bufo',
+        specialEffect: 'boss',
+        weight: 0, // Bosses don't spawn randomly
+        isBoss: true,
+        baseStats: {
+            health: 150, // Much higher health for boss
+            speed: 25, // Much slower - boss is deliberate
+            displaySize: 200, // 5x larger than normal enemies (40 * 5)
+            hitboxRadius: 15, // Larger hitbox for boss
+            xpValue: 500, // Massive XP reward
+            contactDamage: 20 // High contact damage
+        }
     }
 };
 
@@ -168,7 +185,8 @@ const ENEMY_CLASSES = {
     'vampire': VampireBufo,  // Specialized: Bleed effects and life steal mechanics
     'chicken': ChickenBufo,  // Specialized: Ranged attacks
     'ghost': GhostBufo,      // Specialized: Damage reflection mechanics
-    'meltdown': MeltdownBufo // Specialized: Explosion timer mechanics
+    'meltdown': MeltdownBufo, // Specialized: Explosion timer mechanics
+    'yoda': YodaBufo         // Boss: Force abilities and complex mechanics
 };
 
 class EnemyRegistry {

@@ -83,6 +83,11 @@ class AssetConfig {
                     png: 'assets/enemies/bufo-meltdown.png',
                     gif: null, // PNG only
                     displaySize: 40
+                },
+                'yoda-bufo': {
+                    png: 'assets/enemies/yoda-bufo.png', // Downloaded locally
+                    gif: null, // PNG only - can add animated version later
+                    displaySize: 200 // 5x larger than normal enemies (40 * 5)
                 }
                 // Note: bufo-dancing.gif and bufo-eyes.gif exist in assets but are not used by any enemy types
             },

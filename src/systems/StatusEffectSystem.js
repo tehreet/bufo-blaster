@@ -89,6 +89,17 @@ class StatusEffectSystem {
             priority: 1 // High priority like poison
         });
         
+        this.effectConfigs.set('mindControl', {
+            text: 'MIND CONTROLLED',
+            fontSize: '16px',
+            color: '#FF4444', // Bright red for mind control
+            backgroundColor: '#440000', // Dark red background
+            padding: { x: 8, y: 4 },
+            pulseColor: '#FF6666', // Pulsing red
+            pulseSpeed: 250, // Fast pulse for urgency
+            priority: 0 // Highest priority - shows closest to player
+        });
+        
         // Add more status effect configs as needed...
     }
     
