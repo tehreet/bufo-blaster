@@ -460,6 +460,27 @@ class UISystem {
         this.isPaused = false;
         this.gameOverInProgress = false; // Reset game over flag
         
+        // CRITICAL: Clean up all systems to prevent status effect carryover
+        if (this.scene.enemySpawnTimer) {
+            this.scene.enemySpawnTimer.remove();
+            this.scene.enemySpawnTimer = null;
+        }
+        
+        // Clean up character system timers
+        if (this.scene.characterSystem) {
+            this.scene.characterSystem.cleanup();
+        }
+        
+        // Clean up enemy system (clears poison/bleed effects)
+        if (this.scene.enemySystem) {
+            this.scene.enemySystem.cleanup();
+        }
+        
+        // Clean up status effects
+        if (this.scene.statusEffectSystem) {
+            this.scene.statusEffectSystem.cleanup();
+        }
+        
         // Clear existing UI elements
         this.gameUIElements.forEach(element => element.destroy());
         this.gameUIElements = [];

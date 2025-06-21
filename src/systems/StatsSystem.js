@@ -25,7 +25,8 @@ class StatsSystem {
             invincible: false,
             invincibilityEnd: 0,
             lastRegenTime: 0,
-            isPoisoned: false
+            isPoisoned: false,
+            isBleeding: false  // CRITICAL: Reset bleeding status for new character
         };
         
         // Upgrade modifiers (flat bonuses and multipliers)
