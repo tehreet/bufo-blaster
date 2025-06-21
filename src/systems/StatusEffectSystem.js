@@ -95,13 +95,13 @@ class StatusEffectSystem {
     // Add a status effect with automatic visual indicator
     addStatusEffect(effectType, duration = 5000, customConfig = {}) {
         if (!this.scene.player) {
-            console.warn('Cannot add status effect: player not found');
+            Logger.warn(Logger.Categories.SYSTEM, 'Cannot add status effect: player not found');
             return null;
         }
         
         const config = this.effectConfigs.get(effectType);
         if (!config) {
-            console.warn(`Unknown status effect type: ${effectType}`);
+            Logger.warn(Logger.Categories.SYSTEM, `Unknown status effect type: ${effectType}`);
             return null;
         }
         
@@ -115,7 +115,7 @@ class StatusEffectSystem {
         const indicator = this.createStatusIndicator(effectId, effectType, finalConfig);
         
         if (!indicator) {
-            console.warn(`Failed to create indicator for effect: ${effectType}`);
+                            Logger.warn(Logger.Categories.SYSTEM, `Failed to create indicator for effect: ${effectType}`);
             return null;
         }
         
@@ -262,7 +262,7 @@ class StatusEffectSystem {
             return indicator;
             
         } catch (error) {
-            console.error('Error creating status indicator:', error);
+            Logger.error(Logger.Categories.SYSTEM, 'Error creating status indicator:', error);
             return null;
         }
     }

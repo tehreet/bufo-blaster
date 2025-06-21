@@ -231,7 +231,7 @@ class CharacterRegistry {
                 const characterHandlers = tempCharacter.getCollisionHandlers();
                 handlers.push(...characterHandlers);
             } catch (error) {
-                console.warn(`Failed to get collision handlers for character ${characterId}:`, error);
+                Logger.warn(Logger.Categories.SYSTEM, `Failed to get collision handlers for character ${characterId}:`, error);
             }
         }
         

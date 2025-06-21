@@ -1,6 +1,8 @@
 // HTML UI Manager - Handles modern HTML/CSS overlays with Bulma styling
 // Replaces Phaser-based UI with responsive, accessible HTML interfaces
 
+import Logger from '../utils/Logger.js';
+
 class HTMLUIManager {
     constructor(scene) {
         this.scene = scene;
@@ -29,6 +31,10 @@ class HTMLUIManager {
     // =================== CHARACTER SELECTION ===================
     
     showCharacterSelection() {
+        Logger.ui('Showing character selection screen');
+        this.currentScreen = 'character-selection';
+        this.currentCharacterIndex = 0;
+        
         // Get characters from the character system
         const characters = this.scene.characterSystem.getCharacters();
         this.charactersArray = Object.values(characters);
@@ -113,6 +119,8 @@ class HTMLUIManager {
     }
     
     updateCharacterSelection() {
+        Logger.ui(`Updating character selection to index ${this.selectedCharacterIndex}`);
+        
         const characterCards = document.querySelectorAll('.character-card');
         
         characterCards.forEach((card, index) => {
@@ -156,6 +164,8 @@ class HTMLUIManager {
     selectCharacter() {
         const selectedCharacter = this.charactersArray[this.selectedCharacterIndex];
         
+        Logger.ui(`Character selected: ${selectedCharacter.name}`);
+        
         // Add selection animation
         const selectedCard = document.querySelector(`[data-character-index="${this.selectedCharacterIndex}"]`);
         if (selectedCard) {
@@ -167,14 +177,16 @@ class HTMLUIManager {
             }, 200);
         }
         
-        // Set character in scene and start game
+        // Set character in scene
         this.scene.characterSystem.setSelectedCharacter(selectedCharacter);
         
-        // Hide character selection with fade out
+        // Hide character selection immediately and start game
+        this.hideOverlay(this.characterSelectionOverlay);
+        
+        // Start game after a short delay to ensure overlay is hidden
         setTimeout(() => {
-            this.hideOverlay(this.characterSelectionOverlay);
             this.scene.uiSystem.startGame();
-        }, 300);
+        }, 100);
     }
     
     handleCharacterCardClick(event) {
@@ -216,16 +228,19 @@ class HTMLUIManager {
     // =================== LOADING SCREEN ===================
     
     showLoadingScreen() {
+        Logger.ui('Showing loading screen');
         this.showOverlay(this.loadingOverlay);
     }
     
     hideLoadingScreen() {
+        Logger.ui('Hiding loading screen');
         this.hideOverlay(this.loadingOverlay);
     }
     
     // =================== PAUSE MENU ===================
     
     showPauseMenu() {
+        Logger.ui('Showing pause menu');
         // Create pause menu HTML if it doesn't exist
         if (!this.pauseOverlay.innerHTML.trim()) {
             this.pauseOverlay.innerHTML = `
@@ -265,12 +280,14 @@ class HTMLUIManager {
     }
     
     hidePauseMenu() {
+        Logger.ui('Hiding pause menu');
         this.hideOverlay(this.pauseOverlay);
     }
     
     // =================== GAME OVER SCREEN ===================
     
     showGameOverScreen(stats = {}) {
+        Logger.ui('Showing game over screen');
         const gameOverHTML = `
             <div class="character-selection">
                 <div class="container has-text-centered">
@@ -330,64 +347,60 @@ class HTMLUIManager {
     }
     
     hideGameOverScreen() {
+        Logger.ui('Hiding game over screen');
         this.hideOverlay(this.gameOverOverlay);
     }
     
     // =================== GAMEPAD SUPPORT ===================
     
-    handleGamepadInput(gamepadState) {
-        // Check cooldown to prevent rapid-fire inputs
-        const currentTime = Date.now();
-        if (currentTime < this.gamepadInputCooldown) return;
-        
-        let inputDetected = false;
-        
-        // Handle character selection screen
-        if (this.characterSelectionOverlay.style.display !== 'none') {
-            // Handle D-pad navigation
-            if (gamepadState.left || gamepadState.up) {
-                this.selectedCharacterIndex = Math.max(0, this.selectedCharacterIndex - 1);
-                this.updateCharacterSelection();
-                inputDetected = true;
-            } else if (gamepadState.right || gamepadState.down) {
-                this.selectedCharacterIndex = Math.min(this.charactersArray.length - 1, this.selectedCharacterIndex + 1);
-                this.updateCharacterSelection();
-                inputDetected = true;
+    handleGamepadInput() {
+        if (Date.now() - this.lastInputTime < 200) return; // Debounce
+
+        const gamepadState = this.inputManager.getGamepadState();
+        if (!gamepadState.connected) return;
+
+        if (gamepadState.buttons[0] || gamepadState.buttons[1]) { // A or B button
+            this.lastInputTime = Date.now();
+            
+            if (this.currentScreen === 'character-selection') {
+                this.selectCharacter();
+            } else if (this.currentScreen === 'pause') {
+                this.resumeGame();
+            } else if (this.currentScreen === 'game-over') {
+                this.returnToMenu();
+            }
+            Logger.input('Gamepad button pressed');
+        }
+
+        // Start/Menu button for pause/unpause
+        if (gamepadState.buttons[9]) { // Start button
+            this.lastInputTime = Date.now();
+            
+            if (this.currentScreen === 'game') {
+                this.pauseGame();
+            } else if (this.currentScreen === 'pause') {
+                this.resumeGame();
+            }
+            Logger.input('Gamepad start button pressed');
+        }
+
+        // D-pad navigation for character selection
+        if (this.currentScreen === 'character-selection') {
+            let moved = false;
+            
+            if (gamepadState.buttons[14]) { // D-pad left
+                this.currentCharacterIndex = Math.max(0, this.currentCharacterIndex - 1);
+                moved = true;
+            } else if (gamepadState.buttons[15]) { // D-pad right
+                this.currentCharacterIndex = Math.min(this.characters.length - 1, this.currentCharacterIndex + 1);
+                moved = true;
             }
             
-            // Handle A button (select)
-            if (gamepadState.a) {
-                this.selectCharacter();
-                inputDetected = true;
+            if (moved) {
+                this.lastInputTime = Date.now();
+                this.updateCharacterSelection();
+                Logger.input(`Character selection moved to index ${this.currentCharacterIndex}`);
             }
-        }
-        
-        // Handle pause screen
-        else if (this.pauseOverlay.style.display !== 'none') {
-            if (gamepadState.a || gamepadState.start) {
-                this.scene.uiSystem.resumeGame();
-                inputDetected = true;
-            } else if (gamepadState.b) {
-                this.scene.uiSystem.restartGame();
-                inputDetected = true;
-            }
-        }
-        
-        // Handle game over screen
-        else if (this.gameOverOverlay.style.display !== 'none') {
-            if (gamepadState.a) {
-                this.scene.uiSystem.restartGame();
-                inputDetected = true;
-            } else if (gamepadState.b) {
-                this.hideOverlay(this.gameOverOverlay);
-                this.showCharacterSelection();
-                inputDetected = true;
-            }
-        }
-        
-        // Set cooldown if input was detected
-        if (inputDetected) {
-            this.gamepadInputCooldown = currentTime + this.gamepadInputDelay;
         }
     }
     

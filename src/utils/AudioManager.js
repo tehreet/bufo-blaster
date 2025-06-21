@@ -1,5 +1,7 @@
 // Audio Manager - Handles background music and sound effects
 
+import Logger from './Logger.js';
+
 class AudioManager {
     constructor(scene) {
         this.scene = scene;
@@ -21,13 +23,13 @@ class AudioManager {
                 volume: this.musicVolume
             });
             
-            console.log('Background music initialized');
+            Logger.audio('Background music initialized');
             
             // Try to start music immediately (might fail due to autoplay policy)
             this.startMusic();
             
         } catch (error) {
-            console.warn('Failed to initialize background music:', error);
+            Logger.warn(Logger.Categories.AUDIO, 'Failed to initialize background music:', error);
         }
     }
     
@@ -38,10 +40,10 @@ class AudioManager {
             if (!this.backgroundMusic.isPlaying) {
                 this.backgroundMusic.play();
                 this.hasPlayedMusic = true;
-                console.log('Background music started');
+                Logger.audio('Background music started');
             }
         } catch (error) {
-            console.warn('Failed to start background music (likely autoplay restriction):', error);
+            Logger.warn(Logger.Categories.AUDIO, 'Failed to start background music (likely autoplay restriction):', error);
             
             // Set up user interaction listener to start music
             this.setupUserInteractionListener();
@@ -57,14 +59,14 @@ class AudioManager {
                 try {
                     this.backgroundMusic.play();
                     this.hasPlayedMusic = true;
-                    console.log('Background music started after user interaction');
+                    Logger.audio('Background music started after user interaction');
                     
                     // Remove listeners once music has started
                     document.removeEventListener('click', startMusicOnInteraction);
                     document.removeEventListener('keydown', startMusicOnInteraction);
                     document.removeEventListener('touchstart', startMusicOnInteraction);
                 } catch (error) {
-                    console.warn('Failed to start music on user interaction:', error);
+                    Logger.warn(Logger.Categories.AUDIO, 'Failed to start music on user interaction:', error);
                 }
             }
         };
@@ -74,13 +76,13 @@ class AudioManager {
         document.addEventListener('keydown', startMusicOnInteraction);
         document.addEventListener('touchstart', startMusicOnInteraction);
         
-        console.log('Set up user interaction listeners for music');
+        Logger.audio('Set up user interaction listeners for music');
     }
     
     pauseMusic() {
         if (this.backgroundMusic && this.backgroundMusic.isPlaying) {
             this.backgroundMusic.pause();
-            console.log('Background music paused');
+            Logger.audio('Background music paused');
         }
     }
     
@@ -88,9 +90,9 @@ class AudioManager {
         if (this.backgroundMusic && !this.backgroundMusic.isPlaying && this.isMusicEnabled) {
             try {
                 this.backgroundMusic.resume();
-                console.log('Background music resumed');
+                Logger.audio('Background music resumed');
             } catch (error) {
-                console.warn('Failed to resume background music:', error);
+                Logger.warn(Logger.Categories.AUDIO, 'Failed to resume background music:', error);
             }
         }
     }
@@ -98,7 +100,7 @@ class AudioManager {
     stopMusic() {
         if (this.backgroundMusic) {
             this.backgroundMusic.stop();
-            console.log('Background music stopped');
+            Logger.audio('Background music stopped');
         }
     }
     
@@ -107,7 +109,7 @@ class AudioManager {
         if (this.backgroundMusic) {
             this.backgroundMusic.setVolume(this.musicVolume);
         }
-        console.log(`Music volume set to: ${this.musicVolume}`);
+        Logger.audio(`Music volume set to: ${this.musicVolume}`);
     }
     
     toggleMusic() {
@@ -119,7 +121,7 @@ class AudioManager {
             this.pauseMusic();
         }
         
-        console.log(`Music ${this.isMusicEnabled ? 'enabled' : 'disabled'}`);
+        Logger.audio(`Music ${this.isMusicEnabled ? 'enabled' : 'disabled'}`);
         return this.isMusicEnabled;
     }
     
@@ -134,17 +136,17 @@ class AudioManager {
                 });
                 return sound;
             } else {
-                console.warn(`Sound '${soundKey}' not found`);
+                Logger.warn(Logger.Categories.AUDIO, `Sound '${soundKey}' not found`);
             }
         } catch (error) {
-            console.warn(`Failed to play sound '${soundKey}':`, error);
+            Logger.warn(Logger.Categories.AUDIO, `Failed to play sound '${soundKey}':`, error);
         }
         return null;
     }
     
     setSfxVolume(volume) {
         this.sfxVolume = Math.max(0, Math.min(1, volume));
-        console.log(`SFX volume set to: ${this.sfxVolume}`);
+        Logger.audio(`SFX volume set to: ${this.sfxVolume}`);
     }
     
     // Handle game state changes
@@ -171,7 +173,7 @@ class AudioManager {
             this.backgroundMusic.destroy();
             this.backgroundMusic = null;
         }
-        console.log('AudioManager destroyed');
+        Logger.audio('AudioManager destroyed');
     }
     
     // Get current status

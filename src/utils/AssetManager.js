@@ -14,7 +14,7 @@ class AssetManager {
 
     createAnimatedOverlay(gameObject, assetId, assetType = 'characters') {
         if (!gameObject || !assetId) {
-            console.warn('Invalid parameters for createAnimatedOverlay');
+            Logger.warn(Logger.Categories.ASSET, 'Invalid parameters for createAnimatedOverlay');
             return false;
         }
         
@@ -142,7 +142,7 @@ class AssetManager {
             const canvas = this.scene.game.canvas;
             
             if (!canvas) {
-                console.warn('Game canvas not found');
+                Logger.warn(Logger.Categories.ASSET, 'Game canvas not found');
                 return;
             }
             
@@ -182,7 +182,7 @@ class AssetManager {
             overlayElement.style.width = Math.round(width * camera.zoom) + 'px';
             overlayElement.style.height = Math.round(height * camera.zoom) + 'px';
         } catch (error) {
-            console.error('Error updating overlay position:', error);
+            Logger.error(Logger.Categories.ASSET, 'Error updating overlay position:', error);
         }
     }
 
@@ -218,7 +218,7 @@ class AssetManager {
                     overlay.element.parentNode.removeChild(overlay.element);
                 }
             } catch (error) {
-                console.error('Error removing overlay element:', error);
+                Logger.error(Logger.Categories.ASSET, 'Error removing overlay element:', error);
             }
             this.animatedOverlays.delete(gameObject);
         }
@@ -238,7 +238,7 @@ class AssetManager {
                         overlay.element.parentNode.removeChild(overlay.element);
                     }
                 } catch (error) {
-                    console.error('Error cleaning up overlay:', error);
+                    Logger.error(Logger.Categories.ASSET, 'Error cleaning up overlay:', error);
                 }
             }
         });

@@ -1,3 +1,5 @@
+import Logger from './Logger.js';
+
 // Input Manager - Handles keyboard, mouse, and gamepad input
 
 class InputManager {
@@ -462,7 +464,26 @@ class InputManager {
     }
 
     getGamepadState() {
-        return this.gamepadState;
+        const gamepads = navigator.getGamepads();
+        const gamepad = gamepads[0]; // First gamepad
+        
+        if (!gamepad) {
+            return { connected: false };
+        }
+
+        const buttonStates = [];
+        for (let i = 0; i < gamepad.buttons.length; i++) {
+            buttonStates[i] = gamepad.buttons[i].pressed;
+        }
+
+        const state = {
+            connected: true,
+            buttons: buttonStates,
+            axes: Array.from(gamepad.axes)
+        };
+
+        Logger.input(`Gamepad state: ${gamepad.buttons.length} buttons, ${gamepad.axes.length} axes`);
+        return state;
     }
 
     setCharacterCards(cards) {

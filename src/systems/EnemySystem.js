@@ -981,9 +981,9 @@ class EnemySystem {
                 magnetOrb.glowEffect.destroy();
             }
             magnetOrb.destroy();
-        } catch (error) {
-            console.error('Error cleaning up magnet orb:', error);
-        }
+                        } catch (error) {
+                    Logger.error(Logger.Categories.SYSTEM, 'Error cleaning up magnet orb:', error);
+                }
         
         // Hide indicator when orb is collected
         this.currentMagnetOrb = null;
@@ -1007,9 +1007,9 @@ class EnemySystem {
                     this.scene.tweens.killTweensOf(magnetOrb.glowEffect);
                     magnetOrb.glowEffect.destroy();
                 }
-            } catch (error) {
-                console.error('Error cleaning up magnet orb during cleanup:', error);
-            }
+                            } catch (error) {
+                    Logger.error(Logger.Categories.SYSTEM, 'Error cleaning up magnet orb during cleanup:', error);
+                }
         });
         
         // Clean up indicator as well
@@ -1039,7 +1039,7 @@ class EnemySystem {
                     y: Math.sin(angle) * speed
                 });
             } catch (error) {
-                console.error('Error setting ranged enemy retreat velocity:', error);
+                Logger.error(Logger.Categories.SYSTEM, 'Error setting ranged enemy retreat velocity:', error);
             }
         } else if (distanceToPlayer > rangedConfig.range) {
             // Too far - move closer to player
@@ -1050,15 +1050,15 @@ class EnemySystem {
                     y: Math.sin(angle) * speed * 0.5
                 });
             } catch (error) {
-                console.error('Error setting ranged enemy approach velocity:', error);
+                Logger.error(Logger.Categories.SYSTEM, 'Error setting ranged enemy approach velocity:', error);
             }
         } else {
             // In optimal range - stop moving and attack
             try {
                 this.scene.matter.body.setVelocity(enemy.body, { x: 0, y: 0 });
-            } catch (error) {
-                console.error('Error stopping ranged enemy:', error);
-            }
+                    } catch (error) {
+            Logger.error(Logger.Categories.SYSTEM, 'Error stopping ranged enemy:', error);
+        }
             
             // Check if we can attack
             const currentTime = this.scene.time.now;
@@ -1106,7 +1106,7 @@ class EnemySystem {
         try {
             this.scene.matter.body.setVelocity(egg.body, velocity);
         } catch (error) {
-            console.error('Error setting projectile velocity:', error);
+            Logger.error(Logger.Categories.SYSTEM, 'Error setting projectile velocity:', error);
             egg.destroy();
             return;
         }
